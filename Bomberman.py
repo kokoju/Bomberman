@@ -1,6 +1,7 @@
 # Módulos necesarios 
 from pygame import *
 from time import sleep
+from config import *
 
 # Usaremos una definición HD (1280x720p)
 # En la parte superior de la pantalla, dejaremos una HUD de tamaño 1280x192 
