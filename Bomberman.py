@@ -12,7 +12,7 @@ ANCHO_BLOQUE = 48  # Ancho de cada bloque en píxeles
 ANCHO_MATRIZ = 26  # Ancho de la matriz en bloques
 ALTO_MATRIZ = 11  # Alto de la matriz en bloques
 
-# pinga
+
 #  fuente_texto = font.Font("assets/FUENTEJUEGO.TTF", 30)  # USAR PARA EL TEXTO DEL JUEGO
 
 
@@ -30,6 +30,10 @@ nivel1 = "xd"
 
 
 
+# Ideas de Items 
+# Fantasmal -> Permite al jugador atravesar bloques destructibles/indestructibles por un tiempo limitado 
+# Explosivo -> Aumenta el rango de las bombas del jugador por un tiempo limitado, además de no detenerse al contacto de un muro
+
 # Clase Jugador
 class Jugador:
     def __init__(self, x, y, pantalla, skin):
@@ -39,13 +43,13 @@ class Jugador:
         self.skin = skin  # Skin del jugador (variable para personalización)
         self.bombas = 5  # Cantidad de bombas que el jugador puede colocar
         self.vidas = 3  # Cantidad de vidas del jugador
-        self.velocidad = 5  # Velocidad de movimiento del jugador
+        self.velocidad = 1  # Velocidad de movimiento del jugador (en bloques)
         self.direccion = 'abajo'  # Dirección inicial del jugador (y a la que está mirando)
         self.hit = 1  # Daño que el jugador inflige (evitamos el uso de ñ)
         self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al jugador en el canvas (TEMPORAL, BORRAR DESPUÉS)
 
-    def mover(self, dx, dy):
-        self.x += dx * self.velocidad
+    def mover(self, dx, dy):  # Mueve al jugador en la dirección especificada
+        self.x += dx 
         self.y += dy * self.velocidad
         self.rect.topleft = (self.x, self.y)
 
