@@ -7,18 +7,42 @@ from time import sleep
 # Abajo del HUD, haremos matrices de 26x11 (siendo cada bloque de 48x48): esto nos dejará con 32 pixeles sobrantes, repartidos en 16 pixeles en la parte izquierda y 16 pixeles en la parte derecha de la pantalla
 # Haremos los niveles con matrices (26x11), y como no se requiere crear nuevos, podemos ponerlos dentro del archivo de código
 
+MEDIDAS_PANTALLA = (1280, 720)  # Definimos el tamaño de la pantalla
+ANCHO_BLOQUE = 48  # Ancho de cada bloque en píxeles
+ANCHO_MATRIZ = 26  # Ancho de la matriz en bloques
+ALTO_MATRIZ = 11  # Alto de la matriz en bloques
+
+
+#  fuente_texto = font.Font("assets/FUENTEJUEGO.TTF", 30)  # USAR PARA EL TEXTO DEL JUEGO
+
+
+# Definiremos lo que significa cada bloque de la matriz:
+# 0 = vacío
+# 1 = bloque indestructible
+# 2 = bloque destructible
+ 
+# Las demás cosas que se colocan en la matriz son objetos que se generan aleatoriamente, y no se colocan en la matriz, sino que se generan en el momento de crear el nivel
+
+
+
+
+nivel1 = "xd"
+
+
+
 # Clase Jugador
 class Jugador:
-    def __init__(self, x, y, color):
-        self.x = x
-        self.y = y
-        self.color = color
-        self.bombas = 5
-        self.vidas = 3
-        self.velocidad = 5
-        self.direccion = 'abajo'
-        self.dano = 1
-        self.rect = Rect(self.x, self.y, 50, 50)
+    def __init__(self, x, y, pantalla, skin):
+        self.x = x  # Posición x del jugador
+        self.y = y  # Posición y del jugador
+        self.pantalla = pantalla  # Pantalla donde se dibuja el jugador
+        self.skin = skin  # Skin del jugador (variable para personalización)
+        self.bombas = 5  # Cantidad de bombas que el jugador puede colocar
+        self.vidas = 3  # Cantidad de vidas del jugador
+        self.velocidad = 5  # Velocidad de movimiento del jugador
+        self.direccion = 'abajo'  # Dirección inicial del jugador (y a la que está mirando)
+        self.hit = 1  # Daño que el jugador inflige (evitamos el uso de ñ)
+        self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al jugador en el canvas (TEMPORAL, BORRAR DESPUÉS)
 
     def mover(self, dx, dy):
         self.x += dx * self.velocidad
@@ -55,7 +79,41 @@ class Objetos:
 
 # Creamos una clase para el juego: esta llamará todas las opciones anteriores y las ejecutará en el orden correcto
 class Game: 
-    pass
+    def __init__(self):
+        init()  # Inicializamos Pygame
+        self.pantalla = display.set_mode((MEDIDAS_PANTALLA[0], MEDIDAS_PANTALLA[1]))  # Configura la ventana
+        display.set_caption("Bomberman")  # Título de la ventana
+        self.clock = time.Clock()  # Crea un objeto de reloj para controlar la tasa de refresco, necesario para la física y el movimiento
+        self.running = True  # Variable para controlar el bucle del juego
+
+
+    def key_pressed(self, event):
+        #  Usa un diccionario para determinar si sube, baja, der, izq
+        movimientos_posibles = {
+            "K_w": (0, -1),
+            "K_s": (0, 1),
+            "K_a": (-1, 0),
+            "K_d": (1, 0)
+        }
+        #  Si la tecla presionada está en el diccionario de movimientos posibles, se mueve el jugador
+        if event.key in movimientos_posibles:
+            dx, dy = movimientos_posibles[event.key]
+            self.jugador.mover(dx, dy)
+
+
+    def run(self):
+        while self.running:  # Bucle principal del juego
+            self.hadle_events()  # Maneja los eventos del juego (HACER)
+            self.update()  # Actualiza el estado del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
+            self.draw()  # Dibuja los elementos del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
+
+        
+
+                
+# Ejecutar el juego
+if __name__ == "__main__": #solo se ejecuta si se hace run, no si es import
+    game = Game()
+    game.run()
 
 
 
