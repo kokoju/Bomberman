@@ -12,7 +12,7 @@ ANCHO_BLOQUE = 48  # Ancho de cada bloque en píxeles
 ANCHO_MATRIZ = 26  # Ancho de la matriz en bloques
 ALTO_MATRIZ = 11  # Alto de la matriz en bloques
 
-
+# pinga
 #  fuente_texto = font.Font("assets/FUENTEJUEGO.TTF", 30)  # USAR PARA EL TEXTO DEL JUEGO
 
 
