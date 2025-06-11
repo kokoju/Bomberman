@@ -7,12 +7,6 @@ from time import sleep
 # Abajo del HUD, haremos matrices de 26x11 (siendo cada bloque de 48x48): esto nos dejará con 32 pixeles sobrantes, repartidos en 16 pixeles en la parte izquierda y 16 pixeles en la parte derecha de la pantalla
 # Haremos los niveles con matrices (26x11), y como no se requiere crear nuevos, podemos ponerlos dentro del archivo de código
 
-MEDIDAS_PANTALLA = (1280, 720)  # Definimos el tamaño de la pantalla
-ANCHO_BLOQUE = 48  # Ancho de cada bloque en píxeles
-ANCHO_MATRIZ = 26  # Ancho de la matriz en bloques
-ALTO_MATRIZ = 11  # Alto de la matriz en bloques
-
-# pinga
 #  fuente_texto = font.Font("assets/FUENTEJUEGO.TTF", 30)  # USAR PARA EL TEXTO DEL JUEGO
 
 
@@ -99,11 +93,15 @@ class Game:
         if event.key in movimientos_posibles:
             dx, dy = movimientos_posibles[event.key]
             self.jugador.mover(dx, dy)
-
-
+    
+    def update():
+        pass
+    
+    def draw():
+        pass
+    
     def run(self):
         while self.running:  # Bucle principal del juego
-            self.hadle_events()  # Maneja los eventos del juego (HACER)
             self.update()  # Actualiza el estado del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
             self.draw()  # Dibuja los elementos del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
 
