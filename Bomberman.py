@@ -23,7 +23,9 @@ from config import *
 
 
 
-nivel1 = "xd"
+nivel1 = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+]
 
 
 
@@ -43,7 +45,6 @@ class Jugador:
         self.vidas = 3  # Cantidad de vidas del jugador
         self.velocidad = 1  # Velocidad de movimiento del jugador (en bloques)
         self.direccion = 'abajo'  # Dirección inicial del jugador (y a la que está mirando)
-        self.hit = 1  # Daño que el jugador inflige (evitamos el uso de ñ)
         self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al jugador en el canvas (TEMPORAL, BORRAR DESPUÉS)
 
     #  Mueve al jugador en la dirección especificada
@@ -70,22 +71,44 @@ class Enemigo:
         self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al enemigo en el canvas (TEMPORAL, BORRAR DESPUÉS)
 
     # Mueve al enemigo en una dirección aleatoria
-    def movimiento(self):
+    def movimiento(self, obstaculos):
         # Genera un movimiento aleatorio
         movimientos = [(1, 0), (-1, 0), (0, 1), (0, -1)]
         dx, dy = choice(movimientos)
-        # FALTA LÓGICA PARA NO CHOCAR CONTRA MUROS
+        new_x = self.x + dx  # Se calcula la nueva posición x
+        new_y = self.y + dy  # Se calcula la nueva posición y
+        if ANCHO_MATRIZ > new_x >= 0 and ALTO_MATRIZ > new_y >= 0:  # Si está dentro de los límites del mapa
+            # Verifica si no hay obstáculos en la nueva posición
+            if (new_x, new_y) not in [(obs.x, obs.y) for obs in obstaculos]:
+                self.x = new_x
+                self.y = new_y
+
+        
+
+class Bomba:
+    def __init__(self, x, y):
+        self.x = x  # Posición x de la bomba
+        self.y = y  # Posición y de la bomba
+        self.tiempo_detonar = 2  # Tiempo en segundos para que la bomba explote
+        self.hit = 1 # Daño que causa la bomba al explotar
+        Thread(target=self.detonar, args=([], [])).start()  # Inicia el temporizador de la bomba en un hilo separado
+
+    def detonar(self, lista_obstaculos, enemigos):
+        sleep(self.tiempo_detonar)
         
 
 
-class Bomba:
-    def __init__(self):
-        pass
-
 
 class Obstaculo:
-    def __init__(self):
-        pass
+    def __init__(self, x, y, destructible=False):
+        self.x = x  # Posición x del obstáculo
+        self.y = y  # Posición y del obstáculo
+        self.destructible = destructible  # Si es destructible, puede ser destruido por una bomba
+
+    # Destruye el obstáculo si es destructible (se le pasa la lista de obstáculos y se saca solo)
+    def destruir(self, lista_obstaculos):
+        if self.destructible:
+            lista_obstaculos.remove(self)
 
 
 class Jefe:
@@ -97,6 +120,12 @@ class Objetos:
 
 
 
+class Menu:
+    pass
+
+
+class In_Game:
+    pass
 
 # Creamos una clase para el juego: esta llamará todas las opciones anteriores y las ejecutará en el orden correcto
 class Game: 
@@ -106,6 +135,8 @@ class Game:
         display.set_caption("Bomberman")  # Título de la ventana
         self.clock = time.Clock()  # Crea un objeto de reloj para controlar la tasa de refresco, necesario para la física y el movimiento
         self.running = True  # Variable para controlar el bucle del juego
+        
+        self.jugador = Jugador(0, 0, self.pantalla)
 
 
     def key_pressed(self, event):
