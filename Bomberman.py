@@ -1,9 +1,10 @@
-# Módulos necesarios 
+# Módulos necesarios
 from pygame import *
 from time import sleep
 from random import choice
 from threading import Thread
 from config import *
+import json
 
 
 # Usaremos una definición HD (1280x720p)
@@ -73,7 +74,24 @@ class Jugador:
     def dibujar_jugador(self, pantalla):
         draw.rect(self.pantalla, (0, 0, 255), (16 + (self.x * MEDIDA_BLOQUE), MEDIDA_HUD + (self.y * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
 
-
+    def habilidad1(self):
+        pass
+    
+    def habilidad2(self):
+        pass
+    
+    def actualizar(self, event):
+        if event.type == KEYDOWN: #Si presiona una tecla
+            
+            if event.key == K_SPACE: #Si le da a espacio
+                Bomba(self.x, self.y) #Pone una bomba
+                
+            elif event.key == K_1: #Si le da a 1
+                self.habilidad1
+                
+            elif event.key == K_2:
+                self.habilidad2
+    
 # Clase Enemigo
 class Enemigo:
     def __init__(self, x, y, pantalla):
@@ -98,12 +116,13 @@ class Enemigo:
                 self.x = new_x
                 self.y = new_y
 
-        
 
 class Bomba:
-    def __init__(self, x, y):
+    def __init__(self, pantalla, x, y):
+        self.pantalla = pantalla #Pantalla para dibujar la bomba
         self.x = x  # Posición x de la bomba
         self.y = y  # Posición y de la bomba
+        self.rect = Rect(x, y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)
         self.tiempo_detonar = 2  # Tiempo en segundos para que la bomba explote
         self.hit = 1 # Daño que causa la bomba al explotar
         Thread(target=self.detonar, args=([], [])).start()  # Inicia el temporizador de la bomba en un hilo separado
@@ -111,8 +130,9 @@ class Bomba:
     def detonar(self, lista_obstaculos, enemigos):
         sleep(self.tiempo_detonar)
         # CONTINUAR AQUÍ: Lógica de explosión de la bomba, que afectará a enemigos y obstáculos
-
-
+        #TODO
+        draw.rect(self.pantalla, "black", self.rect)
+    
 class Explosion:
     pass
 
@@ -157,6 +177,7 @@ class Game:
         self.clock = time.Clock()  # Crea un objeto de reloj para controlar la tasa de refresco, necesario para la física y el movimiento
         self.running = True  # Variable para controlar el bucle del juego
         self.dt = 0  # Delta time, tiempo entre frames
+        self.modos = {"menu":False, "jugar":True, "editor":False} #Fases de juego
 
         
         self.jugador = Jugador(0, 0, self.pantalla)  # Crea una instancia del jugador en la posición (0, 0) en la pantalla jugable
@@ -183,12 +204,13 @@ class Game:
                 self.teclas_presionadas(evento)
     
     def dibujar(self):
-        for i in range(ANCHO_MATRIZ):
-            for j in range(ALTO_MATRIZ):
-                # Dibuja el fondo de la pantalla
-                # Pantalla, color, posición (x, y), tamaño (ancho, alto)
-                draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
-        self.jugador.dibujar_jugador(self.pantalla)  # Dibuja al jugador en la pantalla
+        if self.modos["jugar"]:
+            for i in range(ANCHO_MATRIZ):
+                for j in range(ALTO_MATRIZ):
+                    # Dibuja el fondo de la pantalla
+                    # Pantalla, color, posición (x, y), tamaño (ancho, alto)
+                    draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
+            self.jugador.dibujar_jugador(self.pantalla)  # Dibuja al jugador en la pantalla
         
     
     def run(self):
