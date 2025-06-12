@@ -48,11 +48,15 @@ class Jugador:
         self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al jugador en el canvas (TEMPORAL, BORRAR DESPUÉS)
 
     #  Mueve al jugador en la dirección especificada
-    def mover(self, dx, dy):
+    def mover(self, dx, dy, obstaculos):
         # Cambia sus coords x y y
-        self.x += dx 
-        self.y += dy
-        self.rect.topleft = (self.x, self.y)  # Actualiza la posición del rectángulo del jugador
+        new_x = self.x + dx  # Se calcula la nueva posición x
+        new_y = self.y + dy
+        if ANCHO_MATRIZ > new_x >= 0 and ALTO_MATRIZ > new_y >= 0:  # Si está dentro de los límites del mapa
+            # Verifica si no hay obstáculos en la nueva posición
+            if (new_x, new_y) not in [(obs.x, obs.y) for obs in obstaculos]:
+                self.x = new_x
+                self.y = new_y
 
     #  Dibuja al jugador en la pantalla
     def dibujar_jugador(self, pantalla):
@@ -95,7 +99,8 @@ class Bomba:
 
     def detonar(self, lista_obstaculos, enemigos):
         sleep(self.tiempo_detonar)
-        
+        # CONTINUAR AQUÍ: Lógica de explosión de la bomba, que afectará a enemigos y obstáculos
+
 
 
 
