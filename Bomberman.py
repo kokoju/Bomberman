@@ -71,7 +71,7 @@ class Jugador:
 
     #  Dibuja al jugador en la pantalla
     def dibujar_jugador(self, pantalla):
-        draw.rect(pantalla, self.rect)
+        draw.rect(self.pantalla, (0, 0, 255), (16 + (self.x * MEDIDA_BLOQUE), MEDIDA_HUD + (self.y * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
 
 
 # Clase Enemigo
@@ -159,26 +159,28 @@ class Game:
         self.dt = 0  # Delta time, tiempo entre frames
 
         
-        self.jugador = Jugador(0, 0, self.pantalla)
+        self.jugador = Jugador(0, 0, self.pantalla)  # Crea una instancia del jugador en la posición (0, 0) en la pantalla jugable
+        self.lista_obstaculos = []  # Lista de obstáculos en el juego
 
 
-    def teclas_presionadas(self, event):
-        #  Usa un diccionario para determinar si sube, baja, der, izq
+    def teclas_presionadas(self, evento):
+        #  Usa un diccionario para determinar si sube, baja, si va para la derecha o izquierda
         movimientos_posibles = {
-            "K_w": (0, -1),
-            "K_s": (0, 1),
-            "K_a": (-1, 0),
-            "K_d": (1, 0)
+            K_w: (0, -1),
+            K_s: (0, 1),
+            K_a: (-1, 0),
+            K_d: (1, 0)
         }
-        #  Si la tecla presionada está en el diccionario de movimientos posibles, se mueve el jugador
-        if event.key in movimientos_posibles:
-            dx, dy = movimientos_posibles[event.key]
-            self.jugador.mover(dx, dy)
+        if evento.key in movimientos_posibles:
+            dx, dy = movimientos_posibles[evento.key]
+            self.jugador.movimiento(dx, dy, self.lista_obstaculos)
 
     def actualizar(self):
         for evento in event.get():
             if evento.type == QUIT:
                 self.running = False
+            elif evento.type == KEYDOWN:
+                self.teclas_presionadas(evento)
     
     def dibujar(self):
         for i in range(ANCHO_MATRIZ):
@@ -186,6 +188,8 @@ class Game:
                 # Dibuja el fondo de la pantalla
                 # Pantalla, color, posición (x, y), tamaño (ancho, alto)
                 draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
+        self.jugador.dibujar_jugador(self.pantalla)  # Dibuja al jugador en la pantalla
+        
     
     def run(self):
         while self.running:  # Bucle principal del juego
