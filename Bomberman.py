@@ -7,9 +7,10 @@ from config import *
 
 
 # Usaremos una definición HD (1280x720p)
-# En la parte superior de la pantalla, dejaremos una HUD de tamaño 1280x192 
-# Abajo del HUD, haremos matrices de 26x11 (siendo cada bloque de 48x48): esto nos dejará con 32 pixeles sobrantes, repartidos en 16 pixeles en la parte izquierda y 16 pixeles en la parte derecha de la pantalla
-# Haremos los niveles con matrices (26x11), y como no se requiere crear nuevos, podemos ponerlos dentro del archivo de código
+# En la parte superior de la pantalla, dejaremos una HUD de tamaño 1280x176 
+# Abajo del HUD, haremos matrices de 11x26 (siendo cada bloque de 48x48): esto nos dejará con 32 pixeles sobrantes, repartidos en 16 pixeles en la parte izquierda y 16 pixeles en la parte derecha de la pantalla
+# Además, dejé un espacio de 16 pixeles entre la matriz y el borde inferior, para que no se vea tan pegado
+# Haremos los niveles con matrices (11x26), y como no se requiere crear nuevos, podemos ponerlos dentro del archivo de código
 
 #  fuente_texto = font.Font("assets/FUENTEJUEGO.TTF", 30)  # USAR PARA EL TEXTO DEL JUEGO
 
@@ -24,7 +25,17 @@ from config import *
 
 
 nivel1 = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ]
 
 
@@ -36,7 +47,7 @@ nivel1 = [
 
 # Clase Jugador
 class Jugador:
-    def __init__(self, x, y, pantalla, skin):
+    def __init__(self, x, y, pantalla, skin="red"):
         self.x = x  # Posición x del jugador
         self.y = y  # Posición y del jugador
         self.pantalla = pantalla  # Pantalla donde se dibuja el jugador
@@ -48,7 +59,7 @@ class Jugador:
         self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al jugador en el canvas (TEMPORAL, BORRAR DESPUÉS)
 
     #  Mueve al jugador en la dirección especificada
-    def mover(self, dx, dy, obstaculos):
+    def movimiento(self, dx, dy, obstaculos):
         # Cambia sus coords x y y
         new_x = self.x + dx  # Se calcula la nueva posición x
         new_y = self.y + dy
@@ -60,7 +71,7 @@ class Jugador:
 
     #  Dibuja al jugador en la pantalla
     def dibujar_jugador(self, pantalla):
-        draw.rect(pantalla, self.color, self.rect)
+        draw.rect(pantalla, self.rect)
 
 
 # Clase Enemigo
@@ -102,6 +113,8 @@ class Bomba:
         # CONTINUAR AQUÍ: Lógica de explosión de la bomba, que afectará a enemigos y obstáculos
 
 
+class Explosion:
+    pass
 
 
 class Obstaculo:
@@ -132,6 +145,9 @@ class Menu:
 class In_Game:
     pass
 
+
+    
+
 # Creamos una clase para el juego: esta llamará todas las opciones anteriores y las ejecutará en el orden correcto
 class Game: 
     def __init__(self):
@@ -140,11 +156,13 @@ class Game:
         display.set_caption("Bomberman")  # Título de la ventana
         self.clock = time.Clock()  # Crea un objeto de reloj para controlar la tasa de refresco, necesario para la física y el movimiento
         self.running = True  # Variable para controlar el bucle del juego
+        self.dt = 0  # Delta time, tiempo entre frames
+
         
         self.jugador = Jugador(0, 0, self.pantalla)
 
 
-    def key_pressed(self, event):
+    def teclas_presionadas(self, event):
         #  Usa un diccionario para determinar si sube, baja, der, izq
         movimientos_posibles = {
             "K_w": (0, -1),
@@ -156,17 +174,26 @@ class Game:
         if event.key in movimientos_posibles:
             dx, dy = movimientos_posibles[event.key]
             self.jugador.mover(dx, dy)
+
+    def actualizar(self):
+        for evento in event.get():
+            if evento.type == QUIT:
+                self.running = False
     
-    def update(self):
-        pass
-    
-    def draw(self):
-        pass
+    def dibujar(self):
+        for i in range(ANCHO_MATRIZ):
+            for j in range(ALTO_MATRIZ):
+                # Dibuja el fondo de la pantalla
+                # Pantalla, color, posición (x, y), tamaño (ancho, alto)
+                draw.rect(self.pantalla, (255, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
     
     def run(self):
         while self.running:  # Bucle principal del juego
-            self.update()  # Actualiza el estado del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
-            self.draw()  # Dibuja los elementos del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
+            display.flip()  # Actualiza la pantalla
+            self.dt = self.clock.tick(FPS) / 1000  # Controla la tasa de refresco del juego
+
+            self.actualizar()  # Actualiza el estado del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
+            self.dibujar()  # Dibuja los elementos del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
 
         
 

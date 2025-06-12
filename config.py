@@ -1,6 +1,6 @@
 ANCHO_PANTALLA = 1280  # Definimos el tamaño de la pantalla
 ALTO_PANTALLA = 720
-ANCHO_BLOQUE = 48  # (en píxeles)
+MEDIDA_BLOQUE = 48  # (en píxeles)
 ANCHO_MATRIZ = 26  # (en bloques)
 ALTO_MATRIZ = 11  # (en bloques)
 FPS = 60
