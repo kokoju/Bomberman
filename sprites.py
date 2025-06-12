@@ -19,6 +19,8 @@ def player_skins():
         "derecha": [sprite1, sprite2, sprite3...]
     }
     
-    player2 = 
+    player2 = {}
+    player3 = {}
+    player4 = {}
     
     return player1, player2, player3, player4
