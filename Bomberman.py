@@ -1,19 +1,16 @@
 # Módulos necesarios 
 from pygame import *
 from time import sleep
+from random import choice
+from threading import Thread
 from config import *
+
 
 # Usaremos una definición HD (1280x720p)
 # En la parte superior de la pantalla, dejaremos una HUD de tamaño 1280x192 
 # Abajo del HUD, haremos matrices de 26x11 (siendo cada bloque de 48x48): esto nos dejará con 32 pixeles sobrantes, repartidos en 16 pixeles en la parte izquierda y 16 pixeles en la parte derecha de la pantalla
 # Haremos los niveles con matrices (26x11), y como no se requiere crear nuevos, podemos ponerlos dentro del archivo de código
 
-MEDIDAS_PANTALLA = (1280, 720)  # Definimos el tamaño de la pantalla
-ANCHO_BLOQUE = 48  # Ancho de cada bloque en píxeles
-ANCHO_MATRIZ = 26  # Ancho de la matriz en bloques
-ALTO_MATRIZ = 11  # Alto de la matriz en bloques
-
-# pinga
 #  fuente_texto = font.Font("assets/FUENTEJUEGO.TTF", 30)  # USAR PARA EL TEXTO DEL JUEGO
 
 
@@ -26,7 +23,6 @@ ALTO_MATRIZ = 11  # Alto de la matriz en bloques
 
 
 
-
 nivel1 = "xd"
 
 
@@ -34,6 +30,7 @@ nivel1 = "xd"
 # Ideas de Items 
 # Fantasmal -> Permite al jugador atravesar bloques destructibles/indestructibles por un tiempo limitado 
 # Explosivo -> Aumenta el rango de las bombas del jugador por un tiempo limitado, además de no detenerse al contacto de un muro
+# Freeze -> Congela a los enemigos por un tiempo limitado
 
 # Clase Jugador
 class Jugador:
@@ -49,27 +46,46 @@ class Jugador:
         self.hit = 1  # Daño que el jugador inflige (evitamos el uso de ñ)
         self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al jugador en el canvas (TEMPORAL, BORRAR DESPUÉS)
 
-    def mover(self, dx, dy):  # Mueve al jugador en la dirección especificada
+    #  Mueve al jugador en la dirección especificada
+    def mover(self, dx, dy):
+        # Cambia sus coords x y y
         self.x += dx 
-        self.y += dy * self.velocidad
-        self.rect.topleft = (self.x, self.y)
+        self.y += dy
+        self.rect.topleft = (self.x, self.y)  # Actualiza la posición del rectángulo del jugador
 
+    #  Dibuja al jugador en la pantalla
     def dibujar_jugador(self, pantalla):
         draw.rect(pantalla, self.color, self.rect)
 
 
-
+# Clase Enemigo
 class Enemigo:
-    pass
+    def __init__(self, x, y, pantalla):
+        self.x = x
+        self.y = y
+        self.pantalla = pantalla
+        self.vida = 1
+        self.velocidad = 1
+        self.direccion = 'abajo'
+        self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al enemigo en el canvas (TEMPORAL, BORRAR DESPUÉS)
 
+    # Mueve al enemigo en una dirección aleatoria
+    def movimiento(self):
+        # Genera un movimiento aleatorio
+        movimientos = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        dx, dy = choice(movimientos)
+        # FALTA LÓGICA PARA NO CHOCAR CONTRA MUROS
+        
 
 
 class Bomba:
-    pass
+    def __init__(self):
+        pass
 
 
-class Obstaculos:
-    pass
+class Obstaculo:
+    def __init__(self):
+        pass
 
 
 class Jefe:
@@ -86,7 +102,7 @@ class Objetos:
 class Game: 
     def __init__(self):
         init()  # Inicializamos Pygame
-        self.pantalla = display.set_mode((MEDIDAS_PANTALLA[0], MEDIDAS_PANTALLA[1]))  # Configura la ventana
+        self.pantalla = display.set_mode((ANCHO_PANTALLA, ALTO_PANTALLA))  # Configura la ventana
         display.set_caption("Bomberman")  # Título de la ventana
         self.clock = time.Clock()  # Crea un objeto de reloj para controlar la tasa de refresco, necesario para la física y el movimiento
         self.running = True  # Variable para controlar el bucle del juego
@@ -105,10 +121,10 @@ class Game:
             dx, dy = movimientos_posibles[event.key]
             self.jugador.mover(dx, dy)
     
-    def update():
+    def update(self):
         pass
     
-    def draw():
+    def draw(self):
         pass
     
     def run(self):
