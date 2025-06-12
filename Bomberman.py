@@ -185,7 +185,7 @@ class Game:
             for j in range(ALTO_MATRIZ):
                 # Dibuja el fondo de la pantalla
                 # Pantalla, color, posición (x, y), tamaño (ancho, alto)
-                draw.rect(self.pantalla, (255, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
+                draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
     
     def run(self):
         while self.running:  # Bucle principal del juego
@@ -194,8 +194,6 @@ class Game:
 
             self.actualizar()  # Actualiza el estado del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
             self.dibujar()  # Dibuja los elementos del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
-
-        
 
                 
 # Ejecutar el juego

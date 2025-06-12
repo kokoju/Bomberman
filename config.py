@@ -3,4 +3,5 @@ ALTO_PANTALLA = 720
 MEDIDA_BLOQUE = 48  # (en píxeles)
 ANCHO_MATRIZ = 26  # (en bloques)
 ALTO_MATRIZ = 11  # (en bloques)
+MEDIDA_HUD = 176  # (en píxeles)
 FPS = 60
