@@ -47,7 +47,7 @@ nivel1 = [
 
 # Clase Jugador
 class Jugador:
-    def __init__(self, x, y, pantalla, skin="red"):
+    def __init__(self, x, y, pantalla, skin=player_skins()):
         self.x = x  # Posición x del jugador
         self.y = y  # Posición y del jugador
         self.pantalla = pantalla  # Pantalla donde se dibuja el jugador
@@ -220,7 +220,6 @@ class Game:
                     # Dibuja el fondo de la pantalla
                     # Pantalla, color, posición (x, y), tamaño (ancho, alto)
                     draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
-                    self.pantalla.blit(skin1Der4)
             self.jugador.dibujar_jugador(self.pantalla)  # Dibuja al jugador en la pantalla
         
     
