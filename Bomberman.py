@@ -79,9 +79,9 @@ class Jugador:
     def habilidad2(self):
         pass
     
-    def actualizar(self, event):
-        pass
-        """"""
+    def actualizar(self, event):  
+        pass  # REVISAR, LO DE PRESIONAR UNA TECLA DEBERÍA ESTAR EN GAME, NO AQUÍ: ESTO DEBERÍA SER PARA LLAMAR A LAS FUNCIONES
+        """
         if event.type == KEYDOWN: #Si presiona una tecla
             
             if event.key == K_SPACE: #Si le da a espacio
@@ -92,7 +92,7 @@ class Jugador:
                 
             elif event.key == K_2:
                 self.habilidad2
-        """"""
+        """
 
 # Clase Enemigo
 class Enemigo:
@@ -220,6 +220,7 @@ class Game:
                     # Dibuja el fondo de la pantalla
                     # Pantalla, color, posición (x, y), tamaño (ancho, alto)
                     draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
+                    self.pantalla.blit(skin1Der4)
             self.jugador.dibujar_jugador(self.pantalla)  # Dibuja al jugador en la pantalla
         
     
