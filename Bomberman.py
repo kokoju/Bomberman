@@ -1,11 +1,10 @@
-# Módulos necesarios
-from pygame import *
-from time import sleep
-from random import choice
-from threading import Thread
-from config import *
-import json
-
+# Módulos necesarios 
+from pygame import *  # Importa todos los módulos de Pygame necesarios para el juego
+from time import sleep  # Importa sleep para manejar los Threads
+from random import choice  # Importa choice para seleccionar elementos aleatorios de listas (movimiento enemigo)
+from threading import Thread  # Importa los Threads para el manejo de entidades en paralelo
+from config import *  # Importa las configuraciones del juego, como dimensiones y FPS
+from sprites import *  # Importa los sprites del jugador y otros elementos visuales
 
 # Usaremos una definición HD (1280x720p)
 # En la parte superior de la pantalla, dejaremos una HUD de tamaño 1280x176 
@@ -81,6 +80,8 @@ class Jugador:
         pass
     
     def actualizar(self, event):
+        pass
+        """"""
         if event.type == KEYDOWN: #Si presiona una tecla
             
             if event.key == K_SPACE: #Si le da a espacio
@@ -91,7 +92,8 @@ class Jugador:
                 
             elif event.key == K_2:
                 self.habilidad2
-    
+        """"""
+
 # Clase Enemigo
 class Enemigo:
     def __init__(self, x, y, pantalla):
@@ -116,6 +118,10 @@ class Enemigo:
                 self.x = new_x
                 self.y = new_y
 
+    def poner_bomba(self, lista_obstaculos):
+        pass
+
+        
 
 class Bomba:
     def __init__(self, pantalla, x, y):
@@ -195,6 +201,10 @@ class Game:
         if evento.key in movimientos_posibles:
             dx, dy = movimientos_posibles[evento.key]
             self.jugador.movimiento(dx, dy, self.lista_obstaculos)
+        elif evento.key == K_SPACE:  # Si se presiona la tecla espacio, el jugador coloca una bomba
+            if self.jugador.bombas > 0:
+                self.jugador.bombas -= 1
+                self.jugador.poner_bomba(self.lista_obstaculos)  # Lógica para colocar una bomba (debe implementarse en la clase Jugador)
 
     def actualizar(self):
         for evento in event.get():
@@ -204,7 +214,7 @@ class Game:
                 self.teclas_presionadas(evento)
     
     def dibujar(self):
-        if self.modos["jugar"]:
+        if self.modos["jugar"]:  # Si estamos en el modo de juego
             for i in range(ANCHO_MATRIZ):
                 for j in range(ALTO_MATRIZ):
                     # Dibuja el fondo de la pantalla
