@@ -6,3 +6,4 @@ ALTO_MATRIZ = 11  # (en bloques)
 MEDIDA_HUD = 176  # (en píxeles)
 FPS = 60
 PIXELES_SPRITES = 16  # (en píxeles)
+SEPARACION_BORDES_PANTALLA = 16 # (en píxeles)

@@ -66,15 +66,15 @@ class Jugador:
         # Cambia sus coords x y y
         new_x = self.x + dx  # Se calcula la nueva posición x
         new_y = self.y + dy
-        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador 
-        if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
+        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador
+        # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
+        if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
             # Verifica si no hay obstáculos en la nueva posición
-            for obs in obstaculos:
-                if not rectangulo_verif.colliderect(obs.rect):  # Si el rectángulo del jugador no colisiona con el rectángulo del obstáculo
-                    self.y = new_y
-                    self.x = new_x
-                    self.direccion = direccion  # Actualiza la dirección del jugador
-                    self.rect = rectangulo_verif  # Actualiza el rectángulo del jugador a la nueva posición
+            if all(not rectangulo_verif.colliderect(obs.rect) for obs in obstaculos):  # Si el rectángulo del jugador no colisiona con NINGÚN obstáculo
+                self.y = new_y
+                self.x = new_x
+                self.direccion = direccion  # Actualiza la dirección del jugador
+                self.rect = rectangulo_verif  # Actualiza el rectángulo del jugador a la nueva posición
 
     def actualizar_frame_sprite(self):
         self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
