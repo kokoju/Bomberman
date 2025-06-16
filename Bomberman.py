@@ -31,13 +31,54 @@ nivel1 = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ]
 
+nivel2 = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+]
+
+nivel3 = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+]
+
+nivel4 = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+]
 
 
 # Ideas de Items 
@@ -48,17 +89,17 @@ nivel1 = [
 # Clase Jugador
 class Jugador:
     def __init__(self, x, y, pantalla, skin=None):
-        skins = player_skins()
         self.x = x  # Posición x del jugador
         self.y = y  # Posición y del jugador
         self.pantalla = pantalla  # Pantalla donde se dibuja el jugador
         self.frame = 0  # Frame actual del sprite del jugador
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
-        self.skin = skins[self.frame]  # Skin del jugador (variable para personalización)
+        self.numero_skin = 1  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
+        self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
+        self.skin_hoja_sprites = cargar_skin(self.numero_skin)  # Carga la skin del jugador desde la hoja de sprites
         self.bombas = 5  # Cantidad de bombas que el jugador puede colocar
         self.vidas = 3  # Cantidad de vidas del jugador
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
-        self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
         self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al jugador en el canvas (SE USA EN COLISIONES)
 
     #  Mueve al jugador en la dirección especificada
@@ -79,13 +120,13 @@ class Jugador:
     def actualizar_frame_sprite(self):
         self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
         self.frame += 1  # Incrementa el frame actual del sprite
-        if self.frame >= len(self.skin[self.direccion]):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
+        if self.frame >= len(self.skin_hoja_sprites):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
             self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
 
 
     #  Dibuja al jugador en la pantalla
     def dibujar_jugador(self, pantalla):
-        pantalla.blit(self.skin[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
+        pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
 
     def habilidad1(self):
         pass
@@ -165,6 +206,9 @@ class Obstaculo:
         self.destructible = destructible  # Si es destructible, puede ser destruido por una bomba
         self.rect = Rect(x, y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al obstáculo en el canvas (SE USA EN COLISIONES)
 
+    def colocar(self, pantalla):
+        draw.rect(pantalla, "brown" if self.destructible else "gray", self.rect)  # Dibuja el obstáculo en la pantalla, con un color diferente si es destructible
+
     # Destruye el obstáculo si es destructible (se le pasa la lista de obstáculos y se saca solo)
     def destruir(self, lista_obstaculos):
         if self.destructible:
@@ -200,11 +244,19 @@ class Game:
         self.running = True  # Variable para controlar el bucle del juego
         self.dt = 0  # Delta time, tiempo entre frames
         self.modos = {"menu":False, "jugar":True, "editor":False} #Fases de juego
-
+        self.nivel = 0  # Nivel actual del juego (self.nivel = 0 significa que estamos en el primer nivel)
+        self.lista_niveles = [nivel1, nivel2, nivel3, nivel4]  # Lista de niveles del juego (se pueden cargar desde un archivo o definirlos aquí)
         
         self.jugador = Jugador(ANCHO_PANTALLA//2, ALTO_PANTALLA//2, self.pantalla)  # Crea una instancia del jugador en la posición (0, 0) en la pantalla jugable
         self.lista_obstaculos = []  # Lista de obstáculos en el juego
 
+    def cambio_modo(self, modo):
+        pass
+
+    def cambio_nivel(self):
+        self.nivel += 1  # Incrementa el nivel actual del juego
+        if self.nivel > len(self.lista_niveles):
+            self.nivel = 0
 
     def teclas_presionadas(self):
         #  Usa un diccionario para determinar si sube, baja, si va para la derecha o izquierda
@@ -244,7 +296,14 @@ class Game:
                 for j in range(ALTO_MATRIZ):
                     # Dibuja el fondo de la pantalla
                     # Pantalla, color, posición (x, y), tamaño (ancho, alto)
-                    draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
+                    if nivel1[j][i] == 0:  # Si el bloque es vacío
+                        draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
+                    else:
+                        # La comparación de la casilla con un número nos dice qué tipo de bloque es (destructible o indestructible)
+                        obs = Obstaculo(16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), nivel1[j][i] == 2)
+                        self.lista_obstaculos.append(obs)  # Agrega el obstáculo a la lista de obstáculos
+                        obs.colocar(self.pantalla)  # Dibuja el obstáculo en la pantalla
+
             self.jugador.dibujar_jugador(self.pantalla)  # Dibuja al jugador en la pantalla
 
         
