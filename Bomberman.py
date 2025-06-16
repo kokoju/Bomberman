@@ -94,7 +94,7 @@ class Jugador:
         self.pantalla = pantalla  # Pantalla donde se dibuja el jugador
         self.frame = 0  # Frame actual del sprite del jugador
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
-        self.numero_skin = 1  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
+        self.numero_skin = 2  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
         self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
         self.skin_hoja_sprites = cargar_skin(self.numero_skin)  # Carga la skin del jugador desde la hoja de sprites
         self.bombas = 5  # Cantidad de bombas que el jugador puede colocar

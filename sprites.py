@@ -16,7 +16,7 @@ hoja_sprites = Spritesheet("assets/spritesheet.png")
 # SE PUEDE AUTOMATIZAR LA CARGA DE SPRITES: SI SE DA CUENTA, SIGUEN UN PATRON COMO RECORRER CON 2 FORs, HACER UN DICCIONARIO CON LAS COSAS INICIALES DE CADA SKIN, Y SUMARLE HASTA 4 EN LA I
 
 # Diccionario con los puntos iniciales de cada skin en la hoja de sprites (x, y)
-puntos_iniciales_skins = {1 : (0, 21)}
+puntos_iniciales_skins = {1 : (0, 21), 2 : (4, 21), 3 : (8, 21)}
 
 # Carga una skin completa a partir de su número, devolviendo una lista de sprites (derecha, abajo, arriba, izquierda)
 def cargar_skin(numero_skin):
