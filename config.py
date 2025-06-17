@@ -5,3 +5,6 @@ ANCHO_MATRIZ = 26  # (en bloques)
 ALTO_MATRIZ = 11  # (en bloques)
 MEDIDA_HUD = 176  # (en píxeles)
 FPS = 60
+PIXELES_SPRITES = 16  # (en píxeles)
+SEPARACION_BORDES_PANTALLA = 16 # (en píxeles)
+CANTIDAD_ENEMIGOS = 5 # Cantidad de enemigos que aparecen en cada nivel

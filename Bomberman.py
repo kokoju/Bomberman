@@ -1,11 +1,10 @@
-# Módulos necesarios
-from pygame import *
-from time import sleep
-from random import choice
-from threading import Thread
-from config import *
-import json
-
+# Módulos necesarios 
+from pygame import *  # Importa todos los módulos de Pygame necesarios para el juego
+from time import sleep  # Importa sleep para manejar los Threads
+from random import choice, randint  # Importa choice para seleccionar elementos aleatorios de listas (movimiento enemigo)
+from threading import Thread  # Importa los Threads para el manejo de entidades en paralelo
+from config import *  # Importa las configuraciones del juego, como dimensiones y FPS
+from sprites import *  # Importa los sprites del jugador y otros elementos visuales
 
 # Usaremos una definición HD (1280x720p)
 # En la parte superior de la pantalla, dejaremos una HUD de tamaño 1280x176 
@@ -23,7 +22,7 @@ import json
  
 # Las demás cosas que se colocan en la matriz son objetos que se generan aleatoriamente, y no se colocan en la matriz, sino que se generan en el momento de crear el nivel
 
-
+CANTIDAD_ENEMIGOS = 5
 
 nivel1 = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -32,13 +31,54 @@ nivel1 = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ]
 
+nivel2 = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+]
+
+nivel3 = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+]
+
+nivel4 = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+]
 
 
 # Ideas de Items 
@@ -48,31 +88,53 @@ nivel1 = [
 
 # Clase Jugador
 class Jugador:
-    def __init__(self, x, y, pantalla, skin="red"):
+    def __init__(self, x, y, pantalla, skin=None):
         self.x = x  # Posición x del jugador
         self.y = y  # Posición y del jugador
         self.pantalla = pantalla  # Pantalla donde se dibuja el jugador
-        self.skin = skin  # Skin del jugador (variable para personalización)
+        self.frame = 0  # Frame actual del sprite del jugador
+        self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
+        self.numero_skin = 3  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
+        self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
+        self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
+        self.moviendose = False  # Indica si el jugador se está moviendo o no
         self.bombas = 5  # Cantidad de bombas que el jugador puede colocar
         self.vidas = 3  # Cantidad de vidas del jugador
-        self.velocidad = 1  # Velocidad de movimiento del jugador (en bloques)
-        self.direccion = 'abajo'  # Dirección inicial del jugador (y a la que está mirando)
-        self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al jugador en el canvas (TEMPORAL, BORRAR DESPUÉS)
+        self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
+        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al jugador en el canvas (SE USA EN COLISIONES)
 
     #  Mueve al jugador en la dirección especificada
-    def movimiento(self, dx, dy, obstaculos):
+    def movimiento(self, dx, dy, obstaculos, direccion):
         # Cambia sus coords x y y
         new_x = self.x + dx  # Se calcula la nueva posición x
         new_y = self.y + dy
-        if ANCHO_MATRIZ > new_x >= 0 and ALTO_MATRIZ > new_y >= 0:  # Si está dentro de los límites del mapa
+        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador
+        # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
+        if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
             # Verifica si no hay obstáculos en la nueva posición
-            if (new_x, new_y) not in [(obs.x, obs.y) for obs in obstaculos]:
-                self.x = new_x
+            if all(not rectangulo_verif.colliderect(obs.rect) for obs in obstaculos):  # Si el rectángulo del jugador no colisiona con NINGÚN obstáculo
                 self.y = new_y
+                self.x = new_x
+                self.direccion = direccion  # Actualiza la dirección del jugador
+                self.rect = rectangulo_verif  # Actualiza el rectángulo del jugador a la nueva posición
+
+    def poner_bomba(self):
+        if self.bombas > 0:
+            self.bombas -= 1
+            bomba = Bomba(self.pantalla, self.x, self.y)  # Crea una instancia de la bomba en la posición del jugador
+
+    def actualizar_frame_sprite(self):
+        if self.moviendose:  # Si el jugador se está moviendo
+            self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
+            self.frame += 1  # Incrementa el frame actual del sprite
+            if self.frame >= len(self.skin_hoja_sprites):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
+                self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
+        else:
+            self.frame = 0  # Si el jugador no se está moviendo, reinicia el frame a 0 para que muestre el primer sprite de la animación
 
     #  Dibuja al jugador en la pantalla
-    def dibujar_jugador(self, pantalla):
-        draw.rect(self.pantalla, (0, 0, 255), (16 + (self.x * MEDIDA_BLOQUE), MEDIDA_HUD + (self.y * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
+    def dibujar_jugador(self):
+        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
 
     def habilidad1(self):
         pass
@@ -80,7 +142,9 @@ class Jugador:
     def habilidad2(self):
         pass
     
-    def actualizar(self, event):
+    def actualizar(self, event):  
+        pass  # REVISAR, LO DE PRESIONAR UNA TECLA DEBERÍA ESTAR EN GAME, NO AQUÍ: ESTO DEBERÍA SER PARA LLAMAR A LAS FUNCIONES
+        """
         if event.type == KEYDOWN: #Si presiona una tecla
             
             if event.key == K_SPACE: #Si le da a espacio
@@ -91,31 +155,52 @@ class Jugador:
                 
             elif event.key == K_2:
                 self.habilidad2
-    
+        """
+
 # Clase Enemigo
 class Enemigo:
     def __init__(self, x, y, pantalla):
         self.x = x
         self.y = y
         self.pantalla = pantalla
+        self.frame = 0
+        self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
+        self.numero_skin = 1  # Número de skin del enemigo (se puede cambiar para hacerlo más complicado)
+        self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_inciales_skins_enemigos)  # Carga la skin del enemigo desde la hoja de sprites
+        self.direccion = 'abajo'  # Dirección inicial del enemigo (y a la que está mirando)
         self.vida = 1
-        self.velocidad = 1
-        self.direccion = 'abajo'
-        self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al enemigo en el canvas (TEMPORAL, BORRAR DESPUÉS)
+        self.velocidad = 5
+        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
 
     # Mueve al enemigo en una dirección aleatoria
     def movimiento(self, obstaculos):
         # Genera un movimiento aleatorio
-        movimientos = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-        dx, dy = choice(movimientos)
+        movimientos = {"arriba" : (0, -self.velocidad), "abajo" : (0, self.velocidad), "izquierda" : (-self.velocidad, 0), "derecha" : (self.velocidad, 0)}  # Diccionario con los movimientos posibles
+        movimiento_elegido = choice(list(movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
+        dx, dy = movimientos[movimiento_elegido]  # Obtiene el desplazamiento correspondiente al movimiento elegido
+        # Cambia sus coords x y y
         new_x = self.x + dx  # Se calcula la nueva posición x
-        new_y = self.y + dy  # Se calcula la nueva posición y
-        if ANCHO_MATRIZ > new_x >= 0 and ALTO_MATRIZ > new_y >= 0:  # Si está dentro de los límites del mapa
+        new_y = self.y + dy
+        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE, "red")  # Rectángulo que representa la nueva posición del jugador
+        # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
+        if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
             # Verifica si no hay obstáculos en la nueva posición
-            if (new_x, new_y) not in [(obs.x, obs.y) for obs in obstaculos]:
-                self.x = new_x
+            if all(not rectangulo_verif.colliderect(obs.rect) for obs in obstaculos):  # Si el rectángulo del enemigo no colisiona con NINGÚN obstáculo
                 self.y = new_y
+                self.x = new_x
+                self.direccion = movimiento_elegido  # Actualiza la dirección del enemigo
+                self.rect = rectangulo_verif  # Actualiza el rectángulo del enemigo a la nueva posición
 
+    def actualizar_frame_sprite(self):
+        self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
+        self.frame += 1  # Incrementa el frame actual del sprite
+        if self.frame >= len(self.skin_hoja_sprites):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
+            self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
+
+    #  Dibuja al enemigo en la pantalla
+    def dibujar_enemigo(self):
+        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
+        
 
 class Bomba:
     def __init__(self, pantalla, x, y):
@@ -142,6 +227,10 @@ class Obstaculo:
         self.x = x  # Posición x del obstáculo
         self.y = y  # Posición y del obstáculo
         self.destructible = destructible  # Si es destructible, puede ser destruido por una bomba
+        self.rect = Rect(x, y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al obstáculo en el canvas (SE USA EN COLISIONES)
+
+    def colocar(self, pantalla):
+        draw.rect(pantalla, "brown" if self.destructible else "gray", self.rect)  # Dibuja el obstáculo en la pantalla, con un color diferente si es destructible
 
     # Destruye el obstáculo si es destructible (se le pasa la lista de obstáculos y se saca solo)
     def destruir(self, lista_obstaculos):
@@ -178,39 +267,82 @@ class Game:
         self.running = True  # Variable para controlar el bucle del juego
         self.dt = 0  # Delta time, tiempo entre frames
         self.modos = {"menu":False, "jugar":True, "editor":False} #Fases de juego
-
+        self.nivel = 0  # Nivel actual del juego (self.nivel = 0 significa que estamos en el primer nivel)
+        self.lista_niveles = [nivel1, nivel2, nivel3, nivel4]  # Lista de niveles del juego (se pueden cargar desde un archivo o definirlos aquí)
         
-        self.jugador = Jugador(0, 0, self.pantalla)  # Crea una instancia del jugador en la posición (0, 0) en la pantalla jugable
+        self.jugador = Jugador(ANCHO_PANTALLA//2, ALTO_PANTALLA//2, self.pantalla)  # Crea una instancia del jugador en la posición (0, 0) en la pantalla jugable
+        self.lista_enemigos = []  # Lista de enemigos en el juego
         self.lista_obstaculos = []  # Lista de obstáculos en el juego
+        self.colocar_enemigos()
 
 
-    def teclas_presionadas(self, evento):
+    def cambio_modo(self, modo):
+        pass
+
+    def cambio_nivel(self):
+        self.nivel += 1  # Incrementa el nivel actual del juego
+        if self.nivel > len(self.lista_niveles):
+            self.nivel = 0
+
+    def teclas_presionadas(self):
         #  Usa un diccionario para determinar si sube, baja, si va para la derecha o izquierda
         movimientos_posibles = {
-            K_w: (0, -1),
-            K_s: (0, 1),
-            K_a: (-1, 0),
-            K_d: (1, 0)
+            K_w: (0, -(self.jugador.velocidad), "arriba"),  # Arriba
+            K_s: (0, self.jugador.velocidad, "abajo"),     # Abajo
+            K_a: (-(self.jugador.velocidad), 0, "izquierda"), # Izquierda
+            K_d: (self.jugador.velocidad, 0, "derecha")     # Derecha
         }
-        if evento.key in movimientos_posibles:
-            dx, dy = movimientos_posibles[evento.key]
-            self.jugador.movimiento(dx, dy, self.lista_obstaculos)
+
+        keys = key.get_pressed()
+        for tecla in movimientos_posibles.keys():
+            if keys[tecla]:  # Si la tecla está presionada
+                self.jugador.moviendose = True  # Indica que el jugador se está moviendo
+                dx, dy, direccion = movimientos_posibles[tecla]  # Obtiene el desplazamiento correspondiente
+                self.jugador.movimiento(dx, dy, self.lista_obstaculos, direccion)  # Mueve al jugador en la dirección correspondiente
+            if all(not keys[k] for k in movimientos_posibles.keys()):  # Si no se presiona ninguna tecla de movimiento
+                self.jugador.moviendose = False  #  El jugador no se está moviendo
+
+    def colocar_enemigos(self):
+        for _ in range(CANTIDAD_ENEMIGOS):  # Coloca 5 enemigos en posiciones aleatorias del mapa
+            coord_x = randint(0, ANCHO_MATRIZ - 1) * MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA  # Genera una coordenada x aleatoria dentro del mapa
+            coord_y = randint(0, ALTO_MATRIZ - 1) * MEDIDA_BLOQUE + MEDIDA_HUD  # Genera una coordenada y aleatoria dentro del mapa
+            enemigo = Enemigo(coord_x, coord_y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
+            self.lista_enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
+
+    def poner_bombas(self):
+        if self.jugador.bombas > 0:  # Si se presiona espacio y el jugador tiene bombas
+            self.jugador.bombas -= 1
+            self.jugador.poner_bomba(self.lista_obstaculos)  # Lógica para colocar una bomba (debe implementarse en la clase Jugador)
 
     def actualizar(self):
         for evento in event.get():
             if evento.type == QUIT:
                 self.running = False
-            elif evento.type == KEYDOWN:
-                self.teclas_presionadas(evento)
+            if evento.type == KEYDOWN:
+                if evento.key == K_SPACE:
+                    self.poner_bombas()
+        self.teclas_presionadas()
+        if time.get_ticks() - self.jugador.ultima_actualizacion_frame > 150:  # Si han pasado más de 100 ms desde la última actualización del sprite
+            self.jugador.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
+            self.jugador.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
     
     def dibujar(self):
-        if self.modos["jugar"]:
+        if self.modos["jugar"]:  # Si estamos en el modo de juego
             for i in range(ANCHO_MATRIZ):
                 for j in range(ALTO_MATRIZ):
                     # Dibuja el fondo de la pantalla
                     # Pantalla, color, posición (x, y), tamaño (ancho, alto)
-                    draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
-            self.jugador.dibujar_jugador(self.pantalla)  # Dibuja al jugador en la pantalla
+                    if nivel1[j][i] == 0:  # Si el bloque es vacío
+                        draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
+                    else:
+                        # La comparación de la casilla con un número nos dice qué tipo de bloque es (destructible o indestructible)
+                        obs = Obstaculo(16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), nivel1[j][i] == 2)
+                        self.lista_obstaculos.append(obs)  # Agrega el obstáculo a la lista de obstáculos
+                        obs.colocar(self.pantalla)  # Dibuja el obstáculo en la pantalla
+            for enemigo in self.lista_enemigos:  # Dibuja todos los enemigos en la pantalla
+                enemigo.dibujar_enemigo()
+            self.jugador.dibujar_jugador()  # Dibuja al jugador en la pantalla
+
         
     
     def run(self):
