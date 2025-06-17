@@ -1,7 +1,7 @@
 # Módulos necesarios 
 from pygame import *  # Importa todos los módulos de Pygame necesarios para el juego
 from time import sleep  # Importa sleep para manejar los Threads
-from random import choice  # Importa choice para seleccionar elementos aleatorios de listas (movimiento enemigo)
+from random import choice, randint  # Importa choice para seleccionar elementos aleatorios de listas (movimiento enemigo)
 from threading import Thread  # Importa los Threads para el manejo de entidades en paralelo
 from config import *  # Importa las configuraciones del juego, como dimensiones y FPS
 from sprites import *  # Importa los sprites del jugador y otros elementos visuales
@@ -158,20 +158,26 @@ class Enemigo:
         self.vida = 1
         self.velocidad = 5
         self.direccion = 'abajo'
-        self.rect = Rect(self.x, self.y, 50, 50)  # Rectángulo que representa al enemigo en el canvas (TEMPORAL, BORRAR DESPUÉS)
+        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
 
     # Mueve al enemigo en una dirección aleatoria
     def movimiento(self, obstaculos):
         # Genera un movimiento aleatorio
-        movimientos = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-        dx, dy = choice(movimientos)
+        movimientos = {"arriba" : (0, -self.velocidad), "abajo" : (0, self.velocidad), "izquierda" : (-self.velocidad, 0), "derecha" : (self.velocidad, 0)}  # Diccionario con los movimientos posibles
+        movimiento_elegido = choice(list(movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
+        dx, dy = movimientos[movimiento_elegido]  # Obtiene el desplazamiento correspondiente al movimiento elegido
+        # Cambia sus coords x y y
         new_x = self.x + dx  # Se calcula la nueva posición x
-        new_y = self.y + dy  # Se calcula la nueva posición y
-        if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
+        new_y = self.y + dy
+        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador
+        # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
+        if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
             # Verifica si no hay obstáculos en la nueva posición
-            if (new_x, new_y) not in [(obs.x, obs.y) for obs in obstaculos]:
-                self.x = new_x
+            if all(not rectangulo_verif.colliderect(obs.rect) for obs in obstaculos):  # Si el rectángulo del enemigo no colisiona con NINGÚN obstáculo
                 self.y = new_y
+                self.x = new_x
+                self.direccion = movimiento_elegido  # Actualiza la dirección del enemigo
+                self.rect = rectangulo_verif  # Actualiza el rectángulo del enemigo a la nueva posición
 
 
     def poner_bomba(self, lista_obstaculos):
@@ -248,7 +254,10 @@ class Game:
         self.lista_niveles = [nivel1, nivel2, nivel3, nivel4]  # Lista de niveles del juego (se pueden cargar desde un archivo o definirlos aquí)
         
         self.jugador = Jugador(ANCHO_PANTALLA//2, ALTO_PANTALLA//2, self.pantalla)  # Crea una instancia del jugador en la posición (0, 0) en la pantalla jugable
+        self.lista_enemigos = []  # Lista de enemigos en el juego
         self.lista_obstaculos = []  # Lista de obstáculos en el juego
+        self.colocar_enemigos()
+
 
     def cambio_modo(self, modo):
         pass
@@ -272,6 +281,13 @@ class Game:
             if keys[tecla]:  # Si la tecla está presionada
                 dx, dy, direccion = movimientos_posibles[tecla]  # Obtiene el desplazamiento correspondiente
                 self.jugador.movimiento(dx, dy, self.lista_obstaculos, direccion)  # Mueve al jugador en la dirección correspondiente
+
+    def colocar_enemigos(self):
+        for i in range(CANTIDAD_ENEMIGOS):  # Coloca 5 enemigos en posiciones aleatorias del mapa
+            coord_x = randint(0, ANCHO_MATRIZ - 1) * MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA  # Genera una coordenada x aleatoria dentro del mapa
+            coord_y = randint(0, ALTO_MATRIZ - 1) * MEDIDA_BLOQUE + MEDIDA_HUD  # Genera una coordenada y aleatoria dentro del mapa
+            enemigo = Enemigo(coord_x, coord_y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
+            self.lista_enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
 
     def poner_bombas(self):
         if self.jugador.bombas > 0:  # Si se presiona espacio y el jugador tiene bombas
