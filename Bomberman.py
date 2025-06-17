@@ -22,7 +22,7 @@ from sprites import *  # Importa los sprites del jugador y otros elementos visua
  
 # Las demás cosas que se colocan en la matriz son objetos que se generan aleatoriamente, y no se colocan en la matriz, sino que se generan en el momento de crear el nivel
 
-
+CANTIDAD_ENEMIGOS = 5
 
 nivel1 = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -96,7 +96,7 @@ class Jugador:
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
         self.numero_skin = 3  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
         self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
-        self.skin_hoja_sprites = cargar_skin(self.numero_skin)  # Carga la skin del jugador desde la hoja de sprites
+        self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
         self.bombas = 5  # Cantidad de bombas que el jugador puede colocar
         self.vidas = 3  # Cantidad de vidas del jugador
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
@@ -117,6 +117,11 @@ class Jugador:
                 self.direccion = direccion  # Actualiza la dirección del jugador
                 self.rect = rectangulo_verif  # Actualiza el rectángulo del jugador a la nueva posición
 
+    def poner_bomba(self):
+        if self.bombas > 0:
+            self.bombas -= 1
+            bomba = Bomba(self.pantalla, self.x, self.y)  # Crea una instancia de la bomba en la posición del jugador
+
     def actualizar_frame_sprite(self):
         self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
         self.frame += 1  # Incrementa el frame actual del sprite
@@ -125,8 +130,8 @@ class Jugador:
 
 
     #  Dibuja al jugador en la pantalla
-    def dibujar_jugador(self, pantalla):
-        pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
+    def dibujar_jugador(self):
+        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
 
     def habilidad1(self):
         pass
@@ -155,9 +160,13 @@ class Enemigo:
         self.x = x
         self.y = y
         self.pantalla = pantalla
+        self.frame = 0
+        self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
+        self.numero_skin = 1  # Número de skin del enemigo (se puede cambiar para hacerlo más complicado)
+        self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_inciales_skins_enemigos)  # Carga la skin del enemigo desde la hoja de sprites
+        self.direccion = 'abajo'  # Dirección inicial del enemigo (y a la que está mirando)
         self.vida = 1
         self.velocidad = 5
-        self.direccion = 'abajo'
         self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
 
     # Mueve al enemigo en una dirección aleatoria
@@ -169,7 +178,7 @@ class Enemigo:
         # Cambia sus coords x y y
         new_x = self.x + dx  # Se calcula la nueva posición x
         new_y = self.y + dy
-        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador
+        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE, "red")  # Rectángulo que representa la nueva posición del jugador
         # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
         if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
             # Verifica si no hay obstáculos en la nueva posición
@@ -179,10 +188,15 @@ class Enemigo:
                 self.direccion = movimiento_elegido  # Actualiza la dirección del enemigo
                 self.rect = rectangulo_verif  # Actualiza el rectángulo del enemigo a la nueva posición
 
+    def actualizar_frame_sprite(self):
+        self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
+        self.frame += 1  # Incrementa el frame actual del sprite
+        if self.frame >= len(self.skin_hoja_sprites):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
+            self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
 
-    def poner_bomba(self, lista_obstaculos):
-        pass
-
+    #  Dibuja al enemigo en la pantalla
+    def dibujar_enemigo(self):
+        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
         
 
 class Bomba:
@@ -319,8 +333,9 @@ class Game:
                         obs = Obstaculo(16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), nivel1[j][i] == 2)
                         self.lista_obstaculos.append(obs)  # Agrega el obstáculo a la lista de obstáculos
                         obs.colocar(self.pantalla)  # Dibuja el obstáculo en la pantalla
-
-            self.jugador.dibujar_jugador(self.pantalla)  # Dibuja al jugador en la pantalla
+            for enemigo in self.lista_enemigos:  # Dibuja todos los enemigos en la pantalla
+                enemigo.dibujar_enemigo()
+            self.jugador.dibujar_jugador()  # Dibuja al jugador en la pantalla
 
         
     
