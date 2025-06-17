@@ -283,7 +283,7 @@ class Game:
                 self.jugador.movimiento(dx, dy, self.lista_obstaculos, direccion)  # Mueve al jugador en la dirección correspondiente
 
     def colocar_enemigos(self):
-        for i in range(CANTIDAD_ENEMIGOS):  # Coloca 5 enemigos en posiciones aleatorias del mapa
+        for _ in range(CANTIDAD_ENEMIGOS):  # Coloca 5 enemigos en posiciones aleatorias del mapa
             coord_x = randint(0, ANCHO_MATRIZ - 1) * MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA  # Genera una coordenada x aleatoria dentro del mapa
             coord_y = randint(0, ALTO_MATRIZ - 1) * MEDIDA_BLOQUE + MEDIDA_HUD  # Genera una coordenada y aleatoria dentro del mapa
             enemigo = Enemigo(coord_x, coord_y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
