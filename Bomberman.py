@@ -97,6 +97,7 @@ class Jugador:
         self.numero_skin = 3  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
         self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
         self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
+        self.moviendose = False  # Indica si el jugador se está moviendo o no
         self.bombas = 5  # Cantidad de bombas que el jugador puede colocar
         self.vidas = 3  # Cantidad de vidas del jugador
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
@@ -123,11 +124,13 @@ class Jugador:
             bomba = Bomba(self.pantalla, self.x, self.y)  # Crea una instancia de la bomba en la posición del jugador
 
     def actualizar_frame_sprite(self):
-        self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
-        self.frame += 1  # Incrementa el frame actual del sprite
-        if self.frame >= len(self.skin_hoja_sprites):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
-            self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
-
+        if self.moviendose:  # Si el jugador se está moviendo
+            self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
+            self.frame += 1  # Incrementa el frame actual del sprite
+            if self.frame >= len(self.skin_hoja_sprites):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
+                self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
+        else:
+            self.frame = 0  # Si el jugador no se está moviendo, reinicia el frame a 0 para que muestre el primer sprite de la animación
 
     #  Dibuja al jugador en la pantalla
     def dibujar_jugador(self):
@@ -293,8 +296,11 @@ class Game:
         keys = key.get_pressed()
         for tecla in movimientos_posibles.keys():
             if keys[tecla]:  # Si la tecla está presionada
+                self.jugador.moviendose = True  # Indica que el jugador se está moviendo
                 dx, dy, direccion = movimientos_posibles[tecla]  # Obtiene el desplazamiento correspondiente
                 self.jugador.movimiento(dx, dy, self.lista_obstaculos, direccion)  # Mueve al jugador en la dirección correspondiente
+            if all(not keys[k] for k in movimientos_posibles.keys()):  # Si no se presiona ninguna tecla de movimiento
+                self.jugador.moviendose = False  #  El jugador no se está moviendo
 
     def colocar_enemigos(self):
         for _ in range(CANTIDAD_ENEMIGOS):  # Coloca 5 enemigos en posiciones aleatorias del mapa
