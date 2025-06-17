@@ -13,9 +13,28 @@ spritesheet_jugadores = Spritesheet("assets/jugadores")
 
 def player_skins():
     player1 = {
-        "arriba": [sprite1, sprite2, sprite3...]
-        "abajo": [sprite1, sprite2, sprite3...]
-        "izquierda": [sprite1, sprite2, sprite3...]
+        "arriba": [sprite1, sprite2, sprite3...],
+        "abajo": [sprite1, sprite2, sprite3...],
+        "izquierda": [sprite1, sprite2, sprite3...],
+        "derecha": [sprite1, sprite2, sprite3...]
+    },
+    
+    player1 = {
+        "arriba": [sprite1, sprite2, sprite3...],
+        "abajo": [sprite1, sprite2, sprite3...],
+        "izquierda": [sprite1, sprite2, sprite3...],
+        "derecha": [sprite1, sprite2, sprite3...]
+    },
+    player3 = {
+        "arriba": [sprite1, sprite2, sprite3...],
+        "abajo": [sprite1, sprite2, sprite3...],
+        "izquierda": [sprite1, sprite2, sprite3...],
+        "derecha": [sprite1, sprite2, sprite3...]
+    },
+    player4 = {
+        "arriba": [sprite1, sprite2, sprite3...],
+        "abajo": [sprite1, sprite2, sprite3...],
+        "izquierda": [sprite1, sprite2, sprite3...],
         "derecha": [sprite1, sprite2, sprite3...]
     }
     
