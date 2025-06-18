@@ -27,10 +27,8 @@ class Bomba:
 
 class Jugador:
     def __init__(self, juego, skin=None):
-        self.pantalla = juego.pantalla  # Pantalla donde se dibuja el jugador
-        
-        self.x = 0  # Posición x del jugador
-        self.y = 0  # Posición y del jugador
+        self.pantalla = juego.pantalla_juego  # Pantalla donde se dibuja el jugador
+        self.nivel = juego.nivel
 
         self.frame = 0  # Frame actual del sprite del jugador
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
@@ -43,7 +41,7 @@ class Jugador:
         self.vidas = 3  # Cantidad de vidas del jugador
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
         
-        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al jugador en el canvas (SE USA EN COLISIONES)
+        self.rect = Rect(MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE) #Rectangulo del jugador para posicion y colision
         
         self.movimientos_posibles = {
             K_w: (0, -(self.velocidad), "arriba"),  # Arriba
@@ -52,33 +50,43 @@ class Jugador:
             K_d: (self.velocidad, 0, "derecha")     # Derecha
         }
 
-    #  Mueve al jugador en la dirección especificada
-    def actualizar(self):
-        keys = key.get_pressed()
+    def verificar_colision(self, rect):
+        esquinas = (
+            (izq := rect.left // MEDIDA_BLOQUE, arriba := rect.top // MEDIDA_BLOQUE), #Superior izquierda
+            (izq, abajo := rect.bottom // MEDIDA_BLOQUE), #Inferior izquierda
+            (der := rect.right // MEDIDA_BLOQUE, arriba), #Superior derecha
+            (der, abajo) #Inferior derecha
+        )
         
+        #Verifica si alguna esquina esta en un tile que no sea aire
+        for x, y in esquinas:
+            if self.nivel[y][x] != 0:
+                return False
+        return True
+    
+    def actualizar(self, keys):
+        dx, dy = 0, 0
+
         #Saca el input del usuario
         self.moviendose = False
         for tecla in self.movimientos_posibles.keys():
             if keys[tecla]:
                 self.moviendose = True
-                print(tecla)
-                dx, dy, direccion = self.movimientos_posibles[tecla]
+                dx, dy, self.direccion = self.movimientos_posibles[tecla]        
         
-        #Mueve al jugador basado en el input
-        new_x = self.x + dx  # Se calcula la nueva posición x
-        new_y = self.y + dy
-        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador
-        
-        # Si está dentro de los límites del mapa
-        if ((ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and
-            (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD):
-            
-            self.y = new_y
-            self.x = new_x
-            self.direccion = direccion  # Actualiza la dirección del jugador
-            self.rect = rectangulo_verif  # Actualiza el rectángulo del jugador a la nueva posición
-        
-        self.actualizar_frame_sprite()
+        #Movimiento del jugador
+        # Si está dentro de los límites del mapa y camina en aire
+        rect_dx, rect_dy = self.rect.move(dx, 0), self.rect.move(0, dy)
+        #Verifica los ejes independientemente para mantener deslizamiento en muros con movimiento diagonal
+        if self.verificar_colision(rect_dx):
+            self.rect = self.rect.move(dx, 0)
+        if self.verificar_colision(rect_dy):
+            self.rect = self.rect.move(0, dy)
+    
+        #Animacion
+        if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el jugador se está moviendo y han pasado 150ms
+            self.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
+            self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
 
     def poner_bomba(self):
         if self.bombas > 0: # Si le quedan bombas
@@ -87,16 +95,15 @@ class Jugador:
 
     
     def actualizar_frame_sprite(self):
-        if self.moviendose:  # Si el jugador se está moviendo
+        if self.moviendose: #Jugador se mueve
             self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
-            self.frame = 1  (self.frames + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
-            
+            self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
         else: #Jugador no se mueve
             self.frame = 0 #Reinicia
 
     #  Dibuja al jugador en la pantalla
     def dibujar(self):
-        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
+        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.rect.x, self.rect.y))  # Dibuja el sprite del jugador en la pantalla
 
     def habilidad1(self):
         pass
@@ -104,15 +111,19 @@ class Jugador:
     def habilidad2(self):
         pass
     
-    def actualizar(self, keys):
-        if keys[K_SPACE]: #Si le da a espacio
-            self.poner_bomba()
+    def eventos(self, evento):
+        if evento.type == KEYDOWN:
+            if evento.key == K_SPACE: #Si le da a espacio
+                self.poner_bomba()
 
-        if keys[K_1]: #Si le da a 1
-            self.habilidad1()
-            
-        elif keys[K_2]: #Si le da a 2
-            self.habilidad2()
+            if evento.key == K_1: #Si le da a 1
+                self.habilidad1()
+                
+            elif evento.key == K_2: #O si le da a 2
+                self.habilidad2()
+
+        
+
 
 class Enemigo:
     def __init__(self, x, y, pantalla):
@@ -160,31 +171,47 @@ class Enemigo:
 class Jugar:
     def __init__(self, game):
         self.pantalla = game.pantalla
-        self.pantalla_juego = Surface((ANCHO_PANTALLA - 2*SEPARACION_BORDES_PANTALLA, ALTO_PANTALLA - MEDIDA_HUD))
-        self.debug = False
+        self.pantalla_juego = Surface((ANCHO_PANTALLA - 2*SEPARACION_BORDES_PANTALLA, ALTO_PANTALLA - MEDIDA_HUD - SEPARACION_BORDES_PANTALLA))
+        self.debug = True
         
         self.niveles = game.niveles
         self.num_nivel = 1 #Inicia en el nivel 1
         self.nivel = self.niveles[0] #Contiene la posicion de enemigos y obstaculos
         
         self.jugador = Jugador(self) #TODO Falta la skin
-        
+    
+    def dibujar_nivel(self):
+        for y in range(1, ALTO_MATRIZ-1): #Por cada fila
+            for x in range(1, ANCHO_MATRIZ-1): #Por cada bloque
+                if self.nivel[y][x] != 0: #Si no es aire, lo dibuja
+                    draw.rect(self.pantalla_juego, GRIS, Rect(x*MEDIDA_BLOQUE, y*MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE))
+                    
+        if self.debug:
+            #Dibuja las lineas del grid
+            for x in range(ANCHO_MATRIZ):
+                draw.line(self.pantalla_juego, NEGRO, (x*MEDIDA_BLOQUE, 0), (x*MEDIDA_BLOQUE, ALTO_PANTALLA))
+            for y in range(ALTO_MATRIZ):
+                draw.line(self.pantalla_juego, NEGRO, (0, y*MEDIDA_BLOQUE), (ANCHO_PANTALLA, y*MEDIDA_BLOQUE))
+
+
     def actualizar(self):
-        self.jugador.actualizar()
+        keys = key.get_pressed()
+        self.jugador.actualizar(keys)
+        
+
+    def eventos(self, event):
+        if event.type == KEYDOWN:
+            if event.key == K_g:
+                self.debug = not self.debug
+
         
     def dibujar(self):
-        self.pantalla.fill(BLANCO) #Fondo blanco
-        self.pantalla_juego.blit(self.pantalla, (SEPARACION_BORDES_PANTALLA, MEDIDA_HUD))
-        
-        #Dibuja el mapa
-        for i in range(ANCHO_MATRIZ): #Por cada fila
-            for j in range(ALTO_MATRIZ): #Por cada tile
-                if self.nivel[j][i] != 0: #Si no es aire
-                    draw.rect(self.pantalla_juego, "brown", Rect(j*MEDIDA_BLOQUE, i*MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE))
-        
+        self.pantalla_juego.fill(BLANCO) #Fondo blanco
+        self.dibujar_nivel()
         self.jugador.dibujar()
-                    
+        self.pantalla.blit(self.pantalla_juego, (SEPARACION_BORDES_PANTALLA, MEDIDA_HUD))
 
+        
 class Game: 
     def __init__(self):
         init()  # Inicializa Pygame
@@ -197,7 +224,7 @@ class Game:
         
         self.niveles = cargar_niveles()
         self.jugar = Jugar(self)
-        self.modo = self.jugar # Inicia en jugar TODO (esto es temporal)
+        self.modo = self.jugar # Inicia en jugar TODO (esto es temporal, deberia iniciar en el menu principal)
 
         self.enemigos = []  # Lista de enemigos en el juego
         self.obstaculos = []  # Lista de obstáculos en el juego
@@ -213,22 +240,23 @@ class Game:
         enemigos_puestos = 0
         enemigos_coords = []
         while enemigos_puestos < CANTIDAD_ENEMIGOS:
-            x = randint(0, ANCHO_MATRIZ - 1) * MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA  # Genera una coordenada x aleatoria dentro del mapa
-            y = randint(0, ALTO_MATRIZ - 1) * MEDIDA_BLOQUE + MEDIDA_HUD  # Genera una coordenada y aleatoria dentro del mapa
+            x = randint(0, ANCHO_MATRIZ + 1) * MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA  # Genera una coordenada x aleatoria dentro del mapa
+            y = randint(0, ALTO_MATRIZ + 1) * MEDIDA_BLOQUE + MEDIDA_HUD  # Genera una coordenada y aleatoria dentro del mapa
             
             #Revisa que no ponga un enemigo encima de otro
             if (x, y) not in enemigos_coords:
                 enemigo = Enemigo(x, y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
                 self.enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
                 enemigos_puestos += 1
-
+    
 
     def actualizar(self):
         for evento in event.get():
             if evento.type == QUIT:
                 self.running = False
+            self.modo.eventos(evento)
             
-            self.modo.actualizar()
+        self.modo.actualizar()
     
     def dibujar(self):
         self.modo.dibujar()
