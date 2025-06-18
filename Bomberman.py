@@ -5,6 +5,7 @@ from random import choice, randint  # Importa choice para seleccionar elementos 
 from threading import Thread  # Importa los Threads para el manejo de entidades en paralelo
 from config import *  # Importa las configuraciones del juego, como dimensiones y FPS
 from sprites import *  # Importa los sprites del jugador y otros elementos visuales
+from niveles import *
 
 # Usaremos una definición HD (1280x720p)
 # En la parte superior de la pantalla, dejaremos una HUD de tamaño 1280x176 
@@ -13,72 +14,8 @@ from sprites import *  # Importa los sprites del jugador y otros elementos visua
 # Haremos los niveles con matrices (11x26), y como no se requiere crear nuevos, podemos ponerlos dentro del archivo de código
 
 #  fuente_texto = font.Font("assets/FUENTEJUEGO.TTF", 30)  # USAR PARA EL TEXTO DEL JUEGO
-
-
-# Definiremos lo que significa cada bloque de la matriz:
-# 0 = vacío
-# 1 = bloque indestructible
-# 2 = bloque destructible
  
 # Las demás cosas que se colocan en la matriz son objetos que se generan aleatoriamente, y no se colocan en la matriz, sino que se generan en el momento de crear el nivel
-
-CANTIDAD_ENEMIGOS = 5
-
-nivel1 = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-]
-
-nivel2 = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-]
-
-nivel3 = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-]
-
-nivel4 = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-]
 
 
 # Ideas de Items 
@@ -119,10 +56,11 @@ class Jugador:
                 self.rect = rectangulo_verif  # Actualiza el rectángulo del jugador a la nueva posición
 
     def poner_bomba(self):
-        if self.bombas > 0:
+        if self.bombas > 0: # Si le quedan bombas
             self.bombas -= 1
-            bomba = Bomba(self.pantalla, self.x, self.y)  # Crea una instancia de la bomba en la posición del jugador
+            Bomba(self.pantalla, self.x, self.y)  # Pone una bomba en el jugador
 
+    
     def actualizar_frame_sprite(self):
         if self.moviendose:  # Si el jugador se está moviendo
             self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
@@ -142,22 +80,19 @@ class Jugador:
     def habilidad2(self):
         pass
     
-    def actualizar(self, event):  
-        pass  # REVISAR, LO DE PRESIONAR UNA TECLA DEBERÍA ESTAR EN GAME, NO AQUÍ: ESTO DEBERÍA SER PARA LLAMAR A LAS FUNCIONES
-        """
+    def actualizar(self, event):
+        # REVISAR, LO DE PRESIONAR UNA TECLA DEBERÍA ESTAR EN GAME, NO AQUÍ: ESTO DEBERÍA SER PARA LLAMAR A LAS FUNCIONES
         if event.type == KEYDOWN: #Si presiona una tecla
             
             if event.key == K_SPACE: #Si le da a espacio
-                Bomba(self.x, self.y) #Pone una bomba
+                self.poner_bomba()
                 
             elif event.key == K_1: #Si le da a 1
                 self.habilidad1
                 
             elif event.key == K_2:
                 self.habilidad2
-        """
 
-# Clase Enemigo
 class Enemigo:
     def __init__(self, x, y, pantalla):
         self.x = x
@@ -213,10 +148,11 @@ class Bomba:
         Thread(target=self.detonar, args=([], [])).start()  # Inicia el temporizador de la bomba en un hilo separado
 
     def detonar(self, lista_obstaculos, enemigos):
+        draw.rect(self.pantalla, "black", self.rect)
         sleep(self.tiempo_detonar)
         # CONTINUAR AQUÍ: Lógica de explosión de la bomba, que afectará a enemigos y obstáculos
         #TODO
-        draw.rect(self.pantalla, "black", self.rect)
+        
     
 class Explosion:
     pass
@@ -267,8 +203,9 @@ class Game:
         self.running = True  # Variable para controlar el bucle del juego
         self.dt = 0  # Delta time, tiempo entre frames
         self.modos = {"menu":False, "jugar":True, "editor":False} #Fases de juego
-        self.nivel = 0  # Nivel actual del juego (self.nivel = 0 significa que estamos en el primer nivel)
-        self.lista_niveles = [nivel1, nivel2, nivel3, nivel4]  # Lista de niveles del juego (se pueden cargar desde un archivo o definirlos aquí)
+        self.lista_niveles = cargar_niveles()
+        self.num_nivel = 0  # Nivel actual del juego (self.nivel = 0 significa que estamos en el primer nivel)
+        self.nivel = self.lista_niveles[0]
         
         self.jugador = Jugador(ANCHO_PANTALLA//2, ALTO_PANTALLA//2, self.pantalla)  # Crea una instancia del jugador en la posición (0, 0) en la pantalla jugable
         self.lista_enemigos = []  # Lista de enemigos en el juego
@@ -309,18 +246,14 @@ class Game:
             enemigo = Enemigo(coord_x, coord_y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
             self.lista_enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
 
-    def poner_bombas(self):
-        if self.jugador.bombas > 0:  # Si se presiona espacio y el jugador tiene bombas
-            self.jugador.bombas -= 1
-            self.jugador.poner_bomba(self.lista_obstaculos)  # Lógica para colocar una bomba (debe implementarse en la clase Jugador)
 
     def actualizar(self):
         for evento in event.get():
             if evento.type == QUIT:
                 self.running = False
-            if evento.type == KEYDOWN:
-                if evento.key == K_SPACE:
-                    self.poner_bombas()
+            
+            self.jugador.actualizar(evento)
+                    
         self.teclas_presionadas()
         if time.get_ticks() - self.jugador.ultima_actualizacion_frame > 150:  # Si han pasado más de 100 ms desde la última actualización del sprite
             self.jugador.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
@@ -332,11 +265,11 @@ class Game:
                 for j in range(ALTO_MATRIZ):
                     # Dibuja el fondo de la pantalla
                     # Pantalla, color, posición (x, y), tamaño (ancho, alto)
-                    if nivel1[j][i] == 0:  # Si el bloque es vacío
+                    if self.nivel[j][i] == 0:  # Si el bloque es vacío
                         draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
                     else:
                         # La comparación de la casilla con un número nos dice qué tipo de bloque es (destructible o indestructible)
-                        obs = Obstaculo(16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), nivel1[j][i] == 2)
+                        obs = Obstaculo(16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), self.nivel[j][i] == 2)
                         self.lista_obstaculos.append(obs)  # Agrega el obstáculo a la lista de obstáculos
                         obs.colocar(self.pantalla)  # Dibuja el obstáculo en la pantalla
             for enemigo in self.lista_enemigos:  # Dibuja todos los enemigos en la pantalla

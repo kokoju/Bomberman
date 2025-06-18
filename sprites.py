@@ -13,7 +13,7 @@ class Spritesheet:
     
 hoja_sprites = Spritesheet("assets/spritesheet.png")
 
-<<<<<<< HEAD
+"""
 def player_skins():
     player1 = {
         "arriba": [sprite1, sprite2, sprite3...],
@@ -40,11 +40,7 @@ def player_skins():
         "izquierda": [sprite1, sprite2, sprite3...],
         "derecha": [sprite1, sprite2, sprite3...]
     }
-    
-    player2 = {}
-    player3 = {}
-    player4 = {}
-=======
+"""
 # SE PUEDE AUTOMATIZAR LA CARGA DE SPRITES: SI SE DA CUENTA, SIGUEN UN PATRON COMO RECORRER CON 2 FORs, HACER UN DICCIONARIO CON LAS COSAS INICIALES DE CADA SKIN, Y SUMARLE HASTA 4 EN LA I
 
 # Diccionario con los puntos iniciales de cada skin en la hoja de sprites (x, y)
@@ -57,7 +53,6 @@ def cargar_skins(numero_skin, dict):
     skin = {"derecha": [], "abajo": [], "arriba": [], "izquierda": []}
     
     direcciones = ["derecha", "abajo", "arriba"]
->>>>>>> 297755588a32d96c71bfb4234ede4d311924a500
     
     # Por cada dirección (en orden), tomamos una fila de 4 sprites
     for idx, direccion in enumerate(direcciones):
