@@ -152,7 +152,7 @@ class Bomba:
         sleep(self.tiempo_detonar)
         # CONTINUAR AQUÍ: Lógica de explosión de la bomba, que afectará a enemigos y obstáculos
         #TODO
-        
+
     
 class Explosion:
     pass

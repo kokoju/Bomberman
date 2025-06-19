@@ -13,4 +13,5 @@ CANTIDAD_ENEMIGOS = 5 # Cantidad de enemigos que aparecen en cada nivel
 #Colores
 BLANCO = 255, 255, 255
 NEGRO = 0, 0, 0
+ROJO = 232, 58, 5
 GRIS = 150, 145, 156

@@ -3,15 +3,16 @@ from config import *
 
 class Spritesheet:
     def __init__(self, path):
-        self.sheet = pg.image.load(path)
+        self.sheet = pg.image.load(path).convert_alpha()
     
-    def getSprite(self, x, y, ancho, alto, escala=1):
-        sprite = pg.Surface((ancho, alto))
-        sprite.blit(self.sheet, (0, 0), (x, y, (x + PIXELES_SPRITES), (y + PIXELES_SPRITES)))
-        sprite = pg.transform.scale(sprite, (ancho * escala, alto * escala))
+    def cargar_sprite(self, x, y, ancho, alto, nuevo_ancho=None, nuevo_alto=None):
+        nuevo_ancho = ancho if nuevo_ancho == None else nuevo_alto #Verifica si se inserto un nuevo anco, si no lo deja igual
+        nuevo_alto = alto if nuevo_alto == None else nuevo_alto #Verica si se inserto un nuevo alto, si no, lo deja igual
+        sprite = pg.Surface((ancho, alto), pg.SRCALPHA).convert_alpha() #Crea una pantalla para poner el sprite
+        sprite.blit(self.sheet, (0,0), (x, y, ancho, alto)) #Dibuja el sprite en la pantalla creada
+        sprite = pg.transform.scale(sprite, (nuevo_ancho, nuevo_alto))
         return sprite
     
-hoja_sprites = Spritesheet("assets/spritesheet.png")
 
 """
 def player_skins():
@@ -49,6 +50,7 @@ puntos_inciales_skins_enemigos = {1 : (0, 24), 2 : (4, 24), 3 : (8, 24), 4 : (12
 
 # Carga una skin completa a partir de su número, devolviendo una lista de sprites (derecha, abajo, arriba, izquierda)
 def cargar_skins(numero_skin, dict):
+    sprites_jugador = Spritesheet("assets/spritesheet.png")
     inicio_x, inicio_y = dict[numero_skin]
     skin = {"derecha": [], "abajo": [], "arriba": [], "izquierda": []}
     
@@ -60,7 +62,7 @@ def cargar_skins(numero_skin, dict):
             # Sacamos el (x, y) de la hoja de sprites
             x = (inicio_x + i) * PIXELES_SPRITES
             y = (inicio_y + idx) * PIXELES_SPRITES
-            sprite = hoja_sprites.getSprite(x, y, PIXELES_SPRITES, PIXELES_SPRITES, 3)
+            sprite = sprites_jugador.cargar_sprite(x, y, PIXELES_SPRITES, PIXELES_SPRITES, MEDIDA_BLOQUE, MEDIDA_BLOQUE)
             sprite.set_colorkey((0, 0, 0))
             skin[direccion].append(sprite)
 
@@ -70,3 +72,12 @@ def cargar_skins(numero_skin, dict):
         skin["izquierda"].append(sprite_izquierda)
 
     return skin
+
+
+def cargar_bloques():
+    sprites_niveles = Spritesheet("assets/tiles_niveles.png")
+    return {
+        0:sprites_niveles.cargar_sprite(5*160, 160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE), #Zacate
+        1:sprites_niveles.cargar_sprite(2*160, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE), #Bloque solido
+        2:sprites_niveles.cargar_sprite(0, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE) #Ladrilo rompible
+    }

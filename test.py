@@ -11,7 +11,9 @@ class Bomba:
     bombas = [] #Guarda las bombas activas
     def __init__(self, pantalla, bloque_x, bloque_y):
         self.pantalla = pantalla #Pantalla para dibujar la bomba
-        self.rect = Rect(bloque_x*MEDIDA_BLOQUE, bloque_y*MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE)
+        self.radio = MEDIDA_BLOQUE//2
+        self.x = bloque_x*MEDIDA_BLOQUE+self.radio
+        self.y = bloque_y*MEDIDA_BLOQUE+self.radio
         self.tiempo_detonar = 2  # Tiempo en segundos para que la bomba explote
         self.hit = 1 # Daño que causa la bomba al explotar
         self.activa = True
@@ -31,24 +33,28 @@ class Bomba:
     
     def dibujar(self, pantalla):
         if self.activa:
-            draw.rect(pantalla, NEGRO, self.rect)
+            draw.circle(pantalla, NEGRO, (self.x, self.y), self.radio)
 
 class Jugador:
     def __init__(self, juego, skin=None):
         self.pantalla = juego.pantalla_juego  # Pantalla donde se dibuja el jugador
         self.nivel = juego.nivel
 
-        self.frame = 0  # Frame actual del sprite del jugador
+
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
         self.numero_skin = 3  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
-        self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
         self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
-        self.moviendose = False  # Indica si el jugador se está moviendo o no
+
+
+        self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
+        self.frame = 0  # Frame actual del sprite del jugador
+        self.sprite = self.skin_hoja_sprites[self.direccion][self.frame] #Sprite inicial del jugador
         
         self.vidas = 3  # Cantidad de vidas del jugador
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
+        self.moviendose = False  # Indica si el jugador se está moviendo o no
         
-        self.rect = Rect(MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE) #Rectangulo del jugador para posicion y colision
+        self.rect = Rect(pos:=MEDIDA_BLOQUE//8, pos, tamano:=MEDIDA_BLOQUE-MEDIDA_BLOQUE//4, tamano) #Rectangulo del jugador para posicion y colision
         
         self.movimientos_posibles = {
             K_w: (0, -(self.velocidad), "arriba"),  # Arriba
@@ -80,7 +86,10 @@ class Jugador:
         for tecla in self.movimientos_posibles.keys():
             if keys[tecla]:
                 self.moviendose = True
-                dx, dy, self.direccion = self.movimientos_posibles[tecla]        
+                tx, ty, self.direccion = self.movimientos_posibles[tecla]    
+                #Se suman para que no se reemplazen en el for por 0 (en caso de movimiento diagonal)
+                dx += tx
+                dy += ty   
         
         #Movimiento del jugador
         # Si está dentro de los límites del mapa y camina en aire
@@ -104,10 +113,11 @@ class Jugador:
             self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
         else: #Jugador no se mueve
             self.frame = 0 #Reinicia
+        self.sprite = self.skin_hoja_sprites[self.direccion][self.frame]
 
     #  Dibuja al jugador en la pantalla
     def dibujar(self):
-        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.rect.x, self.rect.y))  # Dibuja el sprite del jugador en la pantalla
+        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))  # Dibuja el sprite del jugador en la pantalla
 
     def poner_bomba(self):
         Bomba(self.pantalla, self.rect.centerx//MEDIDA_BLOQUE, self.rect.centery//MEDIDA_BLOQUE) # Pone una bomba en el jugador y la guarda en la lista de bombas
@@ -129,8 +139,7 @@ class Jugador:
             elif evento.key == K_2: #O si le da a 2
                 self.habilidad2()
 
-        
-
+    
 
 class Enemigo:
     def __init__(self, x, y, pantalla):
@@ -179,21 +188,22 @@ class Jugar:
     def __init__(self, game):
         self.pantalla = game.pantalla
         self.pantalla_juego = Surface((ANCHO_PANTALLA - 2*SEPARACION_BORDES_PANTALLA, ALTO_PANTALLA - MEDIDA_HUD - SEPARACION_BORDES_PANTALLA))
-        self.debug = True
+        self.debug = False #G para cambiar
         
+        self.bloques = game.bloques #Sprites de bloques para el nivel
         self.niveles = game.niveles
         self.num_nivel = 1 #Inicia en el nivel 1
-        self.nivel = self.niveles[0] #Contiene la posicion de enemigos y obstaculos
+        self.nivel = self.niveles[0] #Contiene el nivel 1
         
         
         self.bombas = []  # Lista con bombas que el jugador pone, se borran al explotar
         self.jugador = Jugador(self) #TODO Falta la skin
     
     def dibujar_nivel(self):
-        for y in range(1, ALTO_MATRIZ-1): #Por cada fila
-            for x in range(1, ANCHO_MATRIZ-1): #Por cada bloque
-                if self.nivel[y][x] != 0: #Si no es aire, lo dibuja
-                    draw.rect(self.pantalla_juego, GRIS, Rect((x-1)*MEDIDA_BLOQUE, (y-1)*MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE))
+        for y in range(1, ALTO_MATRIZ+1): #Por cada fila
+            for x in range(1, ANCHO_MATRIZ+1): #Por cada bloque
+                ID = self.nivel[y][x]
+                self.pantalla_juego.blit(self.bloques[ID], ((x-1)*MEDIDA_BLOQUE, (y-1)*MEDIDA_BLOQUE))
                     
         if self.debug:
             #Dibuja las lineas del grid
@@ -201,13 +211,15 @@ class Jugar:
                 draw.line(self.pantalla_juego, NEGRO, (x*MEDIDA_BLOQUE, 0), (x*MEDIDA_BLOQUE, ALTO_PANTALLA))
             for y in range(1, ALTO_MATRIZ):
                 draw.line(self.pantalla_juego, NEGRO, (0, y*MEDIDA_BLOQUE), (ANCHO_PANTALLA, y*MEDIDA_BLOQUE))
+                
+            #Dibuja la hitbox del jugador
+            draw.rect(self.pantalla_juego, ROJO, self.jugador.rect, 2)
 
 
     def actualizar(self):
         keys = key.get_pressed()
         for bomba in Bomba.bombas:
             bomba.actualizar()
-        print(Bomba.bombas)
         self.jugador.actualizar(keys)
 
         
@@ -242,6 +254,7 @@ class Game:
         self.running = True  # Variable para controlar el bucle del juego
         self.dt = 0  # Delta time, tiempo entre frames
         
+        self.bloques = cargar_bloques()
         self.niveles = cargar_niveles()
         self.jugar = Jugar(self)
         self.modo = self.jugar # Inicia en jugar TODO (esto es temporal, deberia iniciar en el menu principal)
@@ -249,6 +262,9 @@ class Game:
         self.enemigos = []  # Lista de enemigos en el juego
         self.obstaculos = []  # Lista de obstáculos en el juego
         self.colocar_enemigos()
+        
+        self.test = image.load("assets/tiles_niveles.png").convert_alpha()
+        self.test = transform.scale(self.test, (MEDIDA_BLOQUE*8, MEDIDA_BLOQUE*2))
 
 
     def cambio_nivel(self):
@@ -279,6 +295,8 @@ class Game:
         self.modo.actualizar()
     
     def dibujar(self):
+        self.pantalla.fill(BLANCO)
+        self.pantalla.blit(self.bloques[1], (0, 0))
         self.modo.dibujar()
         
     
