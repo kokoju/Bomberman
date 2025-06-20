@@ -23,50 +23,88 @@ fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto 
 
 # Clase Jugador
 class Jugador:
-    def __init__(self, x, y, pantalla, skin=None):
-        self.x = x  # Posición x del jugador
-        self.y = y  # Posición y del jugador
-        self.pantalla = pantalla  # Pantalla donde se dibuja el jugador
-        self.frame = 0  # Frame actual del sprite del jugador
+    def __init__(self, juego, num_skin=3):
+        self.pantalla = juego.pantalla  # Pantalla donde se dibuja el jugador
+        self.nivel = juego.nivel  # Nivel actual del jugador (se usa para verificar colisiones)
+
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
-        self.numero_skin = 3  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
-        self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
+        self.numero_skin = num_skin  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
         self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
-        self.moviendose = False  # Indica si el jugador se está moviendo o no
-        self.bombas = 5  # Cantidad de bombas que el jugador puede colocar
+
+        self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
+        self.frame = 0  # Frame actual del sprite del jugador
+        self.sprite = self.skin_hoja_sprites[self.direccion][self.frame] #Sprite inicial del jugador
+        
         self.vidas = 3  # Cantidad de vidas del jugador
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
-        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE - MARGEN_DESLIZAMIENTO, MEDIDA_BLOQUE - MARGEN_DESLIZAMIENTO)  # Rectángulo que representa al jugador en el canvas (SE USA EN COLISIONES)
+        self.moviendose = False  # Indica si el jugador se está moviendo o no
+        
+        self.rect = Rect(ANCHO_PANTALLA//2, ALTO_PANTALLA//2, MEDIDA_BLOQUE-MEDIDA_BLOQUE//4, MEDIDA_BLOQUE-MEDIDA_BLOQUE) #  Rectangulo del jugador para posicion y colision
+        
+        self.movimientos_posibles = {
+            K_w: (0, -(self.velocidad), "arriba"),  # Arriba
+            K_s: (0, self.velocidad, "abajo"),     # Abajo
+            K_a: (-(self.velocidad), 0, "izquierda"), # Izquierda
+            K_d: (self.velocidad, 0, "derecha")     # Derecha
+        }
 
-    #  Mueve al jugador en la dirección especificada
-    def movimiento(self, dx, dy, obstaculos, direccion):
-        # Cambia sus coords x y y
-        new_x = self.x + dx  # Se calcula la nueva posición x
-        new_y = self.y + dy
-        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE - MARGEN_DESLIZAMIENTO, MEDIDA_BLOQUE - MARGEN_DESLIZAMIENTO)  # Rectángulo que representa la nueva posición del jugador
-        # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
-        if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
-            # Verifica si no hay obstáculos en la nueva posición
-            if all(not rectangulo_verif.colliderect(obs.rect) for obs in obstaculos):  # Si el rectángulo del jugador no colisiona con NINGÚN obstáculo
-                self.y = new_y
-                self.x = new_x
-                self.direccion = direccion  # Actualiza la dirección del jugador
-                self.rect = rectangulo_verif  # Actualiza el rectángulo del jugador a la nueva posición
-
-    def poner_bomba(self):
-        if self.bombas > 0: # Si le quedan bombas
-            self.bombas -= 1
-            Bomba(self.pantalla, self.rect.centerx//MEDIDA_BLOQUE, self.rect.centery//MEDIDA_BLOQUE) # Pone una bomba en el jugador y la guarda en la lista de bombas
+    def verificar_colision(self, rect):
+        #Hay un offset de 1 porque hay un borde no visible de bloques solidos
+        esquinas = (
+            (izq := rect.left // MEDIDA_BLOQUE+1, arriba := rect.top // MEDIDA_BLOQUE+1), #Superior izquierda
+            (izq, abajo := rect.bottom // MEDIDA_BLOQUE+1), #Inferior izquierda
+            (der := rect.right // MEDIDA_BLOQUE+1, arriba), #Superior derecha
+            (der, abajo) #Inferior derecha
+        )
+        
+        #Verifica si alguna esquina esta en un tile que no sea aire
+        for x, y in esquinas:
+            if self.nivel[y][x] != 0:
+                return False
+        return True
+    
+    def actualizar(self, keys):
+        dx, dy = 0, 0
+        # Saca el input del usuario
+        self.moviendose = False
+        for tecla in self.movimientos_posibles.keys():
+            if keys[tecla]:
+                self.moviendose = True
+                tx, ty, self.direccion = self.movimientos_posibles[tecla]    
+                # Se suman para que no se reemplazen en el for por 0 (en caso de movimiento diagonal)
+                dx += tx
+                dy += ty   
+        
+        # Movimiento del jugador
+        # Si está dentro de los límites del mapa y camina en aire
+        rect_dx, rect_dy = self.rect.move(dx, 0), self.rect.move(0, dy)
+        # Verifica los ejes independientemente para mantener deslizamiento en muros con movimiento diagonal
+        if self.verificar_colision(rect_dx):
+            self.rect = self.rect.move(dx, 0)
+        if self.verificar_colision(rect_dy):
+            self.rect = self.rect.move(0, dy)
+    
+        # Animación
+        if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el jugador se está moviendo y han pasado 150ms
+            self.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
+            self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
+                   
 
     
     def actualizar_frame_sprite(self):
-        if self.moviendose:  # Si el jugador se está moviendo
-            self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
-            self.frame += 1  # Incrementa el frame actual del sprite
-            if self.frame >= len(self.skin_hoja_sprites):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
-                self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
-        else:
-            self.frame = 0  # Si el jugador no se está moviendo, reinicia el frame a 0 para que muestre el primer sprite de la animación
+        if self.moviendose: #Jugador se mueve
+            self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
+            self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
+        else: #Jugador no se mueve
+            self.frame = 0 #Reinicia
+        self.sprite = self.skin_hoja_sprites[self.direccion][self.frame]
+
+    #  Dibuja al jugador en la pantalla
+    def dibujar(self):
+        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))  # Dibuja el sprite del jugador en la pantalla
+
+    def poner_bomba(self):
+        Bomba(self.pantalla, self.rect.centerx//MEDIDA_BLOQUE, self.rect.centery//MEDIDA_BLOQUE) # Pone una bomba en el jugador y la guarda en la lista de bombas
 
     def habilidad1(self):
         pass
@@ -74,19 +112,16 @@ class Jugador:
     def habilidad2(self):
         pass
     
-    def actualizar(self, evento):
-        if evento.key == K_SPACE: #Si le da a espacio
-            self.poner_bomba()
-                
-        elif evento.key == K_1: #Si le da a 1
-            self.habilidad1()  # Llama a la función de habilidad 1
-                
-        elif evento.key == K_2:
-            self.habilidad2()  # Llama a la función de habilidad 2
+    def eventos(self, evento):
+        if evento.type == KEYDOWN:
+            if evento.key == K_SPACE: #Si le da a espacio
+                self.poner_bomba()
 
-    # Dibuja al jugador en la pantalla
-    def dibujar(self):
-        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
+            if evento.key == K_1: #Si le da a 1
+                self.habilidad1()
+                
+            elif evento.key == K_2: #O si le da a 2
+                self.habilidad2()
 
 class Enemigo:
     def __init__(self, x, y, pantalla):
@@ -245,9 +280,9 @@ class Menu:
 # Clase del juego
 class Juego:
     def __init__(self, pantalla, lista_niveles):
-        self.pantalla = pantalla
+        self.pantalla = pantalla  # Pantalla donde se dibuja el juego
         self.nivel = cargar_niveles()[0]  # Carga el primer nivel del juego
-        self.jugador = Jugador(ANCHO_PANTALLA//2, ALTO_PANTALLA//2, self.pantalla)  # Crea una instancia del jugador en la posición (0, 0) en la pantalla jugable
+        self.jugador = Jugador(self)  # Crea una instancia del jugador
         self.lista_enemigos = []  # Lista de enemigos en el juego
         self.lista_obstaculos = []  # Lista de obstáculos en el juego
         self.colocar_enemigos()
@@ -262,24 +297,6 @@ class Juego:
         if self.nivel > len(self.lista_niveles):  # Si se llega al final, se vuelve al incio
             self.nivel = 0
 
-    def teclas_presionadas(self):
-        #  Usa un diccionario para determinar si sube, baja, si va para la derecha o izquierda
-        movimientos_posibles = {
-            K_w: (0, -(self.jugador.velocidad), "arriba"),  # Arriba
-            K_s: (0, self.jugador.velocidad, "abajo"),     # Abajo
-            K_a: (-(self.jugador.velocidad), 0, "izquierda"), # Izquierda
-            K_d: (self.jugador.velocidad, 0, "derecha")     # Derecha
-        }
-
-        keys = key.get_pressed()
-        for tecla in movimientos_posibles.keys():
-            if keys[tecla]:  # Si la tecla está presionada
-                self.jugador.moviendose = True  # Indica que el jugador se está moviendo
-                dx, dy, direccion = movimientos_posibles[tecla]  # Obtiene el desplazamiento correspondiente
-                self.jugador.movimiento(dx, dy, self.lista_obstaculos, direccion)  # Mueve al jugador en la dirección correspondiente
-            if all(not keys[k] for k in movimientos_posibles.keys()):  # Si no se presiona ninguna tecla de movimiento
-                self.jugador.moviendose = False  #  El jugador no se está moviendo
-
     def colocar_enemigos(self):
         for _ in range(CANTIDAD_ENEMIGOS):  # Coloca 5 enemigos en posiciones aleatorias del mapa
             coord_x = randint(0, ANCHO_MATRIZ - 1) * MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA  # Genera una coordenada x aleatoria dentro del mapa
@@ -292,6 +309,9 @@ class Juego:
         for bomba in Bomba.bombas:
             bomba.actualizar()
         self.jugador.actualizar(keys)
+
+    def eventos(self, evento):
+        self.jugador.eventos(evento)
 
     def dibujar(self):
         self.pantalla.fill((0, 0, 0))  # Limpia la pantalla
@@ -313,10 +333,6 @@ class Juego:
             bomba.dibujar()
 
         self.jugador.dibujar()  # Dibuja al jugador en la pantalla   
-        self.teclas_presionadas()
-        if time.get_ticks() - self.jugador.ultima_actualizacion_frame > 150:  # Si han pasado más de 100 ms desde la última actualización del sprite
-            self.jugador.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
-            self.jugador.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
     
 class Informacion:
     def __init__(self, pantalla):
@@ -491,8 +507,8 @@ class Game:
 
             elif evento.type == KEYDOWN:  # Si se presiona una tecla
                 if hasattr(self, "juego") and self.modos["jugar"]:  # Si estamos en el modo de juego
-                    self.juego.jugador.actualizar(evento)  # Actualiza el jugador según la tecla presionada
-        
+                    self.juego.eventos(evento)  # Llama al método de eventos del juego
+
         if hasattr(self, "opciones"):
             if self.opciones.arrastrando_barra:  # Si se está arrastrando la barra de sonido
                 mouse_pos = mouse.get_pos()  # Obtiene la posición del mouse
