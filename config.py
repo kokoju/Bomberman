@@ -34,3 +34,7 @@ BARRA_ALTO = 10  # (en píxeles)
 BARRA_X = ANCHO_PANTALLA // 2 - (BARRA_ANCHO // 2)  # (en píxeles) 
 BARRA_Y = SEPARACION_BORDES_PANTALLA * 9  # (en píxeles)
 RADIO_CONTROL = 10  # Radio del círculo que representa el control de volumen
+
+# Configuración de la bomba
+TIEMPO_DETONACION_BOMBA = 2000 # Tiempo en milisegundos antes de que la bomba explote 
+HIT_BOMBA = 1  # Daño que causa la bomba al jugador y a los enemigos

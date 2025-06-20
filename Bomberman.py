@@ -56,7 +56,7 @@ class Jugador:
     def poner_bomba(self):
         if self.bombas > 0: # Si le quedan bombas
             self.bombas -= 1
-            Bomba(self.pantalla, self.x, self.y)  # Pone una bomba en el jugador
+            Bomba(self.pantalla, self.rect.centerx//MEDIDA_BLOQUE, self.rect.centery//MEDIDA_BLOQUE) # Pone una bomba en el jugador y la guarda en la lista de bombas
 
     
     def actualizar_frame_sprite(self):
@@ -68,10 +68,6 @@ class Jugador:
         else:
             self.frame = 0  # Si el jugador no se está moviendo, reinicia el frame a 0 para que muestre el primer sprite de la animación
 
-    #  Dibuja al jugador en la pantalla
-    def dibujar(self):
-        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
-
     def habilidad1(self):
         pass
     
@@ -79,16 +75,18 @@ class Jugador:
         pass
     
     def actualizar(self, evento):
-        # REVISAR, LO DE PRESIONAR UNA TECLA DEBERÍA ESTAR EN GAME, NO AQUÍ: ESTO DEBERÍA SER PARA LLAMAR A LAS FUNCIONES
-        if evento.type == KEYDOWN: #Si presiona una tecla
-            if evento.key == K_SPACE: #Si le da a espacio
-                self.poner_bomba()
+        if evento.key == K_SPACE: #Si le da a espacio
+            self.poner_bomba()
                 
-            elif evento.key == K_1: #Si le da a 1
-                self.habilidad1()  # Llama a la función de habilidad 1
+        elif evento.key == K_1: #Si le da a 1
+            self.habilidad1()  # Llama a la función de habilidad 1
                 
-            elif evento.key == K_2:
-                self.habilidad2()  # Llama a la función de habilidad 2
+        elif evento.key == K_2:
+            self.habilidad2()  # Llama a la función de habilidad 2
+
+    # Dibuja al jugador en la pantalla
+    def dibujar(self):
+        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
 
 class Enemigo:
     def __init__(self, x, y, pantalla):
@@ -135,23 +133,32 @@ class Enemigo:
         
 
 class Bomba:
-    def __init__(self, pantalla, x, y):
+    bombas = [] #Guarda las bombas activas
+    def __init__(self, pantalla, bloque_x, bloque_y):
         self.pantalla = pantalla #Pantalla para dibujar la bomba
-        self.x = x  # Posición x de la bomba
-        self.y = y  # Posición y de la bomba
-        self.rect = Rect(x, y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)
-        self.tiempo_detonar = 2  # Tiempo en segundos para que la bomba explote
-        self.hit = 1 # Daño que causa la bomba al explotar
-        Thread(target=self.detonar, args=([], [])).start()  # Inicia el temporizador de la bomba en un hilo separado
+        self.radio = MEDIDA_BLOQUE//2
+        self.x = bloque_x*MEDIDA_BLOQUE+self.radio
+        self.y = bloque_y*MEDIDA_BLOQUE+self.radio
+        self.tiempo_detonar = TIEMPO_DETONACION_BOMBA  # Tiempo en segundos para que la bomba explote
+        self.hit = HIT_BOMBA # Daño que causa la bomba al explotar
+        self.activa = True
+        Bomba.bombas.append(self)
+        hilo = Thread(target=self.detonar) #Crea un hilo para la bomba
+        hilo.daemon = True
+        hilo.start()
 
-    def detonar(self, lista_obstaculos, enemigos):
-        draw.rect(self.pantalla, "black", self.rect)
+    def detonar(self):
         sleep(self.tiempo_detonar)
-        # CONTINUAR AQUÍ: Lógica de explosión de la bomba, que afectará a enemigos y obstáculos
+        self.activa = False #Explota
         #TODO
-
+        Bomba.bombas = [b for b in Bomba.bombas if b != self] #Quita la bomba
+    
+    def actualizar(self):
+        pass #TODO
+    
     def dibujar(self):
-        pass
+        if self.activa:
+            draw.circle(self.pantalla, NEGRO, (self.x, self.y), self.radio)
 
 class Explosion:
     pass
@@ -183,7 +190,6 @@ class Objetos:
 
 # Clase para botones: necesario para los botones del menú
 class Boton:
-
     def __init__(self, x, y, ancho, alto, texto, pantalla, color=BLANCO, color_texto=NEGRO):
         self.x = x  # Posición en el eje X
         self.y = y  # Posición en el eje Y
@@ -281,6 +287,12 @@ class Juego:
             enemigo = Enemigo(coord_x, coord_y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
             self.lista_enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
 
+    def actualizar(self):
+        keys = key.get_pressed()
+        for bomba in Bomba.bombas:
+            bomba.actualizar()
+        self.jugador.actualizar(keys)
+
     def dibujar(self):
         self.pantalla.fill((0, 0, 0))  # Limpia la pantalla
         for i in range(ANCHO_MATRIZ):
@@ -296,6 +308,10 @@ class Juego:
                             obs.colocar(self.pantalla)  # Dibuja el obstáculo en la pantalla
         for enemigo in self.lista_enemigos:  # Dibuja todos los enemigos en la pantalla
             enemigo.dibujar()
+
+        for bomba in Bomba.bombas:  # Dibuja todas las bombas en la pantalla
+            bomba.dibujar()
+
         self.jugador.dibujar()  # Dibuja al jugador en la pantalla   
         self.teclas_presionadas()
         if time.get_ticks() - self.jugador.ultima_actualizacion_frame > 150:  # Si han pasado más de 100 ms desde la última actualización del sprite
@@ -474,7 +490,8 @@ class Game:
                         self.opciones.arrastrando_barra = False  # Indica que ya no se está arrastrando la barra de sonido
 
             elif evento.type == KEYDOWN:  # Si se presiona una tecla
-                self.juego.jugador.actualizar(evento)  # Actualiza el jugador según la tecla presionada
+                if hasattr(self, "juego") and self.modos["jugar"]:  # Si estamos en el modo de juego
+                    self.juego.jugador.actualizar(evento)  # Actualiza el jugador según la tecla presionada
         
         if hasattr(self, "opciones"):
             if self.opciones.arrastrando_barra:  # Si se está arrastrando la barra de sonido
