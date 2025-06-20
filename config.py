@@ -23,3 +23,5 @@ ANCHO_BOTON = 200  # Ancho de los botones en el menú
 ALTO_BOTON = 50  # Alto de los botones en el menú
 
 MEDIDA_REESCALADO_LOGO = 512 # Medida del logo al reescalarlo (en píxeles)
+
+TEXTO_INFO = "Desarrollado por: \n Juan Andrés Bastidas López - 2025066242\n Pablo Vargas - PONER CARNET\nAmbos son estudiantes del ITCR, cursando la carrera de Ingeniería en Computación y entregando este trabajo como el III proyecto de Introducción a la programación.\nAño 2025 - Primer Semestre\n Profesores: Diego Mora Rojas y Jeff Schmidt Peralta" 

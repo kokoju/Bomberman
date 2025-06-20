@@ -187,7 +187,7 @@ class Objetos:
 # Clase para botones: necesario para los botones del menú
 class Boton:
 
-    def __init__(self, x, y, ancho, alto, texto, pantalla, color=BLANCO):
+    def __init__(self, x, y, ancho, alto, texto, pantalla, color=BLANCO, color_texto=NEGRO):
         self.x = x  # Posición en el eje X
         self.y = y  # Posición en el eje Y
         self.ancho = ancho  # Ancho del botón
@@ -195,6 +195,7 @@ class Boton:
         self.texto = texto  # Texto del botón
         self.pantalla = pantalla  # Pantalla donde se dibuja el botón
         self.color = color  # Color del botón (por defecto es blanco)
+        self.color_texto = color_texto  # Color del texto del botón (por defecto es negro)
         self.rect = pg.Rect(self.x, self.y, self.ancho, self.alto)  # Rectángulo que representa el botón para colisiones
         self.fuente = fuente_texto  # Fuente del texto del botón
         self.fue_clickeado = False  # Indica si el botón ha sido clickeado
@@ -211,7 +212,7 @@ class Boton:
     def dibujar(self):
         pg.draw.rect(self.pantalla, self.color, self.rect)  # Dibuja el botón en la pantalla
         pg.draw.rect(self.pantalla, (0, 0, 0), self.rect, 2)  # Le crea un borde al botón (eso es lo que indica el 2, que es el grosor del borde)
-        texto_renderizado = self.fuente.render(self.texto, True, (0, 0, 0))  # Renderiza el texto del botón
+        texto_renderizado = self.fuente.render(self.texto, True, self.color_texto)  # Renderiza el texto del botón
         self.pantalla.blit(texto_renderizado, (self.rect.x + (self.rect.width - texto_renderizado.get_width()) // 2, self.rect.y + (self.rect.height - texto_renderizado.get_height()) // 2))  # Dibuja el texto centrado en el botón
 
 class Menu:
@@ -302,7 +303,61 @@ class Juego:
             self.jugador.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
             self.jugador.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
     
+class Informacion:
+    def __init__(self, pantalla):
+        self.pantalla = pantalla  # Pantalla donde se dibuja la información
+        self.texto = "Información del juego"  # Texto de la información del juego
+        self.fuente = fuente_texto  # Fuente del texto de la información
+        self.boton_cerrar = Boton(ANCHO_PANTALLA - 70, 20, 50, 50, "X", self.pantalla, ROJO, BLANCO)  # Botón para cerrar la información
+        self.foto_juan = pg.image.load("assets/carnets/JuanFoto.png").convert_alpha()  # Carga la imagen de Juan
+        self.foto_pablo = pg.image.load("assets/carnets/PabloFoto.jpg").convert_alpha()  # Carga la imagen de Pablo
+        self.foto_juan = pg.transform.scale(self.foto_juan, (150, 150))  # Reescala la imagen de Juan a 150x150 píxeles
+        self.foto_pablo = pg.transform.scale(self.foto_pablo, (150, 150))  # Reescala la imagen de Pablo a 150x150 píxeles
 
+    # El texto que pensamos poner en la pantalla de información es medianamente largo, por lo que se dividirá en varias líneas
+    def dividir_texto(self):
+        self.ancho_max = ANCHO_PANTALLA - 100  # Ancho máximo de cada línea de texto
+        self.fuente = fuente_texto  # Fuente del texto
+        self.texto = TEXTO_INFO  # Texto a dividir
+
+        bloques = self.texto.split("\n")  # Paso para dividir el texto y que respete los saltos de línea manuales 
+        lineas = []  # Lista para almacenar las líneas de texto
+
+        for bloque in bloques:
+            palabras = bloque.split(' ')  # "Split" divide el texto en palabras, cada que encuentra un espacio, borrándolo en el proceso
+            linea_actual = ""  # Línea actual que se está construyendo
+            
+            # Recorremos cada palabra y comprobamos para cada linea si cabe en el ancho máximo
+            # Si cabe, se agrega a la línea actual y seguimos revisando
+            # Si no cabe, se agrega la línea actual a la lista de líneas y se comienza una nueva línea con la palabra actual
+            # Añadimos los espacios manualmente
+            for palabra in palabras: 
+                prueba = linea_actual + palabra + " "
+                if self.fuente.size(prueba)[0] <= self.ancho_max:
+                    linea_actual = prueba
+                else:
+                    lineas.append(linea_actual)
+                    linea_actual = palabra + " "
+            # Si al final hay una línea actual que no está vacía, la agregamos a la lista de líneas
+            if linea_actual:
+                lineas.append(linea_actual)
+            # Devolvemos la lista de líneas
+
+        return lineas  # Devuelve la lista de líneas de texto divididas
+
+    def dibujar(self):
+        y = 50
+        self.pantalla.fill((0, 0, 0))  # Limpia la pantalla
+        lineas = self.dividir_texto()
+        for linea in lineas:
+            render = self.fuente.render(linea, True, (255, 255, 255))
+            x = (ANCHO_PANTALLA - render.get_width()) // 2  # Centra el texto en la pantalla
+            self.pantalla.blit(render, (x, y))
+            y += self.fuente.get_height() + 5
+        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar la información
+        self.pantalla.blit(self.foto_juan, (ANCHO_PANTALLA // 2 - self.foto_juan.get_width() - 20, ALTO_PANTALLA // 2 + self.foto_juan.get_height() // 2))  # Dibuja la foto de Juan
+        self.pantalla.blit(self.foto_pablo, (ANCHO_PANTALLA // 2 + 20, ALTO_PANTALLA // 2 + self.foto_pablo.get_height() // 2))  # Dibuja la foto de Pablo
+       
     
 
 # Creamos una clase para el juego: esta llamará todas las opciones anteriores y las ejecutará en el orden correcto
@@ -334,13 +389,23 @@ class Game:
                             self.modos["jugar"] = True
                         elif boton.obtener_texto() == "Información":
                             self.modos["menu"] = False
+                            self.info = Informacion(self.pantalla)  # Crea una instancia de la clase Información
                             self.modos["info"] = True
-
                         elif boton.obtener_texto() == "Opciones":
                             self.modos["menu"] = False
                             self.modos["opciones"] = True
                         elif boton.obtener_texto() == "Salir":
                             self.running = False
+                        boton.fue_clickeado = False  # Reinicia el estado del botón después de clickeado
+
+                if hasattr(self, "info"):
+                    self.info.boton_cerrar.clickeado(mouse_pos)  # Verifica si se ha clickeado el botón de cerrar en la información
+                    if self.info.boton_cerrar.fue_clickeado:  # Si se ha clickeado el botón de cerrar
+                        self.modos["info"] = False  # Cambia el modo a no información
+                        self.modos["menu"] = True  # Vuelve al menú principal
+                        self.info.boton_cerrar.fue_clickeado = False  # Reinicia el estado del botón de cerrar
+
+
             elif evento.type == KEYDOWN:  # Si se presiona una tecla
                 self.juego.jugador.actualizar(evento)  # Actualiza el jugador según la tecla presionada
 
@@ -350,6 +415,9 @@ class Game:
 
         elif self.modos["jugar"]:  # Si estamos en el modo de juego
             self.juego.dibujar()  # Dibuja el juego y actualiza el estado del jugador, enemigos y obstáculos
+
+        elif self.modos["info"]:  # Si estamos en el modo de información
+            self.info.dibujar()
 
         elif self.modos["resultados"]:
             pass
