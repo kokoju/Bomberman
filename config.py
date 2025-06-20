@@ -15,3 +15,11 @@ BLANCO = 255, 255, 255
 NEGRO = 0, 0, 0
 ROJO = 232, 58, 5
 GRIS = 150, 145, 156
+
+# Variables para el juego
+MARGEN_DESLIZAMIENTO = 5  # Espacio de "spare" para ajustar el movimiento del jugador (en píxeles)
+
+ANCHO_BOTON = 200  # Ancho de los botones en el menú
+ALTO_BOTON = 50  # Alto de los botones en el menú
+
+MEDIDA_REESCALADO_LOGO = 512 # Medida del logo al reescalarlo (en píxeles)

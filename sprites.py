@@ -62,7 +62,8 @@ def cargar_skins(numero_skin, dict):
             # Sacamos el (x, y) de la hoja de sprites
             x = (inicio_x + i) * PIXELES_SPRITES
             y = (inicio_y + idx) * PIXELES_SPRITES
-            sprite = sprites_jugador.cargar_sprite(x, y, PIXELES_SPRITES, PIXELES_SPRITES, MEDIDA_BLOQUE, MEDIDA_BLOQUE)
+            # y = ((inicio_y + idx) * PIXELES_SPRITES) if dict == puntos_inciales_skins_enemigos or direccion == "arriba" else ((inicio_y + idx) * PIXELES_SPRITES + 2)  # Si se quiere algo más preciso
+            sprite = sprites_jugador.cargar_sprite(x, y, PIXELES_SPRITES, PIXELES_SPRITES, MEDIDA_BLOQUE, MEDIDA_BLOQUE)        
             sprite.set_colorkey((0, 0, 0))
             skin[direccion].append(sprite)
 

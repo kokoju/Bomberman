@@ -13,7 +13,8 @@ from niveles import *
 # Además, dejé un espacio de 16 pixeles entre la matriz y el borde inferior, para que no se vea tan pegado
 # Haremos los niveles con matrices (11x26), y como no se requiere crear nuevos, podemos ponerlos dentro del archivo de código
 
-#  fuente_texto = font.Font("assets/FUENTEJUEGO.TTF", 30)  # USAR PARA EL TEXTO DEL JUEGO
+font.init()  # Inicializa el módulo de fuentes de Pygame
+fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto del juego
  
 # Las demás cosas que se colocan en la matriz son objetos que se generan aleatoriamente, y no se colocan en la matriz, sino que se generan en el momento de crear el nivel
 
@@ -38,14 +39,14 @@ class Jugador:
         self.bombas = 5  # Cantidad de bombas que el jugador puede colocar
         self.vidas = 3  # Cantidad de vidas del jugador
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
-        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al jugador en el canvas (SE USA EN COLISIONES)
+        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE - MARGEN_DESLIZAMIENTO, MEDIDA_BLOQUE - MARGEN_DESLIZAMIENTO)  # Rectángulo que representa al jugador en el canvas (SE USA EN COLISIONES)
 
     #  Mueve al jugador en la dirección especificada
     def movimiento(self, dx, dy, obstaculos, direccion):
         # Cambia sus coords x y y
         new_x = self.x + dx  # Se calcula la nueva posición x
         new_y = self.y + dy
-        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador
+        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE - MARGEN_DESLIZAMIENTO, MEDIDA_BLOQUE - MARGEN_DESLIZAMIENTO)  # Rectángulo que representa la nueva posición del jugador
         # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
         if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
             # Verifica si no hay obstáculos en la nueva posición
@@ -71,7 +72,7 @@ class Jugador:
             self.frame = 0  # Si el jugador no se está moviendo, reinicia el frame a 0 para que muestre el primer sprite de la animación
 
     #  Dibuja al jugador en la pantalla
-    def dibujar_jugador(self):
+    def dibujar(self):
         self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
 
     def habilidad1(self):
@@ -80,18 +81,17 @@ class Jugador:
     def habilidad2(self):
         pass
     
-    def actualizar(self, event):
+    def actualizar(self, evento):
         # REVISAR, LO DE PRESIONAR UNA TECLA DEBERÍA ESTAR EN GAME, NO AQUÍ: ESTO DEBERÍA SER PARA LLAMAR A LAS FUNCIONES
-        if event.type == KEYDOWN: #Si presiona una tecla
-            
-            if event.key == K_SPACE: #Si le da a espacio
+        if evento.type == KEYDOWN: #Si presiona una tecla
+            if evento.key == K_SPACE: #Si le da a espacio
                 self.poner_bomba()
                 
-            elif event.key == K_1: #Si le da a 1
-                self.habilidad1
+            elif evento.key == K_1: #Si le da a 1
+                self.habilidad1()  # Llama a la función de habilidad 1
                 
-            elif event.key == K_2:
-                self.habilidad2
+            elif evento.key == K_2:
+                self.habilidad2()  # Llama a la función de habilidad 2
 
 class Enemigo:
     def __init__(self, x, y, pantalla):
@@ -133,7 +133,7 @@ class Enemigo:
             self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
 
     #  Dibuja al enemigo en la pantalla
-    def dibujar_enemigo(self):
+    def dibujar(self):
         self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
         
 
@@ -153,7 +153,9 @@ class Bomba:
         # CONTINUAR AQUÍ: Lógica de explosión de la bomba, que afectará a enemigos y obstáculos
         #TODO
 
-    
+    def dibujar(self):
+        pass
+
 class Explosion:
     pass
 
@@ -182,43 +184,76 @@ class Objetos:
     pass
 
 
+# Clase para botones: necesario para los botones del menú
+class Boton:
+
+    def __init__(self, x, y, ancho, alto, texto, pantalla, color=BLANCO):
+        self.x = x  # Posición en el eje X
+        self.y = y  # Posición en el eje Y
+        self.ancho = ancho  # Ancho del botón
+        self.alto = alto  # Alto del botón
+        self.texto = texto  # Texto del botón
+        self.pantalla = pantalla  # Pantalla donde se dibuja el botón
+        self.color = color  # Color del botón (por defecto es blanco)
+        self.rect = pg.Rect(self.x, self.y, self.ancho, self.alto)  # Rectángulo que representa el botón para colisiones
+        self.fuente = fuente_texto  # Fuente del texto del botón
+        self.fue_clickeado = False  # Indica si el botón ha sido clickeado
+
+    def obtener_texto(self):
+        # Devuelve el texto del botón
+        return self.texto
+
+    def clickeado(self, mouse_pos):
+        # Comprueba si el botón ha sido clickeado
+        if self.rect.collidepoint(mouse_pos):
+            self.fue_clickeado = True  #  Marca el botón como clickeado
+        
+    def dibujar(self):
+        pg.draw.rect(self.pantalla, self.color, self.rect)  # Dibuja el botón en la pantalla
+        pg.draw.rect(self.pantalla, (0, 0, 0), self.rect, 2)  # Le crea un borde al botón (eso es lo que indica el 2, que es el grosor del borde)
+        texto_renderizado = self.fuente.render(self.texto, True, (0, 0, 0))  # Renderiza el texto del botón
+        self.pantalla.blit(texto_renderizado, (self.rect.x + (self.rect.width - texto_renderizado.get_width()) // 2, self.rect.y + (self.rect.height - texto_renderizado.get_height()) // 2))  # Dibuja el texto centrado en el botón
 
 class Menu:
-    pass
+    def __init__(self, pantalla):
+        self.pantalla = pantalla  # Pantalla donde se dibuja el menú
+        self.opciones = ["Jugar", "Opciones", "Información", "Salir"]  # Opciones del menú
+        self.logo = pg.image.load("assets/logo.png").convert_alpha()  # Carga el logo del juego
+        self.logo = pg.transform.scale(self.logo, (MEDIDA_REESCALADO_LOGO, MEDIDA_REESCALADO_LOGO))  # Reescala el logo a la medida deseada
+        self.lista_botones = []  # Lista de botones del menú
+        self.crear_botones()  # Crea los botones del menú
 
+    def crear_botones(self):
+        for i in range(len(self.opciones)):  # Crea un botón para cada opción del menú
+            x = ANCHO_PANTALLA // 2 - 100  # Centra el botón en la pantalla (no cambia para los demás botones, ya que están alineados en el mismo x)
+            y = 480 + i * 60  # Espacio entre botones (en este caso, 60 píxeles entre cada botón)
+            self.boton = Boton(x, y, ANCHO_BOTON, ALTO_BOTON, self.opciones[i], self.pantalla)  # Crea un botón con las dimensiones y texto correspondientes
+            self.lista_botones.append(self.boton)  # Agrega el botón a la lista de botones del menú
 
-class In_Game:
-    pass
+    def dibujar(self):
+        # Llena la pantalla de negro
+        self.pantalla.fill((0, 0, 0))
+        for boton in self.lista_botones:  # Dibuja cada botón en la pantalla
+            boton.dibujar()
+        self.pantalla.blit(self.logo, (ANCHO_PANTALLA // 2 - self.logo.get_width() // 2, - 20))  # Dibuja el logo del juego en la parte superior de la pantalla
 
-
-    
-
-# Creamos una clase para el juego: esta llamará todas las opciones anteriores y las ejecutará en el orden correcto
-class Game: 
-    def __init__(self):
-        init()  # Inicializamos Pygame
-        self.pantalla = display.set_mode((ANCHO_PANTALLA, ALTO_PANTALLA))  # Configura la ventana
-        display.set_caption("Bomberman")  # Título de la ventana
-        self.clock = time.Clock()  # Crea un objeto de reloj para controlar la tasa de refresco, necesario para la física y el movimiento
-        self.running = True  # Variable para controlar el bucle del juego
-        self.dt = 0  # Delta time, tiempo entre frames
-        self.modos = {"menu":False, "jugar":True, "editor":False} #Fases de juego
-        self.lista_niveles = cargar_niveles()
-        self.num_nivel = 0  # Nivel actual del juego (self.nivel = 0 significa que estamos en el primer nivel)
-        self.nivel = self.lista_niveles[0]
-        
+# Clase del juego
+class Juego:
+    def __init__(self, pantalla, lista_niveles):
+        self.pantalla = pantalla
+        self.nivel = cargar_niveles()[0]  # Carga el primer nivel del juego
         self.jugador = Jugador(ANCHO_PANTALLA//2, ALTO_PANTALLA//2, self.pantalla)  # Crea una instancia del jugador en la posición (0, 0) en la pantalla jugable
         self.lista_enemigos = []  # Lista de enemigos en el juego
         self.lista_obstaculos = []  # Lista de obstáculos en el juego
         self.colocar_enemigos()
-
-
-    def cambio_modo(self, modo):
-        pass
+        self.num_nivel = 0  # Nivel actual del juego (self.nivel = 0 significa que estamos en el primer nivel)
+        self.lista_niveles = lista_niveles  # Lista de niveles del juego
+        self.nivel = self.lista_niveles[0]  # Carga el primer nivel del juego
+        self.colocar_enemigos()  # Coloca los enemigos en el nivel actual
 
     def cambio_nivel(self):
         self.nivel += 1  # Incrementa el nivel actual del juego
-        if self.nivel > len(self.lista_niveles):
+        if self.nivel > len(self.lista_niveles):  # Si se llega al final, se vuelve al incio
             self.nivel = 0
 
     def teclas_presionadas(self):
@@ -246,43 +281,84 @@ class Game:
             enemigo = Enemigo(coord_x, coord_y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
             self.lista_enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
 
-
-    def actualizar(self):
-        for evento in event.get():
-            if evento.type == QUIT:
-                self.running = False
-            
-            self.jugador.actualizar(evento)
-                    
+    def dibujar(self):
+        self.pantalla.fill((0, 0, 0))  # Limpia la pantalla
+        for i in range(ANCHO_MATRIZ):
+            for j in range(ALTO_MATRIZ):
+                        # Dibuja el fondo de la pantalla
+                        # Pantalla, color, posición (x, y), tamaño (ancho, alto)
+                        if self.nivel[j][i] == 0:  # Si el bloque es vacío
+                            draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
+                        else:
+                            # La comparación de la casilla con un número nos dice qué tipo de bloque es (destructible o indestructible)
+                            obs = Obstaculo(16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), self.nivel[j][i] == 2)
+                            self.lista_obstaculos.append(obs)  # Agrega el obstáculo a la lista de obstáculos
+                            obs.colocar(self.pantalla)  # Dibuja el obstáculo en la pantalla
+        for enemigo in self.lista_enemigos:  # Dibuja todos los enemigos en la pantalla
+            enemigo.dibujar()
+        self.jugador.dibujar()  # Dibuja al jugador en la pantalla   
         self.teclas_presionadas()
         if time.get_ticks() - self.jugador.ultima_actualizacion_frame > 150:  # Si han pasado más de 100 ms desde la última actualización del sprite
             self.jugador.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
             self.jugador.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
     
+
+    
+
+# Creamos una clase para el juego: esta llamará todas las opciones anteriores y las ejecutará en el orden correcto
+class Game: 
+    def __init__(self):
+        init()  # Inicializamos Pygame
+        self.pantalla = display.set_mode((ANCHO_PANTALLA, ALTO_PANTALLA))  # Configura la ventana
+        display.set_caption("Wooly Warfare")  # Título de la ventana
+        self.clock = time.Clock()  # Crea un objeto de reloj para controlar la tasa de refresco, necesario para la física y el movimiento
+        self.running = True  # Variable para controlar el bucle del juego
+        self.dt = 0  # Delta time, tiempo entre frames
+        self.modos = {"menu": True, "opciones": False, "info": False, "jugar": False, "resultados": False}  # Fases de juego
+        
+        self.menu = Menu(self.pantalla)  # Crea una instancia del menú
+        self.lista_niveles = cargar_niveles()
+        
+    def actualizar(self):
+        for evento in event.get():
+            if evento.type == QUIT:
+                self.running = False
+            elif evento.type == MOUSEBUTTONDOWN:  # Si se presiona un botón del mouse
+                mouse_pos = mouse.get_pos()
+                for boton in self.menu.lista_botones:  # Recorre la lista de botones del menú
+                    boton.clickeado(mouse_pos)
+                    if boton.fue_clickeado:  # Si el botón ha sido clickeado
+                        if boton.obtener_texto() == "Jugar":
+                            self.modos["menu"] = False
+                            self.juego = Juego(self.pantalla, self.lista_niveles)  # Crea una instancia del juego
+                            self.modos["jugar"] = True
+                        elif boton.obtener_texto() == "Información":
+                            self.modos["menu"] = False
+                            self.modos["info"] = True
+
+                        elif boton.obtener_texto() == "Opciones":
+                            self.modos["menu"] = False
+                            self.modos["opciones"] = True
+                        elif boton.obtener_texto() == "Salir":
+                            self.running = False
+            elif evento.type == KEYDOWN:  # Si se presiona una tecla
+                self.juego.jugador.actualizar(evento)  # Actualiza el jugador según la tecla presionada
+
     def dibujar(self):
-        if self.modos["jugar"]:  # Si estamos en el modo de juego
-            for i in range(ANCHO_MATRIZ):
-                for j in range(ALTO_MATRIZ):
-                    # Dibuja el fondo de la pantalla
-                    # Pantalla, color, posición (x, y), tamaño (ancho, alto)
-                    if self.nivel[j][i] == 0:  # Si el bloque es vacío
-                        draw.rect(self.pantalla, (0, 255, 255), (16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), MEDIDA_BLOQUE, MEDIDA_BLOQUE)) 
-                    else:
-                        # La comparación de la casilla con un número nos dice qué tipo de bloque es (destructible o indestructible)
-                        obs = Obstaculo(16 + (i * MEDIDA_BLOQUE), MEDIDA_HUD + (j * MEDIDA_BLOQUE), self.nivel[j][i] == 2)
-                        self.lista_obstaculos.append(obs)  # Agrega el obstáculo a la lista de obstáculos
-                        obs.colocar(self.pantalla)  # Dibuja el obstáculo en la pantalla
-            for enemigo in self.lista_enemigos:  # Dibuja todos los enemigos en la pantalla
-                enemigo.dibujar_enemigo()
-            self.jugador.dibujar_jugador()  # Dibuja al jugador en la pantalla
+        if self.modos["menu"]:  # Si estamos en el modo de menú
+            self.menu.dibujar()
+
+        elif self.modos["jugar"]:  # Si estamos en el modo de juego
+            self.juego.dibujar()  # Dibuja el juego y actualiza el estado del jugador, enemigos y obstáculos
+
+        elif self.modos["resultados"]:
+            pass
 
         
-    
     def run(self):
         while self.running:  # Bucle principal del juego
             display.flip()  # Actualiza la pantalla
             self.dt = self.clock.tick(FPS) / 1000  # Controla la tasa de refresco del juego
-
             self.actualizar()  # Actualiza el estado del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
             self.dibujar()  # Dibuja los elementos del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
 
