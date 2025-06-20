@@ -15,9 +15,6 @@ from niveles import *
 
 font.init()  # Inicializa el módulo de fuentes de Pygame
 fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto del juego
- 
-# Las demás cosas que se colocan en la matriz son objetos que se generan aleatoriamente, y no se colocan en la matriz, sino que se generan en el momento de crear el nivel
-
 
 # Ideas de Items 
 # Fantasmal -> Permite al jugador atravesar bloques destructibles/indestructibles por un tiempo limitado 
@@ -222,6 +219,7 @@ class Menu:
         self.logo = pg.image.load("assets/logo.png").convert_alpha()  # Carga el logo del juego
         self.logo = pg.transform.scale(self.logo, (MEDIDA_REESCALADO_LOGO, MEDIDA_REESCALADO_LOGO))  # Reescala el logo a la medida deseada
         self.lista_botones = []  # Lista de botones del menú
+        self.musica = pg.mixer.Sound("assets/musica/MusicaMenu.mp3")  # Carga la música del menú
         self.crear_botones()  # Crea los botones del menú
 
     def crear_botones(self):
@@ -250,6 +248,7 @@ class Juego:
         self.num_nivel = 0  # Nivel actual del juego (self.nivel = 0 significa que estamos en el primer nivel)
         self.lista_niveles = lista_niveles  # Lista de niveles del juego
         self.nivel = self.lista_niveles[0]  # Carga el primer nivel del juego
+        self.musica = pg.mixer.Sound("assets/musica/MusicaJuego.mp3")  # Carga la música del juego
         self.colocar_enemigos()  # Coloca los enemigos en el nivel actual
 
     def cambio_nivel(self):
@@ -358,7 +357,39 @@ class Informacion:
         self.pantalla.blit(self.foto_juan, (ANCHO_PANTALLA // 2 - self.foto_juan.get_width() - 20, ALTO_PANTALLA // 2 + self.foto_juan.get_height() // 2))  # Dibuja la foto de Juan
         self.pantalla.blit(self.foto_pablo, (ANCHO_PANTALLA // 2 + 20, ALTO_PANTALLA // 2 + self.foto_pablo.get_height() // 2))  # Dibuja la foto de Pablo
        
-    
+# Clase Opciones: aquí se pueden agregar las opciones del juego, como el volumen
+class Opciones:
+    def __init__(self, pantalla):
+        self.pantalla = pantalla  # Pantalla donde se dibuja la información
+        self.texto = "Opciones"  # Texto de la información del juego
+        self.texto_musica = "Volumen de la música"
+        self.fuente = fuente_texto  # Fuente del texto de la información
+        self.boton_cerrar = Boton(ANCHO_PANTALLA - 70, 20, 50, 50, "X", self.pantalla, ROJO, BLANCO)  # Botón para cerrar la información
+        self.arrastrando_barra = False  # Indica si se está arrastrando la barra de sonido
+
+    def barra_sonido(self, volumen):
+        # Dibuja una barra de sonido en la pantalla
+        # Definimos las coordenadas y dimensiones de la barra (fondo)
+        pg.draw.rect(self.pantalla, (100, 100, 100), (BARRA_X, BARRA_Y, BARRA_ANCHO, BARRA_ALTO))  # Dibuja el fondo de la barra de sonido en color gris
+        # Parte que se llena en función del volumen
+        pg.draw.rect(self.pantalla, VERDE, (BARRA_X, BARRA_Y, BARRA_ANCHO * volumen, BARRA_ALTO))
+        x_control = BARRA_X + int(BARRA_ANCHO * volumen)  # Posición del control deslizante según el volumen
+        pg.draw.circle(self.pantalla, BLANCO, (x_control, BARRA_Y + BARRA_ALTO // 2), RADIO_CONTROL)  # Dibuja el control deslizante en la barra de sonido
+
+    def dibujar(self, volumen):
+        self.pantalla.fill((0, 0, 0))  # Limpia la pantalla
+        self.texto_renderizado = self.fuente.render(self.texto, True, BLANCO)  # Renderiza el texto de las opciones
+        self.texto_musica_renderizado = self.fuente.render(self.texto_musica, True, BLANCO)  # Renderiza el texto del volumen de la música
+        self.barra_sonido(volumen)  # Dibuja la barra de sonido en el centro de la pantalla
+        self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
+        self.pantalla.blit(self.texto_musica_renderizado, (SEPARACION_BORDES_PANTALLA * 4, SEPARACION_BORDES_PANTALLA * 8))
+        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar la información
+        
+class Resultados:
+    def __init__(self, pantalla):
+        self.pantalla = pantalla
+        self.musica = pg.mixer.Sound("assets/musica/MusicaResultados.mp3")  # Carga la música de los resultados
+        # TODO
 
 # Creamos una clase para el juego: esta llamará todas las opciones anteriores y las ejecutará en el orden correcto
 class Game: 
@@ -371,9 +402,27 @@ class Game:
         self.dt = 0  # Delta time, tiempo entre frames
         self.modos = {"menu": True, "opciones": False, "info": False, "jugar": False, "resultados": False}  # Fases de juego
         
+        # Configuraciones de la música 
+        self.musica = None  # Espera a tener una instancia de música
+        self.volumen = VALOR_INCIAL_VOLUMEN  # Volumen inicial del juego
+
         self.menu = Menu(self.pantalla)  # Crea una instancia del menú
         self.lista_niveles = cargar_niveles()
+
+        self.administrar_musica()  # Llama a la función para administrar la música del juego
         
+    def administrar_musica(self):
+        if self.musica is not None:  # Si es la primera vez que se llama, no hay música, entonces no haríamos nada
+            self.musica.stop()
+        if self.modos["menu"] or self.modos["info"] or self.modos["opciones"]:
+            self.musica = self.menu.musica  # Usa la música del menú
+        elif self.modos["jugar"]:
+            self.musica = self.juego.musica  # Usa la música del juego
+        elif self.modos["resultados"]:
+            self.musica = self.resultados.musica  # Usa la música de los resultados
+        self.musica.play(-1)  # Reproduce la música en bucle
+        self.musica.set_volume(self.volumen)  # Establece el volumen de la música
+
     def actualizar(self):
         for evento in event.get():
             if evento.type == QUIT:
@@ -387,12 +436,14 @@ class Game:
                             self.modos["menu"] = False
                             self.juego = Juego(self.pantalla, self.lista_niveles)  # Crea una instancia del juego
                             self.modos["jugar"] = True
+                            self.administrar_musica()  # Llama a la función para administrar la música del juego
                         elif boton.obtener_texto() == "Información":
                             self.modos["menu"] = False
                             self.info = Informacion(self.pantalla)  # Crea una instancia de la clase Información
                             self.modos["info"] = True
                         elif boton.obtener_texto() == "Opciones":
                             self.modos["menu"] = False
+                            self.opciones = Opciones(self.pantalla)  # Crea una instancia de la clase Opciones
                             self.modos["opciones"] = True
                         elif boton.obtener_texto() == "Salir":
                             self.running = False
@@ -405,9 +456,31 @@ class Game:
                         self.modos["menu"] = True  # Vuelve al menú principal
                         self.info.boton_cerrar.fue_clickeado = False  # Reinicia el estado del botón de cerrar
 
+                if hasattr(self, "opciones"):
+                    self.opciones.boton_cerrar.clickeado(mouse_pos)
+                    if self.opciones.boton_cerrar.fue_clickeado:  # Si se ha clickeado el botón de cerrar
+                        self.modos["opciones"] = False  # Cambia el modo a no opciones
+                        self.modos["menu"] = True  # Vuelve al menú principal
+                        self.opciones.boton_cerrar.fue_clickeado = False  # Reinicia el estado del botón de cerrar
+
+                    # Control de la barra de sonido
+                    x_control = BARRA_X + int(BARRA_ANCHO * self.volumen)  # Posición del control de sonido deslizante según el volumen
+                    if abs(mouse_pos[0] - x_control) <= RADIO_CONTROL and abs(mouse_pos[1] - (BARRA_Y) + BARRA_ALTO // 2) <= RADIO_CONTROL:  # Si el mouse está cerca del control deslizante
+                        self.opciones.arrastrando_barra = True  # Indica que se está arrastrando el control de la barra de sonido
+            
+            elif evento.type == MOUSEBUTTONUP:  # Si se suelta un botón del mouse
+                if hasattr(self, "opciones"):
+                    if self.opciones.arrastrando_barra:
+                        self.opciones.arrastrando_barra = False  # Indica que ya no se está arrastrando la barra de sonido
 
             elif evento.type == KEYDOWN:  # Si se presiona una tecla
                 self.juego.jugador.actualizar(evento)  # Actualiza el jugador según la tecla presionada
+        
+        if hasattr(self, "opciones"):
+            if self.opciones.arrastrando_barra:  # Si se está arrastrando la barra de sonido
+                mouse_pos = mouse.get_pos()  # Obtiene la posición del mouse
+                self.volumen = max(0, min(1, (mouse_pos[0] - BARRA_X) / BARRA_ANCHO))  # Calcula el nuevo volumen según la posición del mouse
+                self.musica.set_volume(self.volumen)  # Establece el volumen de la música
 
     def dibujar(self):
         if self.modos["menu"]:  # Si estamos en el modo de menú
@@ -418,6 +491,9 @@ class Game:
 
         elif self.modos["info"]:  # Si estamos en el modo de información
             self.info.dibujar()
+
+        elif self.modos["opciones"]:  # Si estamos en el modo de opciones
+            self.opciones.dibujar(self.volumen)  # Dibuja las opciones del juego
 
         elif self.modos["resultados"]:
             pass
