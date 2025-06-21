@@ -13,37 +13,6 @@ class Spritesheet:
         sprite = pg.transform.scale(sprite, (nuevo_ancho, nuevo_alto))
         return sprite
     
-
-"""
-def player_skins():
-    player1 = {
-        "arriba": [sprite1, sprite2, sprite3...],
-        "abajo": [sprite1, sprite2, sprite3...],
-        "izquierda": [sprite1, sprite2, sprite3...],
-        "derecha": [sprite1, sprite2, sprite3...]
-    },
-    
-    player1 = {
-        "arriba": [sprite1, sprite2, sprite3...],
-        "abajo": [sprite1, sprite2, sprite3...],
-        "izquierda": [sprite1, sprite2, sprite3...],
-        "derecha": [sprite1, sprite2, sprite3...]
-    },
-    player3 = {
-        "arriba": [sprite1, sprite2, sprite3...],
-        "abajo": [sprite1, sprite2, sprite3...],
-        "izquierda": [sprite1, sprite2, sprite3...],
-        "derecha": [sprite1, sprite2, sprite3...]
-    },
-    player4 = {
-        "arriba": [sprite1, sprite2, sprite3...],
-        "abajo": [sprite1, sprite2, sprite3...],
-        "izquierda": [sprite1, sprite2, sprite3...],
-        "derecha": [sprite1, sprite2, sprite3...]
-    }
-"""
-# SE PUEDE AUTOMATIZAR LA CARGA DE SPRITES: SI SE DA CUENTA, SIGUEN UN PATRON COMO RECORRER CON 2 FORs, HACER UN DICCIONARIO CON LAS COSAS INICIALES DE CADA SKIN, Y SUMARLE HASTA 4 EN LA I
-
 # Diccionario con los puntos iniciales de cada skin en la hoja de sprites (x, y)
 puntos_iniciales_skins_jugador = {1 : (0, 21), 2 : (4, 21), 3 : (8, 21)}
 puntos_inciales_skins_enemigos = {1 : (0, 24), 2 : (4, 24), 3 : (8, 24), 4 : (12, 24), 5 : (0, 27), 6 : (4, 27)}
@@ -62,7 +31,8 @@ def cargar_skins(numero_skin, dict):
             # Sacamos el (x, y) de la hoja de sprites
             x = (inicio_x + i) * PIXELES_SPRITES
             y = (inicio_y + idx) * PIXELES_SPRITES
-            sprite = sprites_jugador.cargar_sprite(x, y, PIXELES_SPRITES, PIXELES_SPRITES, MEDIDA_BLOQUE, MEDIDA_BLOQUE)
+            # y = ((inicio_y + idx) * PIXELES_SPRITES) if dict == puntos_inciales_skins_enemigos or direccion == "arriba" else ((inicio_y + idx) * PIXELES_SPRITES + 2)  # Si se quiere algo más preciso
+            sprite = sprites_jugador.cargar_sprite(x, y, PIXELES_SPRITES, PIXELES_SPRITES, MEDIDA_BLOQUE, MEDIDA_BLOQUE)        
             sprite.set_colorkey((0, 0, 0))
             skin[direccion].append(sprite)
 
