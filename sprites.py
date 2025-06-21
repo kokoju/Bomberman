@@ -81,3 +81,58 @@ def cargar_bloques():
         1:sprites_niveles.cargar_sprite(2*160, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE), #Bloque solido
         2:sprites_niveles.cargar_sprite(0, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE) #Ladrilo rompible
     }
+
+def cargar_bomba():
+    sprites_bomba = Spritesheet("assets/spritesheet_bomba.png")
+    return {
+        "bomba":[sprites_bomba.cargar_sprite(0, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                 sprites_bomba.cargar_sprite(0, 160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                 sprites_bomba.cargar_sprite(0, 2*160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE)],
+        
+        "centro":[sprites_bomba.cargar_sprite(3*160, 5*160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                  sprites_bomba.cargar_sprite(3*160, 4*160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                  sprites_bomba.cargar_sprite(3*160, 3*160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                  sprites_bomba.cargar_sprite(3*160, 2*160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                  sprites_bomba.cargar_sprite(3*160, 160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                  sprites_bomba.cargar_sprite(3*160, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE)],
+        
+        "izquierda":[a0 := sprites_bomba.cargar_sprite(2*160, 3*160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                     a1 := sprites_bomba.cargar_sprite(2*160, 2*160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                     a2 := sprites_bomba.cargar_sprite(2*160, 160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                     a3 := sprites_bomba.cargar_sprite(2*160, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE)],
+        
+        "derecha":[pg.transform.rotate(a0, 180),
+                   pg.transform.rotate(a1, 180),
+                   pg.transform.rotate(a2, 180),
+                   pg.transform.rotate(a3, 180)],
+        
+        "arriba":[pg.transform.rotate(a0, 90),
+                  pg.transform.rotate(a1, 90),
+                  pg.transform.rotate(a2, 90),
+                  pg.transform.rotate(a3, 90)],
+        
+        "abajo":[pg.transform.rotate(a0, -90),
+                 pg.transform.rotate(a1, -90),
+                 pg.transform.rotate(a2, -90),
+                 pg.transform.rotate(a3, -90)],
+        
+        "punta_izquierda":[b0 := sprites_bomba.cargar_sprite(160, 3*160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                           b1 := sprites_bomba.cargar_sprite(160, 2*160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                           b2 := sprites_bomba.cargar_sprite(160, 160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+                           b3 := sprites_bomba.cargar_sprite(160, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE)],
+        
+        "punta_derecha":[pg.transform.rotate(b0, 180),
+                         pg.transform.rotate(b1, 180),
+                         pg.transform.rotate(b2, 180),
+                         pg.transform.rotate(b3, 180)],
+        
+        "punta_arriba":[pg.transform.rotate(b0, -90),
+                        pg.transform.rotate(b1, -90),
+                        pg.transform.rotate(b2, -90),
+                        pg.transform.rotate(b3, -90)],
+        
+        "punta_abajo":[pg.transform.rotate(b0, 90),
+                       pg.transform.rotate(b1, 90),
+                       pg.transform.rotate(b2, 90),
+                       pg.transform.rotate(b3, 90)],
+    }

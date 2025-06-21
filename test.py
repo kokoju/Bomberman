@@ -9,14 +9,20 @@ from time import sleep
 
 class Bomba:
     bombas = [] #Guarda las bombas activas
-    def __init__(self, pantalla, bloque_x, bloque_y):
-        self.pantalla = pantalla #Pantalla para dibujar la bomba
-        self.radio = MEDIDA_BLOQUE//2
-        self.x = bloque_x*MEDIDA_BLOQUE+self.radio
-        self.y = bloque_y*MEDIDA_BLOQUE+self.radio
+    def __init__(self, pantalla, bloque_x, bloque_y, nivel, sprites):
+        self.pantalla = pantalla
+        self.x = bloque_x*MEDIDA_BLOQUE
+        self.y = bloque_y*MEDIDA_BLOQUE
+        self.nivel = nivel
+        self.sprites = sprites
+        
+        self.ultima_actualizacion_frame = time.get_ticks()
+        self.frame = 0
+        self.sprite = self.sprites["bomba"][0]
         self.tiempo_detonar = 2  # Tiempo en segundos para que la bomba explote
         self.hit = 1 # Daño que causa la bomba al explotar
         self.activa = True
+        
         Bomba.bombas.append(self)
         hilo = Thread(target=self.detonar) #Crea un hilo para la bomba
         hilo.daemon = True
@@ -24,16 +30,107 @@ class Bomba:
 
     def detonar(self):
         sleep(self.tiempo_detonar)
-        self.active = False #Explota
-        #TODO
-        Bomba.bombas = [b for b in Bomba.bombas if b != self] #Quita la bomba
+        self.activa = False #Explota
+        explosion = Explosion(self.pantalla, self, 3)
+        self.actualizar = explosion.actualizar #Reemplaza el metodo de actualizar de la bomba por el de la explosion
+        self.dibujar = explosion.dibujar #Reemplaza el metodo de dibujar de la bomba por el de la explosion
+        
     
     def actualizar(self):
-        pass #TODO
+        if time.get_ticks() - self.ultima_actualizacion_frame > 200: #Si han pasado 200 ms
+            #Actualiza el frame a dibujar
+            self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
+            self.frame = (self.frame + 1) % len(self.sprites["bomba"]) # Frame ciclico, se reinicia cuando llega al final
+            self.sprite = self.sprites["bomba"][self.frame] # Actualiza self.sprite
     
-    def dibujar(self, pantalla):
-        if self.activa:
-            draw.circle(pantalla, NEGRO, (self.x, self.y), self.radio)
+    def dibujar(self):
+        if self.activa: #Si no ha detonado
+            self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja la bomba
+
+class Explosion:
+    def __init__(self, pantalla, bomba, rango):
+        self.pantalla = pantalla
+        self.bomba = bomba
+        self.x = bomba.x//MEDIDA_BLOQUE+1
+        self.y = bomba.y//MEDIDA_BLOQUE+1
+        self.nivel = bomba.nivel
+        self.sprites = bomba.sprites
+        
+        self.rango = rango
+        self.activa = True
+        self.frame = 0
+        self.frame_expansion = len(self.sprites["centro"]) - len(self.sprites["izquierda"]) #Cuantos frames pasan del centro antes de la explosion hacia los lados
+        self.ultima_actualizacion_frame = time.get_ticks()
+        self.bloques_explosion, self.bloques_rotos = self.obtener_bloques_explosion()
+        
+    
+    def obtener_bloques_explosion(self):
+        direcciones = (0, -1), (0, 1), (-1, 0), (1, 0) #Arriba, abajo, izq, der
+        bloques_explosion = [(self.x, self.y)]
+        bloques_rotos = []
+        for dx, dy in direcciones: #Por cada direccion
+            for i in range(1, self.rango+1): #Por cada bloque en el rango
+                bloque_x = self.x + dx*i
+                bloque_y = self.y + dy*i
+                bloque = self.nivel[bloque_y][bloque_x]
+                
+                if bloque == 0: #Aire
+                    bloques_explosion.append((bloque_x, bloque_y)) #Explosion ocurre en ese tile
+                elif bloque == 2: #Bloque rompible
+                    bloques_rotos.append((bloque_x, bloque_y))
+                    break
+                else:
+                    break
+        return bloques_explosion, bloques_rotos
+    
+
+        
+    def actualizar(self):
+        ahora = pg.time.get_ticks()
+        if ahora - self.ultima_actualizacion_frame < 150:
+            return
+
+        if self.frame == self.frame_expansion:
+            for x, y in self.bloques_rotos:
+                self.nivel[y][x] = 0
+
+        self.ultima_actualizacion_frame = ahora
+        self.frame += 1
+
+        if self.frame >= len(self.sprites["centro"]):
+            Bomba.bombas.remove(self.bomba)
+
+    def dibujar(self):
+        if self.frame < 2:
+            self.pantalla.blit(self.sprites["centro"][self.frame], ((self.x-1)*MEDIDA_BLOQUE, (self.y-1)*MEDIDA_BLOQUE))
+            return
+
+        for bx, by in self.bloques_explosion:
+            x = bx * MEDIDA_BLOQUE
+            y = by * MEDIDA_BLOQUE
+
+            if (bx, by) == (self.x, self.y):
+                self.pantalla.blit(self.sprites["centro"][self.frame], (x-MEDIDA_BLOQUE, y-MEDIDA_BLOQUE))
+                continue
+
+            subframe = min(self.frame - 2, 2)
+
+            if bx == self.x:
+                if by < self.y:
+                    punta = not (bx, by - 1) in self.bloques_explosion
+                    llave = "punta_arriba" if punta else "arriba"
+                else:
+                    punta = not (bx, by + 1) in self.bloques_explosion
+                    llave = "punta_abajo" if punta else "abajo"
+            else:
+                if bx < self.x:
+                    punta = not (bx - 1, by) in self.bloques_explosion
+                    llave = "punta_izquierda" if punta else "izquierda"
+                else:
+                    punta = not (bx + 1, by) in self.bloques_explosion
+                    llave = "punta_derecha" if punta else "derecha"
+
+            self.pantalla.blit(self.sprites[llave][subframe], (x-MEDIDA_BLOQUE, y-MEDIDA_BLOQUE))
 
 class Jugador:
     def __init__(self, juego, skin=None):
@@ -43,12 +140,13 @@ class Jugador:
 
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
         self.numero_skin = 3  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
-        self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
+        self.sprites_jugador = cargar_skins(self.numero_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
+        self.sprites_bomba = cargar_bomba()
 
 
         self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
         self.frame = 0  # Frame actual del sprite del jugador
-        self.sprite = self.skin_hoja_sprites[self.direccion][self.frame] #Sprite inicial del jugador
+        self.sprite = self.sprites_jugador[self.direccion][self.frame] #Sprite inicial del jugador
         
         self.vidas = 3  # Cantidad de vidas del jugador
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
@@ -102,25 +200,23 @@ class Jugador:
     
         #Animacion
         if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el jugador se está moviendo y han pasado 150ms
-            self.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
-            self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
-                   
-
+            self.actualizar_frame()  # Actualiza el frame del sprite del jugador
+            
     
-    def actualizar_frame_sprite(self):
+    def actualizar_frame(self):
+        self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
         if self.moviendose: #Jugador se mueve
-            self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
-            self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
+            self.frame = (self.frame + 1) % len(self.sprites_jugador) # Frame ciclico, se reinicia cuando llega al final
         else: #Jugador no se mueve
             self.frame = 0 #Reinicia
-        self.sprite = self.skin_hoja_sprites[self.direccion][self.frame]
+        self.sprite = self.sprites_jugador[self.direccion][self.frame]
 
     #  Dibuja al jugador en la pantalla
     def dibujar(self):
         self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))  # Dibuja el sprite del jugador en la pantalla
 
     def poner_bomba(self):
-        Bomba(self.pantalla, self.rect.centerx//MEDIDA_BLOQUE, self.rect.centery//MEDIDA_BLOQUE) # Pone una bomba en el jugador y la guarda en la lista de bombas
+        Bomba(self.pantalla, self.rect.centerx//MEDIDA_BLOQUE, self.rect.centery//MEDIDA_BLOQUE, self.nivel, self.sprites_bomba) # Pone una bomba en el jugador y la guarda en la lista de bombas
 
     def habilidad1(self):
         pass
@@ -237,7 +333,7 @@ class Jugar:
         
         #Entidades
         for bomba in Bomba.bombas:
-            bomba.dibujar(self.pantalla_juego)
+            bomba.dibujar()
         self.jugador.dibujar()
         
         #Dibuja la pantalla de juego en la principal
@@ -262,11 +358,9 @@ class Game:
         self.enemigos = []  # Lista de enemigos en el juego
         self.obstaculos = []  # Lista de obstáculos en el juego
         self.colocar_enemigos()
+
+        self.sprites_bomba = cargar_bomba()
         
-        self.test = image.load("assets/tiles_niveles.png").convert_alpha()
-        self.test = transform.scale(self.test, (MEDIDA_BLOQUE*8, MEDIDA_BLOQUE*2))
-
-
     def cambio_nivel(self):
         self.nivel += 1  # Incrementa el nivel actual del juego
         if self.nivel > len(self.lista_niveles):
@@ -295,9 +389,10 @@ class Game:
         self.modo.actualizar()
     
     def dibujar(self):
-        self.pantalla.fill(BLANCO)
-        self.pantalla.blit(self.bloques[1], (0, 0))
+        self.pantalla.fill(NEGRO)
+        self.pantalla.blit(self.sprites_bomba["bomba"][2], (0, 0))
         self.modo.dibujar()
+
         
     
     def run(self):
