@@ -23,7 +23,7 @@ fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto 
 
 # Clase Jugador
 class Jugador:
-    def __init__(self, jugar, num_skin=3):
+    def __init__(self, jugar, num_skin=1):
         self.jugar = jugar
         self.pantalla = jugar.pantalla_juego  # Pantalla donde se dibuja el jugador
         self.nivel = jugar.nivel  # Nivel actual del jugador (se usa para verificar colisiones)
@@ -36,11 +36,15 @@ class Jugador:
         self.frame = 0  # Frame actual del sprite del jugador
         self.sprite = self.skin_hoja_sprites[self.direccion][self.frame] #Sprite inicial del jugador
         
-        self.vidas = 3  # Cantidad de vidas del jugador
+        self.vidas = 3
+        self.bombas = 10
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
+        self.rango = 1 #Rango inicial de la bomba
         self.moviendose = False  # Indica si el jugador se está moviendo o no
         
         self.rect = Rect(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR, ANCHO_JUGADOR, ALTO_JUGADOR) #  Rectangulo del jugador para posicion y colision
+        
+        self.invulnerable = False
         
         self.movimientos_posibles = {
             K_w: (0, -(self.velocidad), "arriba"),  # Arriba
@@ -105,10 +109,15 @@ class Jugador:
             #Dibuja la hitbox del jugador
             draw.rect(self.pantalla, ROJO, self.rect, 2)
             
+        if self.invulnerable and time.get_ticks() % 200 < 100:
+            return  # No dibujar el sprite en este frame (parpadeo)
+ 
         self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))  # Dibuja el sprite del jugador
 
     def poner_bomba(self):
-        Bomba(self)
+        if self.bombas > 0:
+            self.bombas -= 1
+            Bomba(self)
 
     def habilidad1(self):
         pass
@@ -117,9 +126,17 @@ class Jugador:
         pass
     
     def morir(self):
-        if self.vidas > 1:
+        if self.vidas > -200:
             self.vidas -= 1
+            hilo = Thread(target=self.invulnerabilidad)
+            hilo.daemon = True
+            hilo.start()
         #TODO
+    
+    def invulnerabilidad(self):
+        self.invulnerable = True
+        sleep(1.5)
+        self.invulnerable = False
     
     def eventos(self, evento):
         if evento.type == KEYDOWN:
@@ -133,46 +150,77 @@ class Jugador:
                 self.habilidad2()
 
 class Enemigo:
-    def __init__(self, x, y, pantalla):
+    def __init__(self, juego, x, y):
+        self.juego = juego
+        self.jugador = juego.jugador
+        self.pantalla = juego.pantalla_juego
         self.x = x
         self.y = y
-        self.pantalla = pantalla
+
         self.frame = 0
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
         self.numero_skin = 1  # Número de skin del enemigo (se puede cambiar para hacerlo más complicado)
         self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_inciales_skins_enemigos)  # Carga la skin del enemigo desde la hoja de sprites
         self.direccion = 'abajo'  # Dirección inicial del enemigo (y a la que está mirando)
         self.vida = 1
-        self.velocidad = 5
+        self.velocidad = 2
         self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
+        self.movimientos = {"arriba" : (0, -self.velocidad), "abajo" : (0, self.velocidad), "izquierda" : (-self.velocidad, 0), "derecha" : (self.velocidad, 0)}  # Diccionario con los movimientos posibles
+        self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
 
     # Mueve al enemigo en una dirección aleatoria
     def movimiento(self, obstaculos):
         # Genera un movimiento aleatorio
-        movimientos = {"arriba" : (0, -self.velocidad), "abajo" : (0, self.velocidad), "izquierda" : (-self.velocidad, 0), "derecha" : (self.velocidad, 0)}  # Diccionario con los movimientos posibles
-        movimiento_elegido = choice(list(movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
-        dx, dy = movimientos[movimiento_elegido]  # Obtiene el desplazamiento correspondiente al movimiento elegido
+        dx, dy = self.movimientos[self.movimiento_elegido]  # Obtiene el desplazamiento correspondiente al movimiento elegido
         # Cambia sus coords x y y
         new_x = self.x + dx  # Se calcula la nueva posición x
         new_y = self.y + dy
-        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE, "red")  # Rectángulo que representa la nueva posición del jugador
+        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador
         # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
         if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
             # Verifica si no hay obstáculos en la nueva posición
             if all(not rectangulo_verif.colliderect(obs.rect) for obs in obstaculos):  # Si el rectángulo del enemigo no colisiona con NINGÚN obstáculo
                 self.y = new_y
                 self.x = new_x
-                self.direccion = movimiento_elegido  # Actualiza la dirección del enemigo
+                self.direccion = self.movimiento_elegido  # Actualiza la dirección del enemigo
                 self.rect = rectangulo_verif  # Actualiza el rectángulo del enemigo a la nueva posición
+            else:
+                # Si hay un obstáculo, elige un nuevo movimiento aleatorio
+                self.movimiento_elegido = choice(list(self.movimientos.keys()))
+        else:
+            self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Si el enemigo se sale de los límites del mapa, elige un nuevo movimiento aleatorio
 
-    def actualizar_frame_sprite(self):
+        if time.get_ticks() - self.ultima_actualizacion_frame > 150:
+            self.actualizar_frame_sprite()  # Actualiza el frame del sprite del enemigo
+            self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
+            
+            
+    def verificar_colision(self, rect):
+        #Hay un offset de 1 porque hay un borde no visible de bloques solidos
+        esquinas = (
+            (izq := rect.left // MEDIDA_BLOQUE+1, arriba := rect.top // MEDIDA_BLOQUE+1), #Superior izquierda
+            (izq, abajo := rect.bottom // MEDIDA_BLOQUE+1), #Inferior izquierda
+            (der := rect.right // MEDIDA_BLOQUE+1, arriba), #Superior derecha
+            (der, abajo) #Inferior derecha
+        )
+        
+        #Verifica si alguna esquina esta en un tile que no sea aire
+        for x, y in esquinas:
+            if self.nivel[y][x] != 0:
+                return False
+        return True
+    
+    
+    def actualizar_frames(self):
         self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
         self.frame += 1  # Incrementa el frame actual del sprite
         if self.frame >= len(self.skin_hoja_sprites):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
             self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
 
     def actualizar(self):
-        pass #TODO
+        self.actualizar_frames()
+        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
+            self.jugador.morir()
     
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
@@ -181,19 +229,20 @@ class Enemigo:
     def morir(self):
         pass #TODO
         
-
 class Bomba:
     def __init__(self, jugador):
+        self.rango = jugador.rango
         self.jugar = jugador.jugar
         self.pantalla = jugador.pantalla
         self.x = (jugador.rect.centerx//MEDIDA_BLOQUE)*MEDIDA_BLOQUE
         self.y = (jugador.rect.centery//MEDIDA_BLOQUE)*MEDIDA_BLOQUE
         self.sprites = self.jugar.sprites_bomba
         
-        self.ultima_actualizacion_frame = time.get_ticks()
+        self.tiempo_creacion = pg.time.get_ticks()
+        self.ultima_actualizacion_frame = self.tiempo_creacion
         self.frame = 0
         self.sprite = self.sprites["bomba"][0]
-        self.tiempo_detonar = 2  # Tiempo en segundos para que la bomba explote
+        self.tiempo_detonar = 2000  # Tiempo en ms para que la bomba explote
         self.hit = 1 # Daño que causa la bomba al explotar
         self.activa = True
         
@@ -203,14 +252,18 @@ class Bomba:
         hilo.start()
 
     def detonar(self):
-        sleep(self.tiempo_detonar)
+        sleep(self.tiempo_detonar/1000) #Pasa el tiempo a segundos
         self.activa = False #Explota
-        Explosion(self, 3)
+        Explosion(self, self.rango)
         self.jugar.capas[2].remove(self) #Ya no procesa la bomba
         
     
     def actualizar(self):
-        if time.get_ticks() - self.ultima_actualizacion_frame > 200: #Si han pasado 200 ms
+        #Acelera que tan rapido cambia el frame de la bomba entre menos tiempo le queda
+        tiempo_actual = pg.time.get_ticks()
+        intervalo_frame = max(100, (self.tiempo_detonar + self.tiempo_creacion - tiempo_actual)//5) #Cambia cada 1/5 parte del tiempo restante
+        
+        if tiempo_actual - self.ultima_actualizacion_frame > intervalo_frame: #Si han pasado 200 ms
             #Actualiza el frame a dibujar
             self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
             self.frame = (self.frame + 1) % len(self.sprites["bomba"]) # Frame ciclico, se reinicia cuando llega al final
@@ -233,6 +286,7 @@ class Explosion:
         self.rango = rango
         self.activa = True
         self.frame = 0
+        self.disipador = 1 #Variable para subir los frames y devolverlos al final, dando un efecto de que se disipa la bomba
         self.jugar.capas[4].append(self) #Agrega la explosion para ser procesada
         self.frame_expansion = len(self.sprites["centro"]) - len(self.sprites["izquierda"]) #Cuantos frames pasan del centro antes de la explosion hacia los lados
         self.ultima_actualizacion_frame = time.get_ticks()
@@ -261,33 +315,39 @@ class Explosion:
 
     def matar(self):
         #Destruye bloques
-        for x, y in self.bloques_rotos:
-            self.nivel[y][x] = 0
+        if self.frame == self.frame_expansion:
+            for x, y in self.bloques_rotos:
+                self.nivel[y][x] = 0
+                DestruyeBloque(self.jugar, x, y)
             
         #Mata entidades
         for x, y in self.bloques_afectados:
-            if (x, y) == (self.jugador.rect.centerx//MEDIDA_BLOQUE, self.jugador.rect.centery//MEDIDA_BLOQUE):
+            if not self.jugador.invulnerable and (x, y) == (self.jugador.rect.centerx//MEDIDA_BLOQUE+1, self.jugador.rect.centery//MEDIDA_BLOQUE+1): #Si el jugador no esta invulnerable
                 self.jugador.morir()
+                break
             for enemigo in self.jugar.capas[1]: #Capa donde se guardan los enemigos
-                if (x, y) == (self.jugador.rect.centerx//MEDIDA_BLOQUE, self.jugador.rect.centery//MEDIDA_BLOQUE):
-                    enemigo.morir()
+                if (x, y) == (enemigo.rect.centerx//MEDIDA_BLOQUE+1, enemigo.rect.centery//MEDIDA_BLOQUE+1):
+                    self.jugar.matar_entidad(enemigo)
     
     def actualizar(self):
         ahora = pg.time.get_ticks()
-        if ahora - self.ultima_actualizacion_frame < 150: #Si no han pasado 150ms
+        if ahora - self.ultima_actualizacion_frame < 50: #Si no han pasado 50ms
             return
-
-        if self.frame == self.frame_expansion: #Ocurre la explosion, mata enemigos, el jugador y destruye bloques
+           
+        if self.frame >= self.frame_expansion: #Ocurre la explosion, mata enemigos, el jugador y destruye bloques
             self.matar()
 
         self.ultima_actualizacion_frame = ahora
-        self.frame += 1
+        self.frame += self.disipador
 
-        if self.frame >= len(self.sprites["centro"]):
-            self.jugar.capas[4].remove(self)
+        if self.frame >= len(self.sprites["centro"])-1:
+            self.disipador = -1
+            
+        elif self.frame == self.frame_expansion and self.disipador == -1:
+            self.jugar.capas[4].remove(self) #En la capa 4 se guardan las explosiones, por tanto se remuve al terminar
 
     def dibujar(self):
-        if self.frame < 2:
+        if self.frame < self.frame_expansion:
             self.pantalla.blit(self.sprites["centro"][self.frame], ((self.x-1)*MEDIDA_BLOQUE, (self.y-1)*MEDIDA_BLOQUE))
             return
 
@@ -326,20 +386,6 @@ class Explosion:
             self.pantalla.blit(self.sprites[llave][subframe], (x-MEDIDA_BLOQUE, y-MEDIDA_BLOQUE))
 
 
-class Obstaculo:
-    def __init__(self, x, y, destructible=False):
-        self.x = x  # Posición x del obstáculo
-        self.y = y  # Posición y del obstáculo
-        self.destructible = destructible  # Si es destructible, puede ser destruido por una bomba
-        self.rect = Rect(x, y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al obstáculo en el canvas (SE USA EN COLISIONES)
-
-    def colocar(self, pantalla):
-        draw.rect(pantalla, "brown" if self.destructible else "gray", self.rect)  # Dibuja el obstáculo en la pantalla, con un color diferente si es destructible
-
-    # Destruye el obstáculo si es destructible (se le pasa la lista de obstáculos y se saca solo)
-    def destruir(self, obstaculos):
-        if self.destructible:
-            obstaculos.remove(self)
 
 
 class Jefe:
@@ -379,7 +425,7 @@ class Boton:
         
     def dibujar(self):
         pg.draw.rect(self.pantalla, self.color, self.rect)  # Dibuja el botón en la pantalla
-        pg.draw.rect(self.pantalla, (0, 0, 0), self.rect, 2)  # Le crea un borde al botón (eso es lo que indica el 2, que es el grosor del borde)
+        pg.draw.rect(self.pantalla, NEGRO, self.rect, 2)  # Le crea un borde al botón (eso es lo que indica el 2, que es el grosor del borde)
         texto_renderizado = self.fuente.render(self.texto, True, self.color_texto)  # Renderiza el texto del botón
         self.pantalla.blit(texto_renderizado, (self.rect.x + (self.rect.width - texto_renderizado.get_width()) // 2, self.rect.y + (self.rect.height - texto_renderizado.get_height()) // 2))  # Dibuja el texto centrado en el botón
 
@@ -420,8 +466,7 @@ class Menu:
         return botones
 
     def dibujar(self):
-        # Llena la pantalla de negro
-        self.pantalla.fill((0, 0, 0))
+        self.pantalla.fill(NEGRO)
         for boton in self.botones:  # Dibuja cada botón en la pantalla
             boton.dibujar()
         self.pantalla.blit(self.logo, (ANCHO_PANTALLA // 2 - self.logo.get_width() // 2, - 20))  # Dibuja el logo del juego en la parte superior de la pantalla
@@ -444,8 +489,9 @@ class Niveles:
         self.sprites = cargar_bloques()
         self.num_nivel = 1
         self.nivel = self.niveles[0] #Inicia en el nivel 1
-
-
+            
+            
+    
     def dibujar(self):
         for y in range(1, ALTO_MATRIZ+1):
             for x in range(1, ANCHO_MATRIZ+1):
@@ -462,16 +508,43 @@ class Niveles:
     def actualizar(self):
         pass
     
-    def cambio_nivel(self, nivel):
-        if 1 <= nivel < len(self.niveles): #Verifica si existe el numero de nivel
-            self.nivel = nivel
+    def cambio_nivel(self, num_nivel):
+        if 1 <= num_nivel < len(self.niveles): #Verifica si existe el numero de nivel
+            self.num_nivel = num_nivel
+            self.nivel = self.niveles[num_nivel-1]
             
-        elif nivel == len(self.niveles): #Se devuelve al primer nivel al terminar TODO (por que se devuelve? No deberia terminar y ya)
-            self.nivel = 1
+        elif num_nivel == len(self.niveles): #Se devuelve al primer nivel al terminar TODO (por que se devuelve? No deberia terminar y ya)
+            self.nivel = self.num_niveles[0]
             
         else:
             pass #TODO poner resultados o no se que queria hacer Juan
 
+class DestruyeBloque: #NO SIRVE CTM TODO
+    def __init__(self, jugar, x, y):
+        self.jugar = jugar
+        self.pantalla = jugar.pantalla
+        self.jugar.capas[4].append(self) #Capa del nivel
+        self.x = x
+        self.y = y
+        self.sprite = jugar.manager_niveles.sprites[2]
+        self.frames_totales = 10
+        self.frame_actual = 0
+        self.terminado = False
+        
+    def actualizar(self):
+        self.frame_actual += 1
+        if self.frame_actual >= self.frames_totales:
+            self.jugar.capas[4].remove(self)
+
+    def dibujar(self):
+        # Escala proporcional inversa
+        escala = max(1, int(MEDIDA_BLOQUE * max(0.01, 1 - self.frame_actual / self.frames_totales)))
+        sprite_escalado = pg.transform.scale(self.sprite, (escala, escala))
+
+        # Para que se mantenga centrado al reducir tamaño
+        offset_x = (MEDIDA_BLOQUE - escala) // 2
+        offset_y = (MEDIDA_BLOQUE - escala) // 2
+        self.pantalla.blit(sprite_escalado, (self.x * MEDIDA_BLOQUE + offset_x, self.y * MEDIDA_BLOQUE + offset_y))
 
 # Clase del juego
 class Jugar:
@@ -480,6 +553,7 @@ class Jugar:
         self.pantalla_juego = Surface((ANCHO_PANTALLA - 2*SEPARACION_BORDES_PANTALLA, ALTO_PANTALLA - MEDIDA_HUD - SEPARACION_BORDES_PANTALLA))
         self.musica = game.canciones[1]
         self.sprites_bomba = game.sprites_bomba
+        self.dibujar_texto = game.dibujar_texto #Toma el metodo de dibujar texto
         
         self.debug = False #G para cambiar (muestra hitboxes y gridlines)
         self.manager_niveles = Niveles(self)
@@ -506,7 +580,7 @@ class Jugar:
             #Revisa que no ponga un enemigo encima de otro o en un bloque
             if (x, y) not in coords_ocupadas and self.nivel[y][x] == 0:
                 coords_ocupadas.append((x, y))
-                enemigo = Enemigo(x*MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA, y*MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
+                enemigo = Enemigo(self, x*MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA, y*MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA)  # Crea una instancia del enemigo en la posición aleatoria
                 enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
                 enemigos_puestos += 1
         return enemigos
@@ -523,7 +597,15 @@ class Jugar:
                 draw.line(self.pantalla_juego, NEGRO, (x*MEDIDA_BLOQUE, 0), (x*MEDIDA_BLOQUE, ALTO_PANTALLA))
             for y in range(1, ALTO_MATRIZ):
                 draw.line(self.pantalla_juego, NEGRO, (0, y*MEDIDA_BLOQUE), (ANCHO_PANTALLA, y*MEDIDA_BLOQUE))
-        
+    
+    def dibujar_HUD(self):
+        pass
+    
+    def matar_entidad(self, entidad):
+        for capa in self.capas:
+            if entidad in self.capas[capa]:
+                self.capas[capa].remove(entidad)
+                break
     
     def actualizar(self):
         for capa in sorted(self.capas.keys()): #Actualiza entidades (jugador, enemigos, bombas...)
@@ -534,9 +616,17 @@ class Jugar:
         self.jugador.eventos(evento)
         if evento.type == KEYDOWN:
             if evento.key == K_g:
-                self.debug = not self.debug
+                if not self.debug:
+                    self.debug = True
+                    self.jugador.vidas = float('inf')
+                    self.jugador.bombas = float('inf')
+                else:
+                    self.debug = False
+                    self.jugador.vidas = VIDAS
+                    self.jugador.bombas = BOMBAS_DISPONIBLES
 
     def dibujar(self):
+        #Juego
         self.pantalla_juego.fill(BLANCO)
         
         for capa in sorted(self.capas.keys()): #Dibuja entidades (jugador, enemigos, bombas...)
@@ -545,6 +635,11 @@ class Jugar:
         
         #Dibuja la pantalla de juego en la principal
         self.pantalla.blit(self.pantalla_juego, (SEPARACION_BORDES_PANTALLA, MEDIDA_HUD))
+        
+        #Hud
+        self.dibujar_texto(f"Nivel: {self.manager_niveles.num_nivel}", 0, 0, color=BLANCO)
+        self.dibujar_texto(f"Vidas: {self.jugador.vidas}", 0, 25, color=BLANCO)
+        self.dibujar_texto(f"Bombas: {self.jugador.bombas}", 0, 50, color=BLANCO)
 
     
 class Informacion:
@@ -595,11 +690,11 @@ class Informacion:
         return lineas  # Devuelve la lista de líneas de texto divididas
 
     def dibujar(self):
-        self.pantalla.fill((0, 0, 0))  # Limpia la pantalla
+        self.pantalla.fill(NEGRO)  # Limpia la pantalla
         
         y = 50
         for linea in self.lineas:
-            render = self.fuente.render(linea, True, (255, 255, 255))
+            render = self.fuente.render(linea, True, BLANCO)
             x = (ANCHO_PANTALLA - render.get_width()) // 2  # Centra el texto en la pantalla
             self.pantalla.blit(render, (x, y))
             y += self.fuente.get_height() + 5
@@ -662,7 +757,7 @@ class Configuracion:
         self.barra_sonido = Deslizante(self.pantalla, ANCHO_PANTALLA//2 - 200, SEPARACION_BORDES_PANTALLA*9, 400, 10, self.game.volumen)
 
     def dibujar(self):
-        self.pantalla.fill((0, 0, 0))  # Limpia la pantalla
+        self.pantalla.fill(NEGRO)  # Limpia la pantalla
         
         self.texto_renderizado = self.fuente.render("Configuración", True, BLANCO)  # Renderiza el texto de la configuración
         self.texto_musica_renderizado = self.fuente.render("Volumen de la música", True, BLANCO)  # Renderiza el texto del volumen de la música
@@ -721,7 +816,10 @@ class Game:
 
         self.administrar_musica()  # Llama a la función para administrar la música del juego
 
-        
+    def dibujar_texto(self, texto, x, y, fuente=fuente_texto, color=NEGRO):
+        img = fuente.render(texto, True, color)
+        self.pantalla.blit(img, (x, y))
+    
     def administrar_musica(self):
         if self.musica != self.modo.musica:
             if self.musica is not None:  # Si es la primera vez que se llama, no hay música, entonces no haríamos nada

@@ -31,6 +31,8 @@ X_INICIAL_JUGADOR = 0
 Y_INICIAL_JUGADOR = 0
 ANCHO_JUGADOR = int(MEDIDA_BLOQUE * 0.75)
 ALTO_JUGADOR = int(MEDIDA_BLOQUE * 0.75)
+BOMBAS_DISPONIBLES = 10
+VIDAS = 3
 
 # Configuración de la bomba
 TIEMPO_DETONACION_BOMBA = 2000 # Tiempo en milisegundos antes de que la bomba explote 
