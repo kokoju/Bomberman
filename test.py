@@ -1,6 +1,6 @@
 from pygame import *
 from config import *  # Importa las configuraciones del juego, como dimensiones y FPS
-from sprites import *  # Importa los sprites del jugador y otros elementos visuales
+from assets import *  # Importa los sprites del jugador y otros elementos visuales
 from niveles import *
 from threading import Thread
 from random import randint, choice
@@ -152,7 +152,7 @@ class Jugador:
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
         self.moviendose = False  # Indica si el jugador se está moviendo o no
         
-        self.rect = Rect(pos:=MEDIDA_BLOQUE//8, pos, tamano:=MEDIDA_BLOQUE-MEDIDA_BLOQUE//4, tamano) #Rectangulo del jugador para posicion y colision
+        self.rect = Rect(0, 0, tamano:=MEDIDA_BLOQUE-MEDIDA_BLOQUE//4, tamano) #Rectangulo del jugador para posicion y colision
         
         self.movimientos_posibles = {
             K_w: (0, -(self.velocidad), "arriba"),  # Arriba

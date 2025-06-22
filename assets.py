@@ -106,3 +106,13 @@ def cargar_bomba():
                        pg.transform.rotate(b2, 90),
                        pg.transform.rotate(b3, 90)],
     }
+    
+def cargar_logo():
+    return pg.transform.scale(pg.image.load("assets/logo.png").convert_alpha(),
+                              (512, 512)) #512x512 pixeles
+def cargar_canciones():
+    return [
+        pg.mixer.Sound("assets/musica/MusicaMenu.mp3"),  # Carga la música del menú
+        pg.mixer.Sound("assets/musica/MusicaJuego.mp3"),  # Carga la música del juego
+        pg.mixer.Sound("assets/musica/MusicaResultados.mp3")  # Carga la música de los resultados
+    ]

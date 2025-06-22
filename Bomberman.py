@@ -4,7 +4,7 @@ from time import sleep  # Importa sleep para manejar los Threads
 from random import choice, randint  # Importa choice para seleccionar elementos aleatorios de listas (movimiento enemigo)
 from threading import Thread  # Importa los Threads para el manejo de entidades en paralelo
 from config import *  # Importa las configuraciones del juego, como dimensiones y FPS
-from sprites import *  # Importa los sprites del jugador y otros elementos visuales
+from assets import *  # Importa los sprites del jugador y otros elementos visuales
 from niveles import *
 
 # Usaremos una definición HD (1280x720p)
@@ -257,8 +257,7 @@ class Menu:
     def __init__(self, pantalla):
         self.pantalla = pantalla  # Pantalla donde se dibuja el menú
         self.opciones = ["Jugar", "Opciones", "Información", "Salir"]  # Opciones del menú
-        self.logo = pg.image.load("assets/logo.png").convert_alpha()  # Carga el logo del juego
-        self.logo = pg.transform.scale(self.logo, (MEDIDA_REESCALADO_LOGO, MEDIDA_REESCALADO_LOGO))  # Reescala el logo a la medida deseada
+        self.logo = cargar_logo()
         self.lista_botones = []  # Lista de botones del menú
         self.musica = pg.mixer.Sound("assets/musica/MusicaMenu.mp3")  # Carga la música del menú
         self.crear_botones()  # Crea los botones del menú
