@@ -134,27 +134,36 @@ class Enemigo:
         self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_inciales_skins_enemigos)  # Carga la skin del enemigo desde la hoja de sprites
         self.direccion = 'abajo'  # Dirección inicial del enemigo (y a la que está mirando)
         self.vida = 1
-        self.velocidad = 5
+        self.velocidad = 2
         self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
+        self.movimientos = {"arriba" : (0, -self.velocidad), "abajo" : (0, self.velocidad), "izquierda" : (-self.velocidad, 0), "derecha" : (self.velocidad, 0)}  # Diccionario con los movimientos posibles
+        self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
 
     # Mueve al enemigo en una dirección aleatoria
     def movimiento(self, obstaculos):
         # Genera un movimiento aleatorio
-        movimientos = {"arriba" : (0, -self.velocidad), "abajo" : (0, self.velocidad), "izquierda" : (-self.velocidad, 0), "derecha" : (self.velocidad, 0)}  # Diccionario con los movimientos posibles
-        movimiento_elegido = choice(list(movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
-        dx, dy = movimientos[movimiento_elegido]  # Obtiene el desplazamiento correspondiente al movimiento elegido
+        dx, dy = self.movimientos[self.movimiento_elegido]  # Obtiene el desplazamiento correspondiente al movimiento elegido
         # Cambia sus coords x y y
         new_x = self.x + dx  # Se calcula la nueva posición x
         new_y = self.y + dy
-        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE, "red")  # Rectángulo que representa la nueva posición del jugador
+        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador
         # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
         if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
             # Verifica si no hay obstáculos en la nueva posición
             if all(not rectangulo_verif.colliderect(obs.rect) for obs in obstaculos):  # Si el rectángulo del enemigo no colisiona con NINGÚN obstáculo
                 self.y = new_y
                 self.x = new_x
-                self.direccion = movimiento_elegido  # Actualiza la dirección del enemigo
+                self.direccion = self.movimiento_elegido  # Actualiza la dirección del enemigo
                 self.rect = rectangulo_verif  # Actualiza el rectángulo del enemigo a la nueva posición
+            else:
+                # Si hay un obstáculo, elige un nuevo movimiento aleatorio
+                self.movimiento_elegido = choice(list(self.movimientos.keys()))
+        else:
+            self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Si el enemigo se sale de los límites del mapa, elige un nuevo movimiento aleatorio
+
+        if time.get_ticks() - self.ultima_actualizacion_frame > 150:
+            self.actualizar_frame_sprite()  # Actualiza el frame del sprite del enemigo
+            self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
 
     def actualizar_frame_sprite(self):
         self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
@@ -298,17 +307,24 @@ class Juego:
             self.nivel = 0
 
     def colocar_enemigos(self):
-        for _ in range(CANTIDAD_ENEMIGOS):  # Coloca 5 enemigos en posiciones aleatorias del mapa
+        while len(self.lista_enemigos) < CANTIDAD_ENEMIGOS:  # Coloca enemigos en posiciones aleatorias del mapa
             coord_x = randint(0, ANCHO_MATRIZ - 1) * MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA  # Genera una coordenada x aleatoria dentro del mapa
             coord_y = randint(0, ALTO_MATRIZ - 1) * MEDIDA_BLOQUE + MEDIDA_HUD  # Genera una coordenada y aleatoria dentro del mapa
-            enemigo = Enemigo(coord_x, coord_y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
-            self.lista_enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
+            # Verifica que no haya obstáculo ni enemigo en esa posición y que no sea la posición del jugador
+            ocupado_por_obstaculo = any((obs.x, obs.y) == (coord_x, coord_y) for obs in self.lista_obstaculos)
+            ocupado_por_enemigo = any((en.x, en.y) == (coord_x, coord_y) for en in self.lista_enemigos)
+            es_jugador = (coord_x, coord_y) == (self.jugador.rect.x, self.jugador.rect.y)
+            if not ocupado_por_obstaculo and not ocupado_por_enemigo and not es_jugador:
+                enemigo = Enemigo(coord_x, coord_y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
+                self.lista_enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
 
     def actualizar(self):
         keys = key.get_pressed()
         for bomba in Bomba.bombas:
             bomba.actualizar()
         self.jugador.actualizar(keys)
+        for enemigo in self.lista_enemigos:
+            enemigo.movimiento(self.lista_obstaculos)
 
     def eventos(self, evento):
         self.jugador.eventos(evento)
@@ -514,6 +530,10 @@ class Game:
                 mouse_pos = mouse.get_pos()  # Obtiene la posición del mouse
                 self.volumen = max(0, min(1, (mouse_pos[0] - BARRA_X) / BARRA_ANCHO))  # Calcula el nuevo volumen según la posición del mouse
                 self.musica.set_volume(self.volumen)  # Establece el volumen de la música
+
+        if self.modos["jugar"] and hasattr(self, "juego"):
+            self.juego.actualizar()
+
 
     def dibujar(self):
         if self.modos["menu"]:  # Si estamos en el modo de menú

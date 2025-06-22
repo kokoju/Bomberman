@@ -374,7 +374,7 @@ class Game:
             y = randint(0, ALTO_MATRIZ + 1) * MEDIDA_BLOQUE + MEDIDA_HUD  # Genera una coordenada y aleatoria dentro del mapa
             
             #Revisa que no ponga un enemigo encima de otro
-            if (x, y) not in enemigos_coords:
+            if (x, y) not in enemigos_coords and (x, y) not in self.obstaculos:  # Si la coordenada no está ocupada por otro enemigo o un obstáculo
                 enemigo = Enemigo(x, y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
                 self.enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
                 enemigos_puestos += 1
