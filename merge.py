@@ -131,7 +131,8 @@ class Jugador:
             hilo = Thread(target=self.invulnerabilidad)
             hilo.daemon = True
             hilo.start()
-        #TODO
+            if self.vidas <= 0:
+                self.game_over = GameOver(self.jugar.pantalla)  # Si no tiene vidas, se muestra la pantalla de Game Over
     
     def invulnerabilidad(self):
         self.invulnerable = True
@@ -148,6 +149,17 @@ class Jugador:
                 
             elif evento.key == K_2: #O si le da a 2
                 self.habilidad2()
+
+class GameOver:
+    def __init__(self, pantalla):
+        self.pantalla = pantalla  # Pantalla donde se dibuja la pantalla de Game Over
+        self.imagen = cargar_gameover()
+
+    def dibujar(self):
+        self.pantalla.fill(NEGRO)  # Limpia la pantalla con un color
+        self.pantalla.blit(self.imagen, (0, 0))  # Dibuja la pantalla de Game Over
+        
+
 
 class Enemigo:
     def __init__(self, juego, x, y):
@@ -169,29 +181,25 @@ class Enemigo:
         self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
 
     # Mueve al enemigo en una dirección aleatoria
-    def movimiento(self, obstaculos):
+    def movimiento(self, obstaculosg):
         # Genera un movimiento aleatorio
         dx, dy = self.movimientos[self.movimiento_elegido]  # Obtiene el desplazamiento correspondiente al movimiento elegido
         # Cambia sus coords x y y
         new_x = self.x + dx  # Se calcula la nueva posición x
         new_y = self.y + dy
-        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador
-        # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
-        if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
-            # Verifica si no hay obstáculos en la nueva posición
-            if all(not rectangulo_verif.colliderect(obs.rect) for obs in obstaculos):  # Si el rectángulo del enemigo no colisiona con NINGÚN obstáculo
-                self.y = new_y
-                self.x = new_x
-                self.direccion = self.movimiento_elegido  # Actualiza la dirección del enemigo
-                self.rect = rectangulo_verif  # Actualiza el rectángulo del enemigo a la nueva posición
-            else:
-                # Si hay un obstáculo, elige un nuevo movimiento aleatorio
-                self.movimiento_elegido = choice(list(self.movimientos.keys()))
-        else:
-            self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Si el enemigo se sale de los límites del mapa, elige un nuevo movimiento aleatorio
-
-        if time.get_ticks() - self.ultima_actualizacion_frame > 150:
-            self.actualizar_frame_sprite()  # Actualiza el frame del sprite del enemigo
+  
+        # Movimiento del jugador
+        # Si está dentro de los límites del mapa y camina en aire
+        rect_dx, rect_dy = self.rect.move(dx, 0), self.rect.move(0, dy)
+        # Verifica los ejes independientemente para mantener deslizamiento en muros con movimiento diagonal
+        if self.verificar_colision(rect_dx):
+            self.rect = self.rect.move(dx, 0)
+        if self.verificar_colision(rect_dy):
+            self.rect = self.rect.move(0, dy)
+    
+        # Animación
+        if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el jugador se está moviendo y han pasado 150ms
+            self.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
             self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
             
             
@@ -225,9 +233,6 @@ class Enemigo:
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
         self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
-        
-    def morir(self):
-        pass #TODO
         
 class Bomba:
     def __init__(self, jugador):
@@ -384,7 +389,6 @@ class Explosion:
                     llave = "punta_derecha" if punta else "derecha"
 
             self.pantalla.blit(self.sprites[llave][subframe], (x-MEDIDA_BLOQUE, y-MEDIDA_BLOQUE))
-
 
 
 
@@ -569,25 +573,24 @@ class Jugar:
         
 
     def colocar_enemigos(self):
-        enemigos_puestos = 0
-        coords_ocupadas = [X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR]
+        coords_ocupadas = [(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR)]
         enemigos = []
         
-        while enemigos_puestos < CANTIDAD_ENEMIGOS:
-            x = randint(1, ANCHO_MATRIZ + 1) #Coord x aleatoria
-            y = randint(1, ALTO_MATRIZ + 1) #Coord y aleatoria
+        while len(enemigos) < CANTIDAD_ENEMIGOS:
+            x = randint(0, ANCHO_MATRIZ - 1)
+            y = randint(0, ALTO_MATRIZ - 1)
             
-            #Revisa que no ponga un enemigo encima de otro o en un bloque
             if (x, y) not in coords_ocupadas and self.nivel[y][x] == 0:
                 coords_ocupadas.append((x, y))
-                enemigo = Enemigo(self, x*MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA, y*MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA)  # Crea una instancia del enemigo en la posición aleatoria
-                enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
-                enemigos_puestos += 1
+                enemigo = Enemigo(self, x * MEDIDA_BLOQUE, y * MEDIDA_BLOQUE)
+                enemigos.append(enemigo)
+        
         return enemigos
+
     
     def dibujar_nivel(self):
-        for y in range(1, ALTO_MATRIZ+1): #Por cada fila
-            for x in range(1, ANCHO_MATRIZ+1): #Por cada bloque
+        for y in range(1, ALTO_MATRIZ-20): #Por cada fila
+            for x in range(1, ANCHO_MATRIZ-20): #Por cada bloque
                 ID = self.nivel[y][x]
                 self.pantalla_juego.blit(self.sprites_bloques[ID], ((x-1)*MEDIDA_BLOQUE, (y-1)*MEDIDA_BLOQUE))
                     
@@ -627,19 +630,22 @@ class Jugar:
 
     def dibujar(self):
         #Juego
-        self.pantalla_juego.fill(BLANCO)
-        
-        for capa in sorted(self.capas.keys()): #Dibuja entidades (jugador, enemigos, bombas...)
-            for entidad in self.capas[capa]:
-                entidad.dibujar()
-        
-        #Dibuja la pantalla de juego en la principal
-        self.pantalla.blit(self.pantalla_juego, (SEPARACION_BORDES_PANTALLA, MEDIDA_HUD))
-        
-        #Hud
-        self.dibujar_texto(f"Nivel: {self.manager_niveles.num_nivel}", 0, 0, color=BLANCO)
-        self.dibujar_texto(f"Vidas: {self.jugador.vidas}", 0, 25, color=BLANCO)
-        self.dibujar_texto(f"Bombas: {self.jugador.bombas}", 0, 50, color=BLANCO)
+        if not hasattr(self.jugador,"game_over"):  # Si el jugador ha perdido, dibuja la pantalla de Game Over
+            self.pantalla_juego.fill(BLANCO)
+            
+            for capa in sorted(self.capas.keys()): #Dibuja entidades (jugador, enemigos, bombas...)
+                for entidad in self.capas[capa]:
+                    entidad.dibujar()
+            
+            #Dibuja la pantalla de juego en la principal
+            self.pantalla.blit(self.pantalla_juego, (SEPARACION_BORDES_PANTALLA, MEDIDA_HUD))
+            
+            #Hud
+            self.dibujar_texto(f"Nivel: {self.manager_niveles.num_nivel}", 0, 0, color=BLANCO)
+            self.dibujar_texto(f"Vidas: {self.jugador.vidas}", 0, 25, color=BLANCO)
+            self.dibujar_texto(f"Bombas: {self.jugador.bombas}", 0, 50, color=BLANCO)
+        else:
+            self.jugador.game_over.dibujar()
 
     
 class Informacion:
