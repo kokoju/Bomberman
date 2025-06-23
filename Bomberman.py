@@ -305,18 +305,6 @@ class Juego:
         if self.nivel > len(self.lista_niveles):  # Si se llega al final, se vuelve al incio
             self.nivel = 0
 
-    def colocar_enemigos(self):
-        while len(self.lista_enemigos) < CANTIDAD_ENEMIGOS:  # Coloca enemigos en posiciones aleatorias del mapa
-            coord_x = randint(0, ANCHO_MATRIZ - 1) * MEDIDA_BLOQUE + SEPARACION_BORDES_PANTALLA  # Genera una coordenada x aleatoria dentro del mapa
-            coord_y = randint(0, ALTO_MATRIZ - 1) * MEDIDA_BLOQUE + MEDIDA_HUD  # Genera una coordenada y aleatoria dentro del mapa
-            # Verifica que no haya obstáculo ni enemigo en esa posición y que no sea la posición del jugador
-            ocupado_por_obstaculo = any((obs.x, obs.y) == (coord_x, coord_y) for obs in self.lista_obstaculos)
-            ocupado_por_enemigo = any((en.x, en.y) == (coord_x, coord_y) for en in self.lista_enemigos)
-            es_jugador = (coord_x, coord_y) == (self.jugador.rect.x, self.jugador.rect.y)
-            if not ocupado_por_obstaculo and not ocupado_por_enemigo and not es_jugador:
-                enemigo = Enemigo(coord_x, coord_y, self.pantalla)  # Crea una instancia del enemigo en la posición aleatoria
-                self.lista_enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
-
     def actualizar(self):
         keys = key.get_pressed()
         for bomba in Bomba.bombas:

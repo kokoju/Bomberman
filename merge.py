@@ -42,16 +42,15 @@ class Jugador:
         self.rango = 1 #Rango inicial de la bomba
         self.moviendose = False  # Indica si el jugador se está moviendo o no
         
+        self.puntaje = 0  # Puntaje del jugador
+
+        self.tiene_habilidad1 = True  # Indica si el jugador tiene la habilidad 1
+        self.tiene_habilidad2 = False  # Indica si el jugador tiene la habilidad 2
+
         self.rect = Rect(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR, ANCHO_JUGADOR, ALTO_JUGADOR) #  Rectangulo del jugador para posicion y colision
         
         self.invulnerable = False
         
-        self.movimientos_posibles = {
-            K_w: (0, -(self.velocidad), "arriba"),  # Arriba
-            K_s: (0, self.velocidad, "abajo"),     # Abajo
-            K_a: (-(self.velocidad), 0, "izquierda"), # Izquierda
-            K_d: (self.velocidad, 0, "derecha")     # Derecha
-        }
 
     def verificar_colision(self, rect):
         #Hay un offset de 1 porque hay un borde no visible de bloques solidos
@@ -73,6 +72,13 @@ class Jugador:
         dx, dy = 0, 0
         # Saca el input del usuario
         self.moviendose = False
+        self.movimientos_posibles = {
+            K_w: (0, -(self.velocidad), "arriba"),  # Arriba
+            K_s: (0, self.velocidad, "abajo"),     # Abajo
+            K_a: (-(self.velocidad), 0, "izquierda"), # Izquierda
+            K_d: (self.velocidad, 0, "derecha")     # Derecha
+        }
+
         for tecla in self.movimientos_posibles.keys():
             if keys[tecla]:
                 self.moviendose = True
@@ -120,7 +126,19 @@ class Jugador:
             Bomba(self)
 
     def habilidad1(self):
-        pass
+        if self.tiene_habilidad1:
+            self.tiene_habilidad1 = False  # Desactiva la bandera de la habilidad 1
+            self.velocidad += 10
+            self.inicio_habilidad1 = time.get_ticks()  # Guarda el tiempo de inicio de la habilidad
+
+            def restaurar_velocidad():
+                sleep(5)  # Espera 5 segundos
+                self.velocidad -= 10  # Vuelve a la velocidad normal
+                self.tiene_habilidad1 = True  # Permite volver a usar la habilidad
+
+            hilo = Thread(target=restaurar_velocidad)  # Se crea un hilo para restaurar la velocidad
+            hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
+            hilo.start()  # Inicia el hilo
     
     def habilidad2(self):
         pass
@@ -166,6 +184,7 @@ class Enemigo:
         self.juego = juego
         self.jugador = juego.jugador
         self.pantalla = juego.pantalla_juego
+        self.nivel = juego.nivel
         self.x = x
         self.y = y
 
@@ -181,28 +200,32 @@ class Enemigo:
         self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
 
     # Mueve al enemigo en una dirección aleatoria
-    def movimiento(self, obstaculosg):
-        # Genera un movimiento aleatorio
-        dx, dy = self.movimientos[self.movimiento_elegido]  # Obtiene el desplazamiento correspondiente al movimiento elegido
-        # Cambia sus coords x y y
-        new_x = self.x + dx  # Se calcula la nueva posición x
-        new_y = self.y + dy
-  
-        # Movimiento del jugador
-        # Si está dentro de los límites del mapa y camina en aire
-        rect_dx, rect_dy = self.rect.move(dx, 0), self.rect.move(0, dy)
-        # Verifica los ejes independientemente para mantener deslizamiento en muros con movimiento diagonal
-        if self.verificar_colision(rect_dx):
-            self.rect = self.rect.move(dx, 0)
-        if self.verificar_colision(rect_dy):
-            self.rect = self.rect.move(0, dy)
+    def actualizar(self):
+        dx, dy = self.movimientos[self.movimiento_elegido]
+        # Movimiento en eje X
+        rect_dx = self.rect.move(dx, 0)
+        if self.verificar_colision(rect_dx):  # Si puede moverse
+            self.rect = rect_dx
+            self.x = self.rect.x
+            self.y = self.rect.y
+        else:
+            self.movimiento_elegido = choice(list(self.movimientos.keys()))
+            return  # Sale para que el nuevo movimiento se intente en el siguiente frame
+
+        # Movimiento en eje Y
+        rect_dy = self.rect.move(0, dy)
+        if self.verificar_colision(rect_dy):  # Si puede moverse
+            self.rect = rect_dy
+            self.x = self.rect.x
+            self.y = self.rect.y
+        else:
+            self.movimiento_elegido = choice(list(self.movimientos.keys()))
+
+        self.actualizar_frame_sprite()  # Actualiza el frame del sprite del enemigo
+        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
+            self.jugador.morir()
+
     
-        # Animación
-        if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el jugador se está moviendo y han pasado 150ms
-            self.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
-            self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
-            
-            
     def verificar_colision(self, rect):
         #Hay un offset de 1 porque hay un borde no visible de bloques solidos
         esquinas = (
@@ -218,21 +241,15 @@ class Enemigo:
                 return False
         return True
     
-    
-    def actualizar_frames(self):
-        self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
-        self.frame += 1  # Incrementa el frame actual del sprite
-        if self.frame >= len(self.skin_hoja_sprites):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
-            self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
+    def actualizar_frame_sprite(self):
+        if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el enemigo se está moviendo y han pasado 150ms
+            self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
+            self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
+        self.sprite = self.skin_hoja_sprites[self.direccion][self.frame]
 
-    def actualizar(self):
-        self.actualizar_frames()
-        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
-            self.jugador.morir()
-    
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
-        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
+        self.pantalla.blit(self.skin_hoja_sprites[self.movimiento_elegido][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
         
 class Bomba:
     def __init__(self, jugador):
@@ -333,6 +350,7 @@ class Explosion:
             for enemigo in self.jugar.capas[1]: #Capa donde se guardan los enemigos
                 if (x, y) == (enemigo.rect.centerx//MEDIDA_BLOQUE+1, enemigo.rect.centery//MEDIDA_BLOQUE+1):
                     self.jugar.matar_entidad(enemigo)
+                    self.jugador.puntaje += 100  # Aumenta el puntaje del jugador al matar un enemigo
     
     def actualizar(self):
         ahora = pg.time.get_ticks()
@@ -523,7 +541,7 @@ class Niveles:
         else:
             pass #TODO poner resultados o no se que queria hacer Juan
 
-class DestruyeBloque: #NO SIRVE CTM TODO
+class DestruyeBloque:
     def __init__(self, jugar, x, y):
         self.jugar = jugar
         self.pantalla = jugar.pantalla
@@ -564,11 +582,11 @@ class Jugar:
         self.nivel = self.manager_niveles.nivel
         self.jugador = Jugador(self)
         self.capas = {
-            0:[self.manager_niveles], #El fondo
+            0:[self.manager_niveles], #  El fondo
             1:self.colocar_enemigos(),
-            2:[], #Capa para bomba
+            2:[], #  Capa para bomba
             3:[self.jugador],
-            4:[] #Capa para explosiones
+            4:[] #  Capa para explosiones
         }
         
 
@@ -577,8 +595,8 @@ class Jugar:
         enemigos = []
         
         while len(enemigos) < CANTIDAD_ENEMIGOS:
-            x = randint(0, ANCHO_MATRIZ - 1)
-            y = randint(0, ALTO_MATRIZ - 1)
+            x = randint(0, ANCHO_MATRIZ)
+            y = randint(0, ALTO_MATRIZ)
             
             if (x, y) not in coords_ocupadas and self.nivel[y][x] == 0:
                 coords_ocupadas.append((x, y))
@@ -644,6 +662,7 @@ class Jugar:
             self.dibujar_texto(f"Nivel: {self.manager_niveles.num_nivel}", 0, 0, color=BLANCO)
             self.dibujar_texto(f"Vidas: {self.jugador.vidas}", 0, 25, color=BLANCO)
             self.dibujar_texto(f"Bombas: {self.jugador.bombas}", 0, 50, color=BLANCO)
+            self.dibujar_texto(f"Puntaje: {self.jugador.puntaje}", 0, 75, color=BLANCO)
         else:
             self.jugador.game_over.dibujar()
 
