@@ -42,16 +42,15 @@ class Jugador:
         self.rango = 1 #Rango inicial de la bomba
         self.moviendose = False  # Indica si el jugador se está moviendo o no
         
+        self.puntaje = 0  # Puntaje del jugador
+
+        self.tiene_habilidad1 = True  # Indica si el jugador tiene la habilidad 1
+        self.tiene_habilidad2 = False  # Indica si el jugador tiene la habilidad 2
+
         self.rect = Rect(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR, ANCHO_JUGADOR, ALTO_JUGADOR) #  Rectangulo del jugador para posicion y colision
         
         self.invulnerable = False
         
-        self.movimientos_posibles = {
-            K_w: (0, -(self.velocidad), "arriba"),  # Arriba
-            K_s: (0, self.velocidad, "abajo"),     # Abajo
-            K_a: (-(self.velocidad), 0, "izquierda"), # Izquierda
-            K_d: (self.velocidad, 0, "derecha")     # Derecha
-        }
 
     def verificar_colision(self, rect):
         #Hay un offset de 1 porque hay un borde no visible de bloques solidos
@@ -73,6 +72,13 @@ class Jugador:
         dx, dy = 0, 0
         # Saca el input del usuario
         self.moviendose = False
+        self.movimientos_posibles = {
+            K_w: (0, -(self.velocidad), "arriba"),  # Arriba
+            K_s: (0, self.velocidad, "abajo"),     # Abajo
+            K_a: (-(self.velocidad), 0, "izquierda"), # Izquierda
+            K_d: (self.velocidad, 0, "derecha")     # Derecha
+        }
+
         for tecla in self.movimientos_posibles.keys():
             if keys[tecla]:
                 self.moviendose = True
@@ -120,7 +126,19 @@ class Jugador:
             Bomba(self)
 
     def habilidad1(self):
-        pass
+        if self.tiene_habilidad1:
+            self.tiene_habilidad1 = False  # Desactiva la bandera de la habilidad 1
+            self.velocidad += 10
+            self.inicio_habilidad1 = time.get_ticks()  # Guarda el tiempo de inicio de la habilidad
+
+            def restaurar_velocidad():
+                sleep(5)  # Espera 5 segundos
+                self.velocidad -= 10  # Vuelve a la velocidad normal
+                self.tiene_habilidad1 = True  # Permite volver a usar la habilidad
+
+            hilo = Thread(target=restaurar_velocidad)  # Se crea un hilo para restaurar la velocidad
+            hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
+            hilo.start()  # Inicia el hilo
     
     def habilidad2(self):
         pass
@@ -131,7 +149,8 @@ class Jugador:
             hilo = Thread(target=self.invulnerabilidad)
             hilo.daemon = True
             hilo.start()
-        #TODO
+            if self.vidas <= 0:
+                self.game_over = GameOver(self.jugar.pantalla)  # Si no tiene vidas, se muestra la pantalla de Game Over
     
     def invulnerabilidad(self):
         self.invulnerable = True
@@ -149,11 +168,23 @@ class Jugador:
             elif evento.key == K_2: #O si le da a 2
                 self.habilidad2()
 
+class GameOver:
+    def __init__(self, pantalla):
+        self.pantalla = pantalla  # Pantalla donde se dibuja la pantalla de Game Over
+        self.imagen = cargar_gameover()
+
+    def dibujar(self):
+        self.pantalla.fill(NEGRO)  # Limpia la pantalla con un color
+        self.pantalla.blit(self.imagen, (0, 0))  # Dibuja la pantalla de Game Over
+        
+
+
 class Enemigo:
-    def __init__(self, jugar, x, y):
-        self.jugar = jugar
-        self.jugador = jugar.jugador
-        self.pantalla = jugar.pantalla_juego
+    def __init__(self, juego, x, y):
+        self.juego = juego
+        self.jugador = juego.jugador
+        self.pantalla = juego.pantalla_juego
+        self.nivel = juego.nivel
         self.x = x
         self.y = y
 
@@ -171,40 +202,31 @@ class Enemigo:
         self.moviendose = False
 
     # Mueve al enemigo en una dirección aleatoria
-    def movimiento(self, obstaculos):
-        # Genera un movimiento aleatorio
-        dx, dy = self.movimientos[self.movimiento_elegido]  # Obtiene el desplazamiento correspondiente al movimiento elegido
-        # Cambia sus coords x y y
-        new_x = self.x + dx  # Se calcula la nueva posición x
-        new_y = self.y + dy
-        rectangulo_verif = Rect(new_x, new_y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la nueva posición del jugador
-        # Se hace una resta de MEDIDA_BLOQUE para que no se salga, ya que recordamos que las coords marcan la esquina superior izquierda del rectángulo
-        if (ANCHO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_x > SEPARACION_BORDES_PANTALLA and (ALTO_PANTALLA - SEPARACION_BORDES_PANTALLA) - MEDIDA_BLOQUE > new_y > MEDIDA_HUD:  # Si está dentro de los límites del mapa
-            # Verifica si no hay obstáculos en la nueva posición
-            if all(not rectangulo_verif.colliderect(obs.rect) for obs in obstaculos):  # Si el rectángulo del enemigo no colisiona con NINGÚN obstáculo
-                self.y = new_y
-                self.x = new_x
-                self.direccion = self.movimiento_elegido  # Actualiza la dirección del enemigo
-                self.rect = rectangulo_verif  # Actualiza el rectángulo del enemigo a la nueva posición
-            else:
-                # Si hay un obstáculo, elige un nuevo movimiento aleatorio
-                self.movimiento_elegido = choice(list(self.movimientos.keys()))
+    def actualizar(self):
+        dx, dy = self.movimientos[self.movimiento_elegido]
+        # Movimiento en eje X
+        rect_dx = self.rect.move(dx, 0)
+        if self.verificar_colision(rect_dx):  # Si puede moverse
+            self.rect = rect_dx
+            self.x = self.rect.x
+            self.y = self.rect.y
         else:
-            self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Si el enemigo se sale de los límites del mapa, elige un nuevo movimiento aleatorio
+            self.movimiento_elegido = choice(list(self.movimientos.keys()))
+            return  # Sale para que el nuevo movimiento se intente en el siguiente frame
 
-        if time.get_ticks() - self.ultima_actualizacion_frame > 150:
-            self.actualizar_frame_sprite()  # Actualiza el frame del sprite del enemigo
-            self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
-            
-    def movimiento(self):
-        while self.vida > 0: #Mientras le queden vidas
-            sleep(randint(3,5)) #Se mueve cada 3-5 segundos
-            self.direccion = choice(["arriba", "abajo", "izquierda", "derecha"])
-            self.cantidad_de_pasos = randint(1, 3) * MEDIDA_BLOQUE #Pasos a moverse en una direccion
-            self.pasos_dados = 0 #Se mueve hasta que llegue a self.cantidad_de_pasos
-            
-            
-            
+        # Movimiento en eje Y
+        rect_dy = self.rect.move(0, dy)
+        if self.verificar_colision(rect_dy):  # Si puede moverse
+            self.rect = rect_dy
+            self.x = self.rect.x
+            self.y = self.rect.y
+        else:
+            self.movimiento_elegido = choice(list(self.movimientos.keys()))
+
+        self.actualizar_frame_sprite()  # Actualiza el frame del sprite del enemigo
+        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
+            self.jugador.morir()
+
     
     def verificar_colision(self, rect):
         #Hay un offset de 1 porque hay un borde no visible de bloques solidos
@@ -221,34 +243,15 @@ class Enemigo:
                 return False
         return True
     
-    
-    def actualizar_frames(self):
-        self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
-        self.frame += 1  # Incrementa el frame actual del sprite
-        if self.frame >= len(self.skin_hoja_sprites):  # Si el frame actual es mayor o igual al número de frames del sprite en la dirección actual
-            self.frame = 0  # Reinicia el frame a 0 para que vuelva al primer sprite de la animación
-
-    def actualizar_frames(self):
-        if self.moviendose: #Se mueve
+    def actualizar_frame_sprite(self):
+        if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el enemigo se está moviendo y han pasado 150ms
             self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
             self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
-        else: #No se mueve
-            self.frame = 0 #Reinicia
         self.sprite = self.skin_hoja_sprites[self.direccion][self.frame]
 
-    def actualizar(self):
-        self.actualizar_frames()
-        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
-            self.jugador.morir()
-    
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
-        self.pantalla.blit(self.skin_hoja_sprites[self.direccion][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
-        
-    def morir(self):
-        self.vidas -= 1
-        if self.vidas < 1:
-            self.jugar.capas[1].remove(self) #Ya no actualiza ni dibuja al enemigo
+        self.pantalla.blit(self.skin_hoja_sprites[self.movimiento_elegido][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
         
 class Bomba:
     def __init__(self, jugador):
@@ -349,6 +352,7 @@ class Explosion:
             for enemigo in self.jugar.capas[1]: #Capa donde se guardan los enemigos
                 if (x, y) == (enemigo.rect.centerx//MEDIDA_BLOQUE+1, enemigo.rect.centery//MEDIDA_BLOQUE+1):
                     enemigo.morir()
+                    self.jugador.puntaje += 100  # Aumenta el puntaje del jugador al matar un enemigo
     
     def actualizar(self):
         ahora = pg.time.get_ticks()
@@ -405,7 +409,6 @@ class Explosion:
                     llave = "punta_derecha" if punta else "derecha"
 
             self.pantalla.blit(self.sprites[llave][subframe], (x-MEDIDA_BLOQUE, y-MEDIDA_BLOQUE))
-
 
 
 
@@ -540,7 +543,7 @@ class Niveles:
         else:
             pass #TODO poner resultados o no se que queria hacer Juan
 
-class DestruyeBloque: #NO SIRVE CTM TODO
+class DestruyeBloque:
     def __init__(self, jugar, x, y):
         self.jugar = jugar
         self.pantalla = jugar.pantalla
@@ -581,34 +584,33 @@ class Jugar:
         self.nivel = self.manager_niveles.nivel
         self.jugador = Jugador(self)
         self.capas = {
-            0:[self.manager_niveles], #El fondo
+            0:[self.manager_niveles], #  El fondo
             1:self.colocar_enemigos(),
-            2:[], #Capa para bomba
+            2:[], #  Capa para bomba
             3:[self.jugador],
-            4:[] #Capa para explosiones
+            4:[] #  Capa para explosiones
         }
         
 
     def colocar_enemigos(self):
-        enemigos_puestos = 0
-        coords_ocupadas = [X_INICIAL_JUGADOR+1, Y_INICIAL_JUGADOR+1]
+        coords_ocupadas = [(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR)]
         enemigos = []
         
-        while enemigos_puestos < CANTIDAD_ENEMIGOS:
-            x = randint(1,ANCHO_MATRIZ) #Coord x aleatoria
-            y = randint(1,ALTO_MATRIZ) #Coord y aleatoria
+        while len(enemigos) < CANTIDAD_ENEMIGOS:
+            x = randint(0, ANCHO_MATRIZ)
+            y = randint(0, ALTO_MATRIZ)
             
-            #Revisa que no ponga un enemigo encima de otro o en un bloque
             if (x, y) not in coords_ocupadas and self.nivel[y][x] == 0:
                 coords_ocupadas.append((x, y))
-                enemigo = Enemigo(self, x*MEDIDA_BLOQUE-MEDIDA_BLOQUE, y*MEDIDA_BLOQUE-MEDIDA_BLOQUE)  # Crea una instancia del enemigo en la posición aleatoria
-                enemigos.append(enemigo)  # Agrega el enemigo a la lista de enemigos
-                enemigos_puestos += 1
+                enemigo = Enemigo(self, x * MEDIDA_BLOQUE, y * MEDIDA_BLOQUE)
+                enemigos.append(enemigo)
+        
         return enemigos
+
     
     def dibujar_nivel(self):
-        for y in range(1, ALTO_MATRIZ+1): #Por cada fila
-            for x in range(1, ANCHO_MATRIZ+1): #Por cada bloque
+        for y in range(1, ALTO_MATRIZ-20): #Por cada fila
+            for x in range(1, ANCHO_MATRIZ-20): #Por cada bloque
                 ID = self.nivel[y][x]
                 self.pantalla_juego.blit(self.sprites_bloques[ID], ((x-1)*MEDIDA_BLOQUE, (y-1)*MEDIDA_BLOQUE))
                     
@@ -648,19 +650,23 @@ class Jugar:
 
     def dibujar(self):
         #Juego
-        self.pantalla_juego.fill(BLANCO)
-        
-        for capa in sorted(self.capas.keys()): #Dibuja entidades (jugador, enemigos, bombas...)
-            for entidad in self.capas[capa]:
-                entidad.dibujar()
-        
-        #Dibuja la pantalla de juego en la principal
-        self.pantalla.blit(self.pantalla_juego, (SEPARACION_BORDES_PANTALLA, MEDIDA_HUD))
-        
-        #Hud
-        self.dibujar_texto(f"Nivel: {self.manager_niveles.num_nivel}", 0, 0, color=BLANCO)
-        self.dibujar_texto(f"Vidas: {self.jugador.vidas}", 0, 25, color=BLANCO)
-        self.dibujar_texto(f"Bombas: {self.jugador.bombas}", 0, 50, color=BLANCO)
+        if not hasattr(self.jugador,"game_over"):  # Si el jugador ha perdido, dibuja la pantalla de Game Over
+            self.pantalla_juego.fill(BLANCO)
+            
+            for capa in sorted(self.capas.keys()): #Dibuja entidades (jugador, enemigos, bombas...)
+                for entidad in self.capas[capa]:
+                    entidad.dibujar()
+            
+            #Dibuja la pantalla de juego en la principal
+            self.pantalla.blit(self.pantalla_juego, (SEPARACION_BORDES_PANTALLA, MEDIDA_HUD))
+            
+            #Hud
+            self.dibujar_texto(f"Nivel: {self.manager_niveles.num_nivel}", 0, 0, color=BLANCO)
+            self.dibujar_texto(f"Vidas: {self.jugador.vidas}", 0, 25, color=BLANCO)
+            self.dibujar_texto(f"Bombas: {self.jugador.bombas}", 0, 50, color=BLANCO)
+            self.dibujar_texto(f"Puntaje: {self.jugador.puntaje}", 0, 75, color=BLANCO)
+        else:
+            self.jugador.game_over.dibujar()
 
     
 class Informacion:

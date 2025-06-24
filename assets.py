@@ -116,3 +116,7 @@ def cargar_canciones():
         pg.mixer.Sound("assets/musica/MusicaJuego.mp3"),  # Carga la música del juego
         pg.mixer.Sound("assets/musica/MusicaResultados.mp3")  # Carga la música de los resultados
     ]
+
+def cargar_gameover():
+    return pg.transform.scale(pg.image.load("assets/gameover.jpg").convert_alpha(),
+                              (ANCHO_PANTALLA, ALTO_PANTALLA))  # Ajusta el tamaño a la pantalla del juego
