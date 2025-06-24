@@ -628,19 +628,6 @@ class Jugar:
         
         return enemigos
 
-    def dibujar_nivel(self):
-        for y in range(1, ALTO_MATRIZ-20): #Por cada fila
-            for x in range(1, ANCHO_MATRIZ-20): #Por cada bloque
-                ID = self.nivel[y][x]
-                self.pantalla_juego.blit(self.sprites_bloques[ID], ((x-1)*MEDIDA_BLOQUE, (y-1)*MEDIDA_BLOQUE))
-                    
-        if self.debug:
-            #Dibuja las lineas del grid
-            for x in range(1, ANCHO_MATRIZ):
-                draw.line(self.pantalla_juego, NEGRO, (x*MEDIDA_BLOQUE, 0), (x*MEDIDA_BLOQUE, ALTO_PANTALLA))
-            for y in range(1, ALTO_MATRIZ):
-                draw.line(self.pantalla_juego, NEGRO, (0, y*MEDIDA_BLOQUE), (ANCHO_PANTALLA, y*MEDIDA_BLOQUE))
-    
     def asignar_llave(self):
         # Generamos un x y un y aleatorios dentro del areajugable
         while not hasattr(self, "llave"):
