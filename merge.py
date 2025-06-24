@@ -445,15 +445,22 @@ class Llave:
         self.jugador = jugador  # Jugador que recogerá la llave
         self.pantalla = pantalla  # Pantalla donde se dibuja la llave
         self.sprite = cargar_llave()  # Carga el sprite de la llave desde la hoja de sprites
-        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la llave en el canvas (uso para colisiones)
-    
-    def dibujar(self):
-        if self.nivel[self.y_bloque][self.x_bloque] == 0 and not self.jugador.tiene_llave:  # Verifica si el bloque donde se encuentra la llave está vacío (aire)
-            self.pantalla.blit(self.sprite, (self.x * MEDIDA_BLOQUE, self.y*MEDIDA_BLOQUE))  # Dibuja el sprite de la llave en la pantalla
+        self.rect = Rect((self.x_bloque - 1)* MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la llave en el canvas (uso para colisiones)
+        self.bloque_roto = False  # Indica si el bloque donde se encuentra la llave ha sido roto
 
-    def recoger(self):
+    def actualizar(self):
+        if self.nivel[self.y_bloque][self.x_bloque] == 0:
+            self.bloque_roto = True
         if self.rect.colliderect(self.jugador.rect):
             self.jugador.tiene_llave = True
+        print(self.sprite)
+        print(self.x_bloque, self.y_bloque)
+
+    def dibujar(self):
+        if self.bloque_roto and not self.jugador.tiene_llave:  # Verifica si el bloque donde se encuentra la llave está vacío (aire)
+            self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))  # Dibuja el sprite de la llave en la pantalla
+
+
 
 class Objetos:
     pass
@@ -628,7 +635,7 @@ class Jugar:
             2:[], #  Capa para bomba
             3:[self.jugador],
             4:[], #  Capa para explosiones
-            5:[] }  #  Capa para objetos (llave, objetos, etc)
+            5:self.asignar_llave()}  #  Capa para objetos (llave, objetos, etc)
         
     def colocar_enemigos(self):
         coords_ocupadas = [(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR)]
@@ -662,10 +669,13 @@ class Jugar:
     
     def asignar_llave(self):
         # Generamos un x y un y aleatorios dentro del areajugable
-        x = randint(1, ANCHO_MATRIZ)
-        y  = randint(1, ALTO_MATRIZ)
-        if self.nivel[y][x] == 2:  # Si el bloque aleatoriamente generado es un bloque destructible
-            self.llave = Llave(x, y, self.nivel, self.jugador, self.pantalla_juego)
+        while not hasattr(self, "llave"):
+            x = randint(1, ANCHO_MATRIZ)
+            y  = randint(1, ALTO_MATRIZ)
+            if self.nivel[y][x] == 2:  # Si el bloque aleatoriamente generado es un bloque destructible
+                self.llave = Llave(x, y, self.nivel, self.jugador, self.pantalla_juego)
+                return [self.llave]
+        
     
     def dibujar_HUD(self):
         pass
