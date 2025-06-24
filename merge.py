@@ -121,7 +121,13 @@ class Jugador:
         self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))  # Dibuja el sprite del jugador
 
     def poner_bomba(self):
-        if self.bombas > 0:
+        if not self.invulnerable and self.bombas > 0:
+            bx = self.rect.centerx//MEDIDA_BLOQUE+1
+            by = self.rect.centery//MEDIDA_BLOQUE+1
+            for bomba in self.jugar.capas[2]: #No poner bombas encima de otras
+                if (bomba.bx, bomba.by) == (bx, by):
+                    return
+                
             self.bombas -= 1
             Bomba(self)
 
@@ -180,11 +186,11 @@ class GameOver:
 
 
 class Enemigo:
-    def __init__(self, juego, x, y):
-        self.juego = juego
-        self.jugador = juego.jugador
-        self.pantalla = juego.pantalla_juego
-        self.nivel = juego.nivel
+    def __init__(self, jugar, x, y):
+        self.jugar = jugar
+        self.jugador = jugar.jugador
+        self.pantalla = jugar.pantalla_juego
+        self.nivel = jugar.nivel
         self.x = x
         self.y = y
 
@@ -239,8 +245,11 @@ class Enemigo:
         
         #Verifica si alguna esquina esta en un tile que no sea aire
         for x, y in esquinas:
-            if self.nivel[y][x] != 0:
+            if self.nivel[y][x] != 0: #Si no es aire
                 return False
+            for bomba in self.jugar.capas[2]: #Verificar si hay una bomba
+                if (x, y) == (bomba.bx, bomba.by):
+                    return False
         return True
     
     def actualizar_frame_sprite(self):
