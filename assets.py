@@ -46,10 +46,12 @@ def cargar_skins(numero_skin, dict):
 
 def cargar_bloques():
     sprites_niveles = Spritesheet("assets/tiles_niveles.png")
+    zacate = sprites_niveles.cargar_sprite(5*160, 160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE) #Zacate
     return {
-        0:sprites_niveles.cargar_sprite(5*160, 160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE), #Zacate
+        0:zacate,
         1:sprites_niveles.cargar_sprite(2*160, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE), #Bloque solido
-        2:sprites_niveles.cargar_sprite(0, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE) #Ladrilo rompible
+        2:sprites_niveles.cargar_sprite(0, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE), #Ladrilo rompible
+        3:zacate #Bloque invisible (Zacate pero con hitbox)
     }
 
 def cargar_bomba():

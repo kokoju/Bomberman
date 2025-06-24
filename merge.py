@@ -36,7 +36,7 @@ class Jugador:
         self.frame = 0  # Frame actual del sprite del jugador
         self.sprite = self.skin_hoja_sprites[self.direccion][self.frame] #Sprite inicial del jugador
         
-        self.vidas = 3
+        self.vidas = 10
         self.bombas = 10
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
         self.rango = 1 #Rango inicial de la bomba
@@ -51,18 +51,18 @@ class Jugador:
         
         self.invulnerable = False
         
-
-    def verificar_colision(self, rect):
+    def sacar_esquinas(self, rect):
         #Hay un offset de 1 porque hay un borde no visible de bloques solidos
-        esquinas = (
+        return (
             (izq := rect.left // MEDIDA_BLOQUE+1, arriba := rect.top // MEDIDA_BLOQUE+1), #Superior izquierda
             (izq, abajo := rect.bottom // MEDIDA_BLOQUE+1), #Inferior izquierda
             (der := rect.right // MEDIDA_BLOQUE+1, arriba), #Superior derecha
             (der, abajo) #Inferior derecha
         )
         
+    def verificar_colision(self, rect):
         #Verifica si alguna esquina esta en un tile que no sea aire
-        for x, y in esquinas:
+        for x, y in self.sacar_esquinas(rect):
             if self.nivel[y][x] != 0:
                 return False
         return True
@@ -253,13 +253,17 @@ class Enemigo:
     def dibujar(self):
         self.pantalla.blit(self.skin_hoja_sprites[self.movimiento_elegido][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
         
+        
 class Bomba:
     def __init__(self, jugador):
         self.rango = jugador.rango
         self.jugar = jugador.jugar
+        self.jugador = jugador
         self.pantalla = jugador.pantalla
-        self.x = (jugador.rect.centerx//MEDIDA_BLOQUE)*MEDIDA_BLOQUE
-        self.y = (jugador.rect.centery//MEDIDA_BLOQUE)*MEDIDA_BLOQUE
+        self.bx = jugador.rect.centerx//MEDIDA_BLOQUE+1 #Bloque en x
+        self.by = jugador.rect.centery//MEDIDA_BLOQUE+1 #Bloque en y
+        self.x = (self.bx-1) * MEDIDA_BLOQUE #X en pixeles
+        self.y = (self.by-1) * MEDIDA_BLOQUE #Y en pixeles
         self.sprites = self.jugar.sprites_bomba
         
         self.tiempo_creacion = pg.time.get_ticks()
@@ -269,6 +273,7 @@ class Bomba:
         self.tiempo_detonar = 2000  # Tiempo en ms para que la bomba explote
         self.hit = 1 # Daño que causa la bomba al explotar
         self.activa = True
+        self.hitbox_activa = False #Se activa cuando el jugador se mueve fuera de la bomba
         
         self.jugar.capas[2].append(self) #Capa de las bombas
         hilo = Thread(target=self.detonar) #Crea un hilo para la bomba
@@ -278,11 +283,17 @@ class Bomba:
     def detonar(self):
         sleep(self.tiempo_detonar/1000) #Pasa el tiempo a segundos
         self.activa = False #Explota
+        self.jugar.nivel[self.by][self.bx] = 0 #Quita la hitbox
         Explosion(self, self.rango)
         self.jugar.capas[2].remove(self) #Ya no procesa la bomba
         
     
     def actualizar(self):
+        print(self.hitbox_activa)
+        if not self.hitbox_activa and (self.bx,self.by) not in self.jugador.sacar_esquinas(self.jugador.rect): #Crea la hitbox de la bomba cuando el jugador se va
+            self.hitbox_activa = True
+            self.jugar.nivel[self.by][self.bx] = 3 #Pone un bloque invisible
+        
         #Acelera que tan rapido cambia el frame de la bomba entre menos tiempo le queda
         tiempo_actual = pg.time.get_ticks()
         intervalo_frame = max(100, (self.tiempo_detonar + self.tiempo_creacion - tiempo_actual)//5) #Cambia cada 1/5 parte del tiempo restante
@@ -351,8 +362,10 @@ class Explosion:
                 break
             for enemigo in self.jugar.capas[1]: #Capa donde se guardan los enemigos
                 if (x, y) == (enemigo.rect.centerx//MEDIDA_BLOQUE+1, enemigo.rect.centery//MEDIDA_BLOQUE+1):
-                    enemigo.morir()
-                    self.jugador.puntaje += 100  # Aumenta el puntaje del jugador al matar un enemigo
+                    enemigo.vidas -= 1
+                    if enemigo.vidas < 1:
+                        self.jugar.capas[1].remove(enemigo)
+                        self.jugador.puntaje += 100  # Aumenta el puntaje del jugador al matar un enemigo
     
     def actualizar(self):
         ahora = pg.time.get_ticks()
@@ -608,18 +621,6 @@ class Jugar:
         return enemigos
 
     
-    def dibujar_nivel(self):
-        for y in range(1, ALTO_MATRIZ-20): #Por cada fila
-            for x in range(1, ANCHO_MATRIZ-20): #Por cada bloque
-                ID = self.nivel[y][x]
-                self.pantalla_juego.blit(self.sprites_bloques[ID], ((x-1)*MEDIDA_BLOQUE, (y-1)*MEDIDA_BLOQUE))
-                    
-        if self.debug:
-            #Dibuja las lineas del grid
-            for x in range(1, ANCHO_MATRIZ):
-                draw.line(self.pantalla_juego, NEGRO, (x*MEDIDA_BLOQUE, 0), (x*MEDIDA_BLOQUE, ALTO_PANTALLA))
-            for y in range(1, ALTO_MATRIZ):
-                draw.line(self.pantalla_juego, NEGRO, (0, y*MEDIDA_BLOQUE), (ANCHO_PANTALLA, y*MEDIDA_BLOQUE))
     
     def dibujar_HUD(self):
         pass
