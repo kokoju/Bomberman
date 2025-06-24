@@ -122,3 +122,7 @@ def cargar_canciones():
 def cargar_gameover():
     return pg.transform.scale(pg.image.load("assets/gameover.jpg").convert_alpha(),
                               (ANCHO_PANTALLA, ALTO_PANTALLA))  # Ajusta el tamaño a la pantalla del juego
+
+def cargar_llave():
+    sprites_llave = pg.transform.scale(pg.image.load("assets/llave.png").convert_alpha(),
+                                (MEDIDA_BLOQUE, MEDIDA_BLOQUE))  # Ajusta el tamaño de la llave

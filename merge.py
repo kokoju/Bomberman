@@ -46,6 +46,7 @@ class Jugador:
 
         self.tiene_habilidad1 = True  # Indica si el jugador tiene la habilidad 1
         self.tiene_habilidad2 = False  # Indica si el jugador tiene la habilidad 2
+        self.tiene_llave = False  # Indica si el jugador tiene la llave para abrir la puerta del siguente nivel
 
         self.rect = Rect(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR, ANCHO_JUGADOR, ALTO_JUGADOR) #  Rectangulo del jugador para posicion y colision
         
@@ -432,11 +433,27 @@ class Explosion:
 
             self.pantalla.blit(self.sprites[llave][subframe], (x-MEDIDA_BLOQUE, y-MEDIDA_BLOQUE))
 
-
-
 class Jefe:
     pass
 
+# Función para cargar la llave, es especial, porque es un objeto que se encuentra dentro de un bloque aleatorio del nivel, y aparece al romperlo
+class Llave:
+    def __init__(self, x, y, nivel, jugador, pantalla):
+        self.x_bloque = x  # Posición en el eje X del bloque donde se encuentra la llave
+        self.y_bloque = y  # Posición en el eje Y del bloque donde se encuentra la llave
+        self.nivel = nivel  # Nivel donde se encuentra la llave (se usa para verificar colisiones)
+        self.jugador = jugador  # Jugador que recogerá la llave
+        self.pantalla = pantalla  # Pantalla donde se dibuja la llave
+        self.sprite = cargar_llave()  # Carga el sprite de la llave desde la hoja de sprites
+        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la llave en el canvas (uso para colisiones)
+    
+    def dibujar(self):
+        if self.nivel[self.y_bloque][self.x_bloque] == 0 and not self.jugador.tiene_llave:  # Verifica si el bloque donde se encuentra la llave está vacío (aire)
+            self.pantalla.blit(self.sprite, (self.x * MEDIDA_BLOQUE, self.y*MEDIDA_BLOQUE))  # Dibuja el sprite de la llave en la pantalla
+
+    def recoger(self):
+        if self.rect.colliderect(self.jugador.rect):
+            self.jugador.tiene_llave = True
 
 class Objetos:
     pass
@@ -610,17 +627,16 @@ class Jugar:
             1:self.colocar_enemigos(),
             2:[], #  Capa para bomba
             3:[self.jugador],
-            4:[] #  Capa para explosiones
-        }
+            4:[], #  Capa para explosiones
+            5:[] }  #  Capa para objetos (llave, objetos, etc)
         
-
     def colocar_enemigos(self):
         coords_ocupadas = [(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR)]
         enemigos = []
         
         while len(enemigos) < CANTIDAD_ENEMIGOS:
-            x = randint(0, ANCHO_MATRIZ)
-            y = randint(0, ALTO_MATRIZ)
+            x = randint(1, ANCHO_MATRIZ)
+            y = randint(1, ALTO_MATRIZ)
             
             if (x, y) not in coords_ocupadas and self.nivel[y][x] == 0:
                 coords_ocupadas.append((x, y))
@@ -630,6 +646,26 @@ class Jugar:
         return enemigos
 
     
+
+    def dibujar_nivel(self):
+        for y in range(1, ALTO_MATRIZ-20): #Por cada fila
+            for x in range(1, ANCHO_MATRIZ-20): #Por cada bloque
+                ID = self.nivel[y][x]
+                self.pantalla_juego.blit(self.sprites_bloques[ID], ((x-1)*MEDIDA_BLOQUE, (y-1)*MEDIDA_BLOQUE))
+                    
+        if self.debug:
+            #Dibuja las lineas del grid
+            for x in range(1, ANCHO_MATRIZ):
+                draw.line(self.pantalla_juego, NEGRO, (x*MEDIDA_BLOQUE, 0), (x*MEDIDA_BLOQUE, ALTO_PANTALLA))
+            for y in range(1, ALTO_MATRIZ):
+                draw.line(self.pantalla_juego, NEGRO, (0, y*MEDIDA_BLOQUE), (ANCHO_PANTALLA, y*MEDIDA_BLOQUE))
+    
+    def asignar_llave(self):
+        # Generamos un x y un y aleatorios dentro del areajugable
+        x = randint(1, ANCHO_MATRIZ)
+        y  = randint(1, ALTO_MATRIZ)
+        if self.nivel[y][x] == 2:  # Si el bloque aleatoriamente generado es un bloque destructible
+            self.llave = Llave(x, y, self.nivel, self.jugador, self.pantalla_juego)
     
     def dibujar_HUD(self):
         pass
