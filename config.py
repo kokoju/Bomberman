@@ -8,7 +8,7 @@ ALTO_MATRIZ = 11  # (en bloques)
 FPS = 60
 PIXELES_SPRITES = 16  # (en píxeles)
 SEPARACION_BORDES_PANTALLA = 16 # (en píxeles)
-CANTIDAD_ENEMIGOS = 5 # Cantidad de enemigos que aparecen en cada nivel
+CANTIDAD_ENEMIGOS = 10 # Cantidad de enemigos que aparecen en cada nivel
 
 #Colores
 BLANCO = 255, 255, 255
