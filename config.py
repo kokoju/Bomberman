@@ -40,3 +40,7 @@ GOLPE_INICIAL_BOMBA = 1  # Daño que causa la bomba al jugador y a los enemigos
 
 # Configuración de los caramelos
 CANTIDAD_CARAMELOS = 8  # Cantidad de caramelos máximos que aparecen en cada nivel (se toma si hay más bloques destructibles que caramelos requeridos)
+
+# Configuración del pegamento
+PEGAMENTO_DURACION = 5000  # Duración del efecto de pegamento en milisegundos
+RALENTIZACION_PEGAMENTO = 0.5  # Factor de ralentización del jugador al pisar el pegamento (0.5 significa que se mueve a la mitad de la velocidad normal)
