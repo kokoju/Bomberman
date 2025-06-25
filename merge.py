@@ -152,13 +152,13 @@ class Jugador:
         pass
     
     def morir(self):
-        if self.vidas > -200:
+        if self.vidas > 0:
             self.vidas -= 1  # Cada golpe (de bomba o enemigo) resta uno de vida (hecho así para que castigue menos si la bomba tiene más daño)
             hilo = Thread(target=self.invulnerabilidad)
             hilo.daemon = True
             hilo.start()
-            if self.vidas <= 0:
-                self.game_over = GameOver(self.jugar.pantalla)  # Si no tiene vidas, se muestra la pantalla de Game Over
+        else:
+            self.game_over = GameOver(self.jugar.pantalla)  # Si no tiene vidas, se muestra la pantalla de Game Over
     
     def invulnerabilidad(self):
         self.invulnerable = True
@@ -401,7 +401,6 @@ class Explosion:
             for x, y in self.bloques_rotos:
                 self.nivel[y][x] = 0
                 self.jugador.puntaje += 20  # Aumenta el puntaje del jugador al destruir un bloque
-                DestruyeBloque(self.jugar, x, y)
             
         #Mata entidades
         for x, y in self.bloques_afectados:
@@ -476,7 +475,7 @@ class Jefe:
 
 # Función para cargar la llave, es especial, porque es un objeto que se encuentra dentro de un bloque aleatorio del nivel, y aparece al romperlo
 class Llave:
-    def __init__(self, x, y, jugar):
+    def __init__(self, jugar, x, y):
         self.x_bloque = x  # Posición en el eje X del bloque donde se encuentra la llave
         self.y_bloque = y  # Posición en el eje Y del bloque donde se encuentra la llave
         self.jugar = jugar
@@ -706,6 +705,8 @@ class DestruyeBloque:
         offset_y = (MEDIDA_BLOQUE - escala) // 2
         self.pantalla.blit(sprite_escalado, (self.x * MEDIDA_BLOQUE + offset_x, self.y * MEDIDA_BLOQUE + offset_y))
 
+
+
 # Clase del juego
 class Jugar:
     def __init__(self, game):
@@ -722,7 +723,7 @@ class Jugar:
         self.lista_pegamento = []  # Lista para almacenar los pegamentos que sueltan los enemigos
         self.capas = {
             0:[self.manager_niveles], #  El fondo
-            1:[self.asignar_llave(), self.asignar_puerta()] + self.asignar_caramelos(),  #  Capa de objetos (llave, puerta, caramelos)
+            1:self.asignar_extras(),  #  Capa para objetos (llave, objetos, etc)
             2:[], #  Capa para bomba
             3:self.colocar_enemigos(),
             4:[self.jugador],
@@ -738,54 +739,41 @@ class Jugar:
             
             if (x, y) not in coords_ocupadas and self.nivel[y][x] == 0:
                 coords_ocupadas.append((x, y))
-                enemigo = Enemigo(self, x * MEDIDA_BLOQUE, y * MEDIDA_BLOQUE)
+                enemigo = Enemigo(self, (x-1) * MEDIDA_BLOQUE, (y-1) * MEDIDA_BLOQUE)
                 enemigos.append(enemigo)
         
         return enemigos
-    
-    # Aquí usamos rangos, por lo que debemos sumar 1 para recorrer hasta el final de la zona jugable
-    def asignar_llave(self):
-        bloques_disponibles = [
-            (x, y) for y in range(1, ALTO_MATRIZ + 1) for x in range(1, ANCHO_MATRIZ + 1) if self.nivel[y][x] == 2
-        ]  # Encuentra todos los bloques destructibles
-        x, y = choice(bloques_disponibles)  # Selecciona un bloque aleatorio de los bloques destructibles
-        self.llave = Llave(x, y, self)
-        return self.llave  # Retorna la llave generada aleatoriamente en el nivel actual
 
-    def asignar_puerta(self):
-        bloques_disponibles = [
-            (ANCHO_MATRIZ, y) for y in range(1, ALTO_MATRIZ + 1) if self.nivel[y][ANCHO_MATRIZ] == 0
-        ]  # Encuentra todos los bloques donde se puede colocar la puerta
-        x, y = choice(bloques_disponibles)  # Selecciona un bloque aleatorio de los bloques destructibles
-        self.puerta = Puerta(self, y)  # Crea una puerta en el bloque seleccionado
-        return self.puerta
-            
-    def asignar_caramelos(self):
-        caramelos = []
-        # Encuentra todos los bloques destructibles que no sean el de la llave
-        bloques_disponibles = [
-            (x, y) for y in range(1, ALTO_MATRIZ + 1) for x in range(1, ANCHO_MATRIZ + 1) if self.nivel[y][x] == 2 and not (self.llave.x_bloque == x and self.llave.y_bloque == y)
-        ]  # Encuentra todos los bloques destructibles que no sean el de la llave
-        # Asegura que no se generen más caramelos que bloques disponibles (se puede establecer una cantidad máxima de caramelos con CANTIDAD_CARAMELOS)
-        cantidad = min(CANTIDAD_CARAMELOS, len(bloques_disponibles))
-        print(cantidad)
-        while len(caramelos) < cantidad:  # Genera caramelos hasta alcanzar la cantidad deseada
-            x, y = choice(bloques_disponibles)
-            caramelo = Caramelos(x, y, self)
-            caramelos.append(caramelo)
-            bloques_disponibles.remove((x, y))  # Elimina el bloque donde se generó el caramelo para evitar duplicados
-        return caramelos  # Retorna una lista de caramelos generados aleatoriamente en el nivel actual
-    
     def pasar_nivel(self):
-            if self.manager_niveles.pasar_nivel():
-                self.nivel = self.manager_niveles.nivel #Cambia los datos de nivel
-                self.jugador.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
-                self.jugador.nivel = self.nivel #Cambia el nivel del jugador
-                self.jugador.bombas += BOMBAS_DISPONIBLES
-                self.capas[1] = [self.asignar_extras()]
-                self.capas[3] = self.colocar_enemigos() #Pone los enemigos
-                self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
-
+        if self.manager_niveles.pasar_nivel():
+            self.nivel = self.manager_niveles.nivel #Cambia los datos de nivel
+            self.jugador.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
+            self.jugador.nivel = self.nivel #Cambia el nivel del jugador
+            self.jugador.bombas += BOMBAS_DISPONIBLES
+            self.capas[1] = [self.asignar_extras()]
+            self.capas[3] = self.colocar_enemigos() #Pone los enemigos
+            self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
+        
+    def obtener_rompibles(self):
+        bloques = [] #Guarda los bloques rompibles
+        for y in range(1, ALTO_MATRIZ+1):
+            for x in range(1, ANCHO_MATRIZ+1):
+                if self.nivel[y][x] == 2:
+                    bloques.append((x,y))
+        return bloques
+            
+    
+    def asignar_extras(self):
+        bloques = self.obtener_rompibles()
+        coords = choice(bloques)
+        puerta = Puerta(self, coords[0], coords[1])
+        bloques.remove(coords)
+        coords = choice(bloques)
+        llave = Llave(self, coords[0], coords[1])
+        bloques.remove(coords)
+        return [puerta, llave]
+        
+    
     def dibujar_HUD(self):
         pass
     
