@@ -192,8 +192,8 @@ class Enemigo:
         self.jugador = jugar.jugador
         self.pantalla = jugar.pantalla_juego
         self.nivel = jugar.nivel
-        self.x = x
-        self.y = y
+        self.x = y
+        self.y = x
 
         self.frame = 0
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
@@ -261,7 +261,7 @@ class Enemigo:
 
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
-        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))  # Dibuja el sprite del jugador en la pantalla
+        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
         
         
 class Bomba:
@@ -362,6 +362,7 @@ class Explosion:
         if self.frame == self.frame_expansion:
             for x, y in self.bloques_rotos:
                 self.nivel[y][x] = 0
+                self.jugador.puntaje += 20  # Aumenta el puntaje del jugador al destruir un bloque
                 DestruyeBloque(self.jugar, x, y)
             
         #Mata entidades
