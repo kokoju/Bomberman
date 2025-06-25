@@ -38,7 +38,7 @@ class Jugador:
         self.rango = 1 #Rango inicial de la bomba
         self.moviendose = False  # Indica si el jugador se está moviendo o no
         
-        self.puntaje = 0  # Puntaje del jugador
+        self.puntaje = 100000  # Puntaje del jugador
 
         # Habilidades e ítems del jugador
         self.tiene_habilidad = True  # Indica si el jugador tiene la habilidad especial
@@ -285,7 +285,6 @@ class Enemigo:
         pos = (self.rect.centerx // MEDIDA_BLOQUE + 1, self.rect.centery // MEDIDA_BLOQUE + 1)
         posiciones_pegamento = [(el.bx, el.by) for el in self.jugar.lista_pegamento]
         if pos not in posiciones_pegamento:
-            print("Soltando pegamento en", pos)
             pegamento = Pegamento(self)  # Crea un pegamento si no hay uno en la misma posición
             self.jugar.lista_pegamento.append(pegamento)
 
@@ -636,7 +635,7 @@ class Boton:
         ahora_presionado = any(presses) # Si presiono cualquier boton valido
         self.presionado = self.rect.collidepoint(mouse_pos) and ahora_presionado # self.presionado = mouse encima del boton y lo presiona
         presionado = self.presionado and not self.fue_presionado # Si acaba de presionar (no solo esta manteniendo click)
-        self.fue_presionado = ahora_presionado #A ctualiza fue_presionado
+        self.fue_presionado = self.presionado #Actualiza fue_presionado
         return presionado
 
 class Menu:
@@ -759,8 +758,10 @@ class DestruyeBloque:
 # Clase del juego
 class Jugar:
     def __init__(self, game):
+        self.game = game
         self.pantalla = game.pantalla  # Pantalla donde se dibuja el juego
         self.pantalla_juego = Surface((ANCHO_PANTALLA - 2*SEPARACION_BORDES_PANTALLA, ALTO_PANTALLA - MEDIDA_HUD - SEPARACION_BORDES_PANTALLA))
+        self.cambiar_modo = game.cambiar_modo
         self.musica = game.canciones[1]
         self.sprites_bomba = game.sprites_bomba
         self.dibujar_texto = game.dibujar_texto # Toma el metodo de dibujar texto
@@ -769,11 +770,11 @@ class Jugar:
         self.manager_niveles = Niveles(self)
         self.nivel = self.manager_niveles.nivel
         self.jugador = Jugador(self)
+        self.mejoras = Mejoras(self)
         self.lista_pegamento = []  # Lista para almacenar los pegamentos que sueltan los enemigos
         self.capas = {
             0:[self.manager_niveles], #  Bloques del nivel
             1:self.asignar_extras(),  #  Capa para objetos (llave, objetos, etc)
-
             2:[], #  Capa para bombas y pegamento
             3:self.colocar_enemigos(),
             4:[self.jugador],
@@ -800,12 +801,13 @@ class Jugar:
             self.jugador.rect.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
             self.jugador.nivel = self.nivel #Cambia el nivel del jugador
             self.jugador.bombas += BOMBAS_DISPONIBLES
-            self.capas[1] = [self.asignar_extras()]
+            self.capas[1] = self.asignar_extras()
             self.capas[3] = self.colocar_enemigos() #Pone los enemigos
             self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
     
     def menu_mejoras(self):
-        pass
+        self.game.modo_previo = self
+        self.game.modo = self.mejoras
     
     def obtener_rompibles(self):
         bloques = [] #Guarda los bloques rompibles
@@ -853,6 +855,9 @@ class Jugar:
                     self.debug = False
                     self.jugador.vidas = VIDAS
                     self.jugador.bombas = BOMBAS_DISPONIBLES
+            
+            elif evento.key == K_p:
+                self.menu_mejoras()
 
     def dibujar(self):
         #Juego
@@ -880,23 +885,33 @@ class Jugar:
 
 
 class Mejoras:
-    def __init__(self, juego):
-        self.juego = juego
-        self.jugador = juego.jugador
-        self.pantalla = juego.pantalla
+    def __init__(self, jugar):
+        self.jugar = jugar
+        self.jugador = jugar.jugador
+        self.pantalla = jugar.pantalla
+        self.dibujar_texto = jugar.dibujar_texto
         
-        self.puntos = self.jugador.puntos
-        self.precio_vida = 100 + (self.jugador.vida - VIDAS)*200
-        self.precio_golpe = 100 + (self.jugador.golpe - GOLPE)*200
+        self.puntos = self.jugador.puntaje
+        self.precio_vida = 100
+        self.precio_golpe = 100
+        self.precio_rango = 100
+        
+        self.crear_botones()
     
     def crear_botones(self):
-        self.boton_vida = Boton(100, 100, 50, 20, "VIDA", self.pantalla, VERDE)
-        self.boton_golpe = Boton(100, 400, 50, 20, "GOLPE", self.pantalla, ROJO)
-        self.boton_rango = Boton(100, 700, 50, 20, "RANGO", self.pantalla, AZUL)
-        self.pasar_nivel = Boton(1150, 680, 100, 20, "PASAR NIVEL", GRIS)
+        self.boton_vida = Boton(100, 100, 200, 75, f"VIDA {self.precio_vida}", self.pantalla, VERDE)
+        self.boton_golpe = Boton(100, 300, 200, 75, f"GOLPE {self.precio_golpe}", self.pantalla, ROJO)
+        self.boton_rango = Boton(100, 500, 200, 75, f"RANGO {self.precio_rango}", self.pantalla, AZUL)
+        self.pasar_nivel = Boton(1000, 650, 200, 50, "PASAR NIVEL", self.pantalla, GRIS)
     
     def dibujar(self):
         self.pantalla.fill(VERDE_AGUA)
+        
+        self.dibujar_texto("PRECIOS", 100, 50)
+        self.dibujar_texto(f"PUNTOS: {self.puntos}", 100, 650)
+        self.dibujar_texto(f"VIDAS: {self.jugador.vidas}", 500, 150)
+        self.dibujar_texto(f"GOLPE: {self.jugador.golpe}", 500, 350)
+        self.dibujar_texto(f"RANGO: {self.jugador.rango}", 500, 550)
         
         self.boton_vida.dibujar()
         self.boton_golpe.dibujar()
@@ -906,19 +921,32 @@ class Mejoras:
     def actualizar(self):
         mouse_pos = pg.mouse.get_pos()
         click_izq = pg.mouse.get_pressed()[0] #Click izquierdo
-        
-        if self.boton_vida.detectar(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
+            
+        if self.boton_vida.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
             self.puntos -= self.precio_vida
             self.precio_vida += 200 #Incrementa el precio linearmente 200 cada vez
-            
-        elif self.boton_golpe.detectar(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
+            self.jugador.vidas += 1
+            self.boton_vida.texto = f"VIDA {self.precio_vida}"
+                
+        elif self.boton_golpe.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_golpe:
             self.puntos -= self.precio_golpe
-            self.precio_vida += 200 #Incrementa el precio linearmente 200 cada vez
-            
-        elif self.pasar_nivel.detectar(mouse_pos, click_izq):
+            self.precio_golpe += 200 #Incrementa el precio linearmente 200 cada vez
+            self.jugador.golpe += 1
+            self.boton_golpe.texto = f"GOLPE {self.precio_golpe}"
+                
+        elif self.boton_rango.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_rango:
+            self.puntos -= self.precio_rango
+            self.precio_rango += 500 #Incrementa el precio linearmente 500 cada vez
+            self.jugador.rango += 1
+            self.boton_rango.texto = f"RANGO {self.precio_rango}"
+                
+        elif self.pasar_nivel.detectar_presionado(mouse_pos, click_izq):
             self.jugar.cambiar_modo(self.jugar)
             self.jugar.pasar_nivel()
-
+            self.jugador.puntaje = self.puntos
+            
+    def eventos(self, evento):
+        pass
 
 class Informacion:
     def __init__(self, menu):
