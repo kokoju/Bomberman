@@ -834,31 +834,37 @@ class Jugar:
         self.puerta = Puerta(ANCHO_MATRIZ, y, self.nivel, self.jugador, self.pantalla_juego)
         return self.puerta
             
-    def asignar_caramelos(self):
+    def asignar_consumibles(self):
+        pociones = []
         caramelos = []
         # Encuentra todos los bloques destructibles que no sean el de la llave
         bloques_disponibles = [
             (x, y) for y in range(1, ALTO_MATRIZ + 1) for x in range(1, ANCHO_MATRIZ + 1) if self.nivel[y][x] == 2 and not (self.llave.x_bloque == x and self.llave.y_bloque == y)
         ]  # Encuentra todos los bloques destructibles que no sean el de la llave
+<<<<<<< HEAD
         # Asegura que no se generen más caramelos que bloques disponibles (se puede establecer una cantidad máxima de caramelos con CANTIDAD_CARAMELOS)
         cantidad = min(CANTIDAD_CARAMELOS, len(bloques_disponibles))
         while len(caramelos) < cantidad:  # Genera caramelos hasta alcanzar la cantidad deseada
+=======
+        # Asegura que no se generen más pociones que bloques disponibles (se puede establecer una cantidad máxima de caramelos con CANTIDAD_CARAMELOS)
+        cantidad_pociones = min(CANTIDAD_POCIONES, len(bloques_disponibles))        
+        while len(pociones) < cantidad_pociones:  # Genera caramelos hasta alcanzar la cantidad deseada
+            x, y = choice(bloques_disponibles)
+            pocion = Pociones(x, y, self)
+            caramelos.append(pocion)
+            bloques_disponibles.remove((x, y))  # Elimina el bloque donde se generó el caramelo para evitar duplicados
+        cantidad_caramelos = min(CANTIDAD_CARAMELOS, len(bloques_disponibles))  # Asegura que no se generen más caramelos que bloques disponibles
+        while len(caramelos) < cantidad_caramelos:  # Genera caramelos hasta alcanzar la cantidad deseada
+>>>>>>> bd036f31d75d5aeb1fa32772bff870742ee78461
             x, y = choice(bloques_disponibles)
             caramelo = Caramelos(x, y, self)
             caramelos.append(caramelo)
             bloques_disponibles.remove((x, y))  # Elimina el bloque donde se generó el caramelo para evitar duplicados
-        return caramelos  # Retorna una lista de caramelos generados aleatoriamente en el nivel actual
+        
+        return pociones + caramelos  # Retorna una lista de caramelos generados aleatoriamente en el nivel actual
 
     def asignar_extras(self):
-        bloques = self.obtener_rompibles()
-        coords = choice(bloques)
-        puerta = Puerta(self, coords[0], coords[1])
-        bloques.remove(coords)
-        coords = choice(bloques)
-        llave = Llave(self, coords[0], coords[1])
-        bloques.remove(coords)
-        return [puerta, llave]
-        
+        pass
     
     def dibujar_HUD(self):
         pass
