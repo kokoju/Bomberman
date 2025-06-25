@@ -816,7 +816,7 @@ class Jugar:
     def asignar_extras(self):
         bloques = self.obtener_rompibles()
         coords = choice(bloques)
-        puerta = Puerta(self, coords[1])
+        puerta = Puerta(self, coords[0], coords[1])
         bloques.remove(coords)
         coords = choice(bloques)
         llave = Llave(self, coords[0], coords[1])
