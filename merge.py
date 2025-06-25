@@ -672,14 +672,15 @@ class Jugar:
             self.nivel = self.manager_niveles.nivel #Cambia los datos de nivel
             self.jugador.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
             self.jugador.nivel = self.nivel #Cambia el nivel del jugador
-            self.jugador.bombas = BOMBAS_DISPONIBLES
-            #self.capas[1] = [self.asignar_llave(), self.asignar_puerta()]
+            self.jugador.bombas += BOMBAS_DISPONIBLES
+            self.capas[1] = [self.asignar_llave(), self.asignar_puerta()]
             self.capas[3] = self.colocar_enemigos() #Pone los enemigos
+            self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
         
     
     def asignar_llave(self):
-        # Generamos un x y un y aleatorios dentro del areajugable
-        while not hasattr(self, "llave"):  # Mientras no tenga atributo "llave"
+        # Generamos un x y un y aleatorios dentro del area jugable
+        while True:  # Cicla hasta encoentrar un lugar valido para la llave
             x = randint(1, ANCHO_MATRIZ)
             y  = randint(1, ALTO_MATRIZ)
             if self.nivel[y][x] == 2:  # Si el bloque aleatoriamente generado es un bloque destructible
@@ -688,7 +689,7 @@ class Jugar:
     
     def asignar_puerta(self):
         # La puerta es un caso especial, ya que solo vamos a generarla al final del
-        while not hasattr(self, "puerta"):
+        while True:
             y = randint(1, ALTO_MATRIZ)
             if self.nivel[y][ANCHO_MATRIZ] == 0:
                 self.puerta = Puerta(self, ANCHO_MATRIZ, y)
