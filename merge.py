@@ -288,7 +288,6 @@ class Enemigo:
             print("Soltando pegamento en", pos)
             pegamento = Pegamento(self)  # Crea un pegamento si no hay uno en la misma posición
             self.jugar.lista_pegamento.append(pegamento)
-            print(len(self.jugar.lista_pegamento))
 
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
@@ -298,6 +297,7 @@ class Enemigo:
 class Pegamento:  # Los enemigos más avanzados sueltan pegamento al moverse, que ralentiza al jugador
     def __init__(self, enemigo):
         self.jugar = enemigo.jugar
+        self.jugador = enemigo.jugar.jugador
         self.pantalla = enemigo.pantalla
         self.bx = enemigo.rect.centerx//MEDIDA_BLOQUE+1 #Bloque en x
         self.by = enemigo.rect.centery//MEDIDA_BLOQUE+1 #Bloque en y
@@ -320,7 +320,6 @@ class Pegamento:  # Los enemigos más avanzados sueltan pegamento al moverse, qu
         self.jugar.lista_pegamento.remove(self)
 
     def dibujar(self):
-
         self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja el sprite
 
 
@@ -534,7 +533,7 @@ class Puerta:
     def actualizar(self):
         if self.rect.colliderect(self.jugador.rect) and self.jugador.tiene_llave:
             self.jugador.tiene_llave = False
-            self.jugar.pasar_nivel()
+            self.jugar.menu_mejoras()
 
     def dibujar(self):
         self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))
@@ -743,9 +742,10 @@ class Jugar:
         self.jugador = Jugador(self)
         self.lista_pegamento = []  # Lista para almacenar los pegamentos que sueltan los enemigos
         self.capas = {
-            0:[self.manager_niveles], #  El fondo
+            0:[self.manager_niveles], #  Bloques del nivel
             1:self.asignar_extras(),  #  Capa para objetos (llave, objetos, etc)
-            2:[], #  Capa para bomba
+
+            2:[], #  Capa para bombas y pegamento
             3:self.colocar_enemigos(),
             4:[self.jugador],
             5:[]} #  Capa para explosiones
@@ -774,7 +774,10 @@ class Jugar:
             self.capas[1] = [self.asignar_extras()]
             self.capas[3] = self.colocar_enemigos() #Pone los enemigos
             self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
-        
+    
+    def menu_mejoras(self):
+        pass
+    
     def obtener_rompibles(self):
         bloques = [] #Guarda los bloques rompibles
         for y in range(1, ALTO_MATRIZ+1):
@@ -846,7 +849,48 @@ class Jugar:
         else:
             self.jugador.game_over.dibujar()
 
+
+class Mejoras:
+    def __init__(self, juego):
+        self.juego = juego
+        self.jugador = juego.jugador
+        self.pantalla = juego.pantalla
+        
+        self.puntos = self.jugador.puntos
+        self.precio_vida = 100 + (self.jugador.vida - VIDAS)*200
+        self.precio_golpe = 100 + (self.jugador.golpe - GOLPE)*200
     
+    def crear_botones(self):
+        self.boton_vida = Boton(100, 100, 50, 20, "VIDA", self.pantalla, VERDE)
+        self.boton_golpe = Boton(100, 400, 50, 20, "GOLPE", self.pantalla, ROJO)
+        self.boton_rango = Boton(100, 700, 50, 20, "RANGO", self.pantalla, AZUL)
+        self.pasar_nivel = Boton(1150, 680, 100, 20, "PASAR NIVEL", GRIS)
+    
+    def dibujar(self):
+        self.pantalla.fill(VERDE_AGUA)
+        
+        self.boton_vida.dibujar()
+        self.boton_golpe.dibujar()
+        self.boton_rango.dibujar()
+        self.pasar_nivel.dibujar()
+    
+    def actualizar(self):
+        mouse_pos = pg.mouse.get_pos()
+        click_izq = pg.mouse.get_pressed()[0] #Click izquierdo
+        
+        if self.boton_vida.detectar(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
+            self.puntos -= self.precio_vida
+            self.precio_vida += 200 #Incrementa el precio linearmente 200 cada vez
+            
+        elif self.boton_golpe.detectar(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
+            self.puntos -= self.precio_golpe
+            self.precio_vida += 200 #Incrementa el precio linearmente 200 cada vez
+            
+        elif self.pasar_nivel.detectar(mouse_pos, click_izq):
+            self.jugar.cambiar_modo(self.jugar)
+            self.jugar.pasar_nivel()
+
+
 class Informacion:
     def __init__(self, menu):
         self.menu = menu

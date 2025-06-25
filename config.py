@@ -16,6 +16,8 @@ NEGRO = 0, 0, 0
 ROJO = 232, 58, 5
 GRIS = 100, 100, 100
 VERDE = 0, 255, 0
+VERDE_AGUA = 52, 235, 171
+AZUL = 52, 116, 235
 
 # Variables para el juego
 MARGEN_DESLIZAMIENTO = 5  # Espacio de "spare" para ajustar el movimiento del jugador (en píxeles)
@@ -33,6 +35,7 @@ ANCHO_JUGADOR = int(MEDIDA_BLOQUE * 0.75)
 ALTO_JUGADOR = int(MEDIDA_BLOQUE * 0.75)
 BOMBAS_DISPONIBLES = 10
 VIDAS = 3
+GOLPE = 1
 ENFRIAMIENTO_HABILIDAD = 8000  # Tiempo en milisegundos antes de que el jugador pueda usar la habilidad nuevamente
 
 # Configuración de la bomba
