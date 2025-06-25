@@ -470,9 +470,10 @@ class Puerta:
         self.jugador = jugador  # Jugador que abrirá la puerta
         self.pantalla = pantalla  # Pantalla donde se dibuja la puerta
         self.sprite = cargar_puerta()  # Carga el sprite de la puerta desde la hoja de sprites
+        self.rect = Rect((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la puerta en el canvas (uso para colisiones)
 
     def actualizar(self):
-        if self.nivel[self.y_bloque][self.x_bloque] == 0 and self.jugador.tiene_llave:
+        if self.rect.colliderect(self.jugador.rect) and self.jugador.tiene_llave:
             self.jugador.tiene_llave = False
             print("xd")
             # TODO PONER LÓGICA PARA CAMBIAR DE NIVEL
