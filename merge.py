@@ -199,12 +199,12 @@ class Enemigo:
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
         self.numero_skin = 1  # Número de skin del enemigo (se puede cambiar para hacerlo más complicado)
         self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_inciales_skins_enemigos)  # Carga la skin del enemigo desde la hoja de sprites
-        self.direccion = 'abajo'  # Dirección inicial del enemigo (y a la que está mirando)
         self.vidas = 1
         self.velocidad = 2
-        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
+        self.rect = Rect(self.x, self.y, int(MEDIDA_BLOQUE*0.75), int(MEDIDA_BLOQUE*0.75))  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
         self.movimientos = {"arriba" : (0, -self.velocidad), "abajo" : (0, self.velocidad), "izquierda" : (-self.velocidad, 0), "derecha" : (self.velocidad, 0)}  # Diccionario con los movimientos posibles
         self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
+        self.sprite = self.skin_hoja_sprites[self.movimiento_elegido][self.frame] #Sprite inicial del enemigo
         
         self.moviendose = False
 
@@ -257,11 +257,11 @@ class Enemigo:
         if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el enemigo se está moviendo y han pasado 150ms
             self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
             self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
-        self.sprite = self.skin_hoja_sprites[self.direccion][self.frame]
+        self.sprite = self.skin_hoja_sprites[self.movimiento_elegido][self.frame]
 
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
-        self.pantalla.blit(self.skin_hoja_sprites[self.movimiento_elegido][self.frame], (self.x, self.y))  # Dibuja el sprite del jugador en la pantalla
+        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))  # Dibuja el sprite del jugador en la pantalla
         
         
 class Bomba:
@@ -299,7 +299,6 @@ class Bomba:
         
     
     def actualizar(self):
-        print(self.hitbox_activa)
         if not self.hitbox_activa and (self.bx,self.by) not in self.jugador.sacar_esquinas(self.jugador.rect): #Crea la hitbox de la bomba cuando el jugador se va
             self.hitbox_activa = True
             self.jugar.nivel[self.by][self.bx] = 3 #Pone un bloque invisible
