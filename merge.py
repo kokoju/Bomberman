@@ -39,6 +39,7 @@ class Jugador:
         self.vidas = 10
         self.bombas = 10
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
+        self.golpe = GOLPE_INICIAL_BOMBA  # Daño que causa el jugador al explotar una bomba
         self.rango = 1 #Rango inicial de la bomba
         self.moviendose = False  # Indica si el jugador se está moviendo o no
         
@@ -152,7 +153,7 @@ class Jugador:
     
     def morir(self):
         if self.vidas > 0:
-            self.vidas -= 1
+            self.vidas -= 1  # Cada golpe (de bomba o enemigo) resta uno de vida (hecho así para que castigue menos si la bomba tiene más daño)
             hilo = Thread(target=self.invulnerabilidad)
             hilo.daemon = True
             hilo.start()
@@ -281,7 +282,7 @@ class Bomba:
         self.frame = 0
         self.sprite = self.sprites["bomba"][0]
         self.tiempo_detonar = 2000  # Tiempo en ms para que la bomba explote
-        self.hit = 1 # Daño que causa la bomba al explotar
+        self.golpe = jugador.golpe # Daño que causa la bomba al explotar
         self.activa = True
         self.hitbox_activa = False #Se activa cuando el jugador se mueve fuera de la bomba
         
@@ -449,6 +450,7 @@ class Llave:
         self.bloque_roto = False  # Indica si el bloque donde se encuentra la llave ha sido roto
 
     def actualizar(self):
+        # print(self.nivel[self.y_bloque][self.x_bloque])  # Imprime el estado del bloque donde se encuentra la llave
         if self.nivel[self.y_bloque][self.x_bloque] == 0:
             self.bloque_roto = True
         if self.rect.colliderect(self.jugador.rect):
@@ -461,9 +463,9 @@ class Llave:
 
 
 class Puerta:
-    def __init__(self, jugar, x, y):
+    def __init__(self, jugar, y):
         self.jugar = jugar
-        self.x_bloque = x  # Posición en el eje X del bloque donde se encuentra la puerta
+        self.x_bloque = ANCHO_MATRIZ  # Posición en el eje X del bloque donde se encuentra la puerta
         self.y_bloque = y  # Posición en el eje Y del bloque donde se encuentra la puerta
         self.nivel = jugar.nivel  # Nivel donde se encuentra la puerta (se usa para verificar colisiones)
         self.jugador = jugar.jugador  # Jugador que abrirá la puerta
@@ -477,12 +479,39 @@ class Puerta:
             self.jugar.pasar_nivel()
 
     def dibujar(self):
-        self.pantalla.blit(self.sprite, self.rect)
+        self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))
 
 
-class Objetos:
-    pass
+class Caramelos:  # Los caramelos son un objeto que se encuentra en el nivel, y al recogerlos, el jugador gana estadísticas (daño, rango, vida)
+    # Estos, al igual que la llave, se encuentran dentro de un bloque aleatorio del nivel, y aparecen al romperlo
+    def __init__(self, x, y, jugar):
+        self.x_bloque = x
+        self.y_bloque = y
+        self.jugar = jugar
+        self.nivel = self.jugar.nivel  # Nivel donde se encuentra el caramelo (se usa para verificar colisiones)
+        self.jugador = self.jugar.jugador  # Jugador que recogerá el caramelo
+        self.pantalla = self.jugar.pantalla_juego  # Pantalla donde se dibuja el caramelo
+        self.tipo = choice(["daño", "rango", "vida"])  # Tipo de caramelo (vida, rango o daño)
+        self.sprite = cargar_caramelos()[self.tipo]  # Carga el sprite del caramelo desde la hoja de sprites
+        self.rect = Rect((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE)
+        self.bloque_roto = False  # Indica si el bloque donde se encuentra el caramelo ha sido roto
 
+    def actualizar(self):
+        if self.nivel[self.y_bloque][self.x_bloque] == 0:  # Si el bloque donde se encuentra el caramelo ha sido roto
+            self.bloque_roto = True
+        if self.rect.colliderect(self.jugador.rect):  # Si el jugador colisiona con el caramelo
+            if self.tipo == "daño":
+                self.jugador.golpe += 1  # Aumenta el daño del jugador
+            elif self.tipo == "rango":
+                self.jugador.rango += 1  # Aumenta el rango de la bomba del jugador
+            elif self.tipo == "vida":
+                self.jugador.vidas += 1  # Aumenta la vida del jugador
+            self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
+
+    def dibujar(self):
+        if self.bloque_roto:
+            self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))  # Dibuja el sprite del caramelo en la pantalla
+    
 
 # Clase para botones: necesario para los botones del menú
 class Boton:
@@ -498,9 +527,9 @@ class Boton:
         self.rect = pg.Rect(self.x, self.y, self.ancho, self.alto)  # Rectángulo que representa el botón para colisiones
         self.fuente = fuente_texto
         
-        #Permite que no detecta un click todo el tiempi que mantiene click si no solo uno
-        self.fue_presionado = False #Pasado
-        self.presionado = False  #Presente
+        # Permite que no detecta un click todo el tiempo que mantiene click si no solo uno
+        self.fue_presionado = False # Pasado
+        self.presionado = False  # Presente
 
     def detectar(self, mouse_pos, *botones):
         if self.rect.collidepoint(mouse_pos) and any(botones) and not self.presionado:
@@ -518,10 +547,10 @@ class Boton:
         self.pantalla.blit(texto_renderizado, (self.rect.x + (self.rect.width - texto_renderizado.get_width()) // 2, self.rect.y + (self.rect.height - texto_renderizado.get_height()) // 2))  # Dibuja el texto centrado en el botón
 
     def detectar_presionado(self, mouse_pos, *presses):
-        ahora_presionado = any(presses) #Si presiono cualquier boton valido
-        self.presionado = self.rect.collidepoint(mouse_pos) and ahora_presionado #self.presionado = mouse encima del boton y lo presiona
-        presionado = self.presionado and not self.fue_presionado #Si acaba de presionar (no solo esta manteniendo click)
-        self.fue_presionado = ahora_presionado #Actualiza fue_presionado
+        ahora_presionado = any(presses) # Si presiono cualquier boton valido
+        self.presionado = self.rect.collidepoint(mouse_pos) and ahora_presionado # self.presionado = mouse encima del boton y lo presiona
+        presionado = self.presionado and not self.fue_presionado # Si acaba de presionar (no solo esta manteniendo click)
+        self.fue_presionado = ahora_presionado #A ctualiza fue_presionado
         return presionado
 
 class Menu:
@@ -576,7 +605,7 @@ class Niveles:
         self.niveles = cargar_niveles()
         self.sprites = cargar_bloques()
         self.num_nivel = 1
-        self.nivel = self.niveles[0] #Inicia en el nivel 1
+        self.nivel = self.niveles[0]  # Inicia en el nivel 1
             
     def pasar_nivel(self):
         if 1 <= self.num_nivel+1 <= len(self.niveles):
@@ -592,7 +621,7 @@ class Niveles:
                 self.pantalla.blit(self.sprites[ID], ((x-1)*MEDIDA_BLOQUE, (y-1)*MEDIDA_BLOQUE))
                 
         if self.jugar.debug:
-            #Dibuja las lineas del grid
+            # Dibuja las lineas del grid
             for x in range(1, ANCHO_MATRIZ):
                 draw.line(self.pantalla, NEGRO, (x*MEDIDA_BLOQUE, 0), (x*MEDIDA_BLOQUE, ALTO_PANTALLA))
             for y in range(1, ALTO_MATRIZ):
@@ -600,6 +629,45 @@ class Niveles:
                 
     def actualizar(self):
         pass
+    
+    def cambio_nivel(self, num_nivel):
+        if 1 <= num_nivel < len(self.niveles): # Verifica si existe el numero de nivel
+            self.num_nivel = num_nivel
+            self.nivel = self.niveles[num_nivel-1]
+            
+        elif num_nivel == len(self.niveles): # Se devuelve al primer nivel al terminar TODO (por que se devuelve? No deberia terminar y ya)
+            self.nivel = self.num_niveles[0]
+            
+        else:
+            pass #TODO poner resultados o no se que queria hacer Juan
+
+class DestruyeBloque:
+    def __init__(self, jugar, x, y):
+        self.jugar = jugar
+        self.pantalla = jugar.pantalla
+        self.jugar.capas[4].append(self) #Capa del nivel
+        self.x = x
+        self.y = y
+        self.sprite = jugar.manager_niveles.sprites[2]
+        self.frames_totales = 10
+        self.frame_actual = 0
+        self.terminado = False
+        
+    def actualizar(self):
+        self.frame_actual += 1
+        if self.frame_actual >= self.frames_totales:
+            self.jugar.capas[4].remove(self)
+
+    def dibujar(self):
+        # Escala proporcional inversa
+        escala = max(1, int(MEDIDA_BLOQUE * max(0.01, 1 - self.frame_actual / self.frames_totales)))
+        sprite_escalado = pg.transform.scale(self.sprite, (escala, escala))
+
+        # Para que se mantenga centrado al reducir tamaño
+        offset_x = (MEDIDA_BLOQUE - escala) // 2
+        offset_y = (MEDIDA_BLOQUE - escala) // 2
+        self.pantalla.blit(sprite_escalado, (self.x * MEDIDA_BLOQUE + offset_x, self.y * MEDIDA_BLOQUE + offset_y))
+
 
 
 # Clase del juego

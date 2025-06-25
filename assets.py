@@ -109,6 +109,14 @@ def cargar_bomba():
                        pg.transform.rotate(b3, 90)],
     }
     
+def cargar_caramelos():
+    sprites_caramelos = Spritesheet("assets/spritesheet_caramelos.png")
+    return {
+        "daño": sprites_caramelos.cargar_sprite(0, 0, 16, 16, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+        "rango": sprites_caramelos.cargar_sprite(16, 0, 16, 16, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+        "vida": sprites_caramelos.cargar_sprite(32, 0, 16, 16, MEDIDA_BLOQUE, MEDIDA_BLOQUE)
+    }
+
 def cargar_logo():
     return pg.transform.scale(pg.image.load("assets/logo.png").convert_alpha(),
                               (512, 512)) #512x512 pixeles

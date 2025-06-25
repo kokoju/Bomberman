@@ -36,4 +36,7 @@ VIDAS = 3
 
 # Configuración de la bomba
 TIEMPO_DETONACION_BOMBA = 2000 # Tiempo en milisegundos antes de que la bomba explote 
-HIT_BOMBA = 1  # Daño que causa la bomba al jugador y a los enemigos
+GOLPE_INICIAL_BOMBA = 1  # Daño que causa la bomba al jugador y a los enemigos
+
+# Configuración de los caramelos
+CANTIDAD_CARAMELOS = 8  # Cantidad de caramelos máximos que aparecen en cada nivel (se toma si hay más bloques destructibles que caramelos requeridos)
