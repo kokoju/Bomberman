@@ -533,7 +533,7 @@ class Puerta:
     def actualizar(self):
         if self.rect.colliderect(self.jugador.rect) and self.jugador.tiene_llave:
             self.jugador.tiene_llave = False
-            self.jugar.pasar_nivel()
+            self.jugar.menu_mejoras()
 
     def dibujar(self):
         self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))
@@ -853,7 +853,7 @@ class Jugar:
     def asignar_extras(self):
         bloques = self.obtener_rompibles()
         coords = choice(bloques)
-        puerta = Puerta(self, coords[1])
+        puerta = Puerta(self, coords[0], coords[1])
         bloques.remove(coords)
         coords = choice(bloques)
         llave = Llave(self, coords[0], coords[1])
