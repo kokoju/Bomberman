@@ -72,13 +72,17 @@ class Jugador:
     def actualizar(self):
         keys = pg.key.get_pressed()
         dx, dy = 0, 0
+        if any(self.rect.colliderect(el.rect) for el in self.jugar.lista_pegamento):  # Si el jugador colisiona con el pegamento
+            velocidad = RALENTIZACION_PEGAMENTO * self.velocidad  # Reduce la velocidad del jugador al pisar el pegamento
+        else:
+            velocidad = self.velocidad  # Velocidad normal del jugador
         # Saca el input del usuario
         self.moviendose = False
         self.movimientos_posibles = {
-            K_w: (0, -(self.velocidad), "arriba"),  # Arriba
-            K_s: (0, self.velocidad, "abajo"),     # Abajo
-            K_a: (-(self.velocidad), 0, "izquierda"), # Izquierda
-            K_d: (self.velocidad, 0, "derecha")     # Derecha
+            K_w: (0, -(velocidad), "arriba"),  # Arriba
+            K_s: (0, velocidad, "abajo"),     # Abajo
+            K_a: (-(velocidad), 0, "izquierda"), # Izquierda
+            K_d: (velocidad, 0, "derecha")     # Derecha
         }
 
         for tecla in self.movimientos_posibles.keys():
@@ -288,6 +292,8 @@ class Pegamento:  # Los enemigos más avanzados sueltan pegamento al moverse, qu
         self.activo = True  # Indica si el pegamento está activo
         self.tiempo_creacion = pg.time.get_ticks()  # Tiempo de creación del pegamento
         self.hilo = Thread(target=self.duracion)  # Crea un hilo para actualizar el pegamento
+        self.hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
+        self.hilo.start()
 
     def actualizar(self):
         pass
@@ -766,7 +772,7 @@ class Jugar:
     def asignar_extras(self):
         bloques = self.obtener_rompibles()
         coords = choice(bloques)
-        puerta = Puerta(self, coords[0], coords[1])
+        puerta = Puerta(self, coords[1])
         bloques.remove(coords)
         coords = choice(bloques)
         llave = Llave(self, coords[0], coords[1])
@@ -787,8 +793,6 @@ class Jugar:
         for capa in sorted(self.capas.keys()): #Actualiza entidades (jugador, enemigos, bombas...)
             for entidad in self.capas[capa]:
                 entidad.actualizar()
-            for pegamento in self.lista_pegamento:  # Actualiza los pegamentos que sueltan los enemigos
-                pegamento.actualizar()  
 
     def eventos(self, evento):
         self.jugador.eventos(evento)
@@ -808,11 +812,13 @@ class Jugar:
         if not hasattr(self.jugador,"game_over"):  # Si el jugador ha perdido, dibuja la pantalla de Game Over
             self.pantalla_juego.fill(BLANCO)
             
+
             for capa in sorted(self.capas.keys()): #Dibuja entidades (jugador, enemigos, bombas...)
                 for entidad in self.capas[capa]:  # Recorre cada capa y dibuja las entidades
                     entidad.dibujar()
-                for pegamento in self.lista_pegamento:  # Dibuja los pegamentos que sueltan los enemigos
-                    pegamento.dibujar()
+                if capa == 1:  # Después de dibujar los elementos de la capa 1, dibuja el pegamento
+                    for pegamento in self.lista_pegamento:  # Dibuja los pegamentos que sueltan los enemigos
+                        pegamento.dibujar()
             
             #Dibuja la pantalla de juego en la principal
             self.pantalla.blit(self.pantalla_juego, (SEPARACION_BORDES_PANTALLA, MEDIDA_HUD))
