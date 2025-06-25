@@ -52,6 +52,7 @@ class Jugador:
         self.rect = Rect(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR, ANCHO_JUGADOR, ALTO_JUGADOR) #  Rectangulo del jugador para posicion y colision
         
         self.invulnerable = False
+        self.invulnerabilidad() #Inicia invulnerable
         
     def sacar_esquinas(self, rect):
         #Hay un offset de 1 porque hay un borde no visible de bloques solidos
@@ -508,7 +509,6 @@ class Llave:
         self.bloque_roto = False  # Indica si el bloque donde se encuentra la llave ha sido roto
 
     def actualizar(self):
-        # print(self.nivel[self.y_bloque][self.x_bloque])  # Imprime el estado del bloque donde se encuentra la llave
         if self.nivel[self.y_bloque][self.x_bloque] == 0:
             self.bloque_roto = True
         if self.rect.colliderect(self.jugador.rect):
@@ -517,14 +517,14 @@ class Llave:
 
     def dibujar(self):
         if self.bloque_roto and not self.jugador.tiene_llave:
-            self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))  # Dibuja el sprite de la llave en la pantalla
+            self.pantalla.blit(self.sprite, self.rect)  # Dibuja el sprite de la llave en la pantalla
 
 
 class Puerta:
-    def __init__(self, jugar, y):
+    def __init__(self, jugar, x, y):
         self.jugar = jugar
-        self.x_bloque = ANCHO_MATRIZ  # Posición en el eje X del bloque donde se encuentra la puerta
-        self.y_bloque = y  # Posición en el eje Y del bloque donde se encuentra la puerta
+        self.x_bloque = x
+        self.y_bloque = y
         self.nivel = jugar.nivel  # Nivel donde se encuentra la puerta (se usa para verificar colisiones)
         self.jugador = jugar.jugador  # Jugador que abrirá la puerta
         self.pantalla = jugar.pantalla_juego  # Pantalla donde se dibuja la puerta
@@ -768,7 +768,7 @@ class Jugar:
     def pasar_nivel(self):
         if self.manager_niveles.pasar_nivel():
             self.nivel = self.manager_niveles.nivel #Cambia los datos de nivel
-            self.jugador.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
+            self.jugador.rect.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
             self.jugador.nivel = self.nivel #Cambia el nivel del jugador
             self.jugador.bombas += BOMBAS_DISPONIBLES
             self.capas[1] = [self.asignar_extras()]
