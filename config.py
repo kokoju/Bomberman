@@ -24,7 +24,7 @@ ANCHO_BOTON = 200  # Ancho de los botones en el menú
 ALTO_BOTON = 50  # Alto de los botones en el menú
 
 TEXTO_INFO = "Desarrollado por: \n Juan Andrés Bastidas López - 2025066242\n Pablo Vargas Monge - 2025064957\nAmbos son estudiantes del ITCR, cursando la carrera de Ingeniería en Computación y entregando este trabajo como el III proyecto de Introducción a la programación.\nAño 2025 - Primer Semestre\n Profesores: Diego Mora Rojas y Jeff Schmidt Peralta\n Versión 1.0" 
-VALOR_INCIAL_VOLUMEN = 0.5  # Valor inicial del volumen de la música (entre 0 y 1)
+VALOR_INCIAL_VOLUMEN = 0.0  # Valor inicial del volumen de la música (entre 0 y 1)  # TODO PONER EN 0.5
 
 # Jugador
 X_INICIAL_JUGADOR = 0
