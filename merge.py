@@ -533,7 +533,7 @@ class Puerta:
     def actualizar(self):
         if self.rect.colliderect(self.jugador.rect) and self.jugador.tiene_llave:
             self.jugador.tiene_llave = False
-            self.jugar.pasar_nivel()
+            self.jugar.menu_mejoras()
 
     def dibujar(self):
         self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))
@@ -851,7 +851,6 @@ class Jugar:
 
     def asignar_extras(self):
         pass
-        
     
     def dibujar_HUD(self):
         pass
