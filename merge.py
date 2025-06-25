@@ -539,8 +539,37 @@ class Puerta:
     def dibujar(self):
         self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))
 
+class Pociones:  # Las pociones son un objeto que se encuentra en el nivel, y al recogerlos y usarlos, el jugador gana habilidades especiales temporalmente - ITEMS
+    # Estos, al igual que la llave, se encuentran dentro de un bloque aleatorio del nivel, y aparecen al romperlo
+    def __init__(self, x, y, jugar):
+        self.x_bloque = x
+        self.y_bloque = y
+        self.jugar = jugar
+        self.nivel = self.jugar.nivel  # Nivel donde se encuentra la poción (se usa para verificar colisiones)
+        self.jugador = self.jugar.jugador  # Jugador que recogerá la poción
+        self.pantalla = self.jugar.pantalla_juego  # Pantalla donde se dibuja la poción
+        self.tipo = choice(["velocidad", "invulnerabilidad"])  # Tipo de poción (velocidad o invulnerabilidad)
+        self.sprite = cargar_pociones()[self.tipo]  # Carga el sprite de la poción desde la hoja de sprites
+        self.rect = Rect((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE)
+        self.bloque_roto = False  # Indica si el bloque donde se encuentra la poción ha sido roto
 
-class Caramelos:  # Los caramelos son un objeto que se encuentra en el nivel, y al recogerlos, el jugador gana estadísticas (daño, rango, vida)
+    def actualizar(self):
+        if self.nivel[self.y_bloque][self.x_bloque] == 0:  # Si el bloque donde se encuentra la poción ha sido roto
+            self.bloque_roto = True
+        if self.rect.colliderect(self.jugador.rect):  # Si el jugador colisiona con el caramelo
+            if self.tipo == "velocidad":
+                self.jugador.tiene_item_1 = True  # Hace que el jugador pueda usar la habilidad de velocidad (1)
+            elif self.tipo == "invulnerabilidad":
+                self.jugador.tiene_item_2 = True  # Hace que el jugador pueda usar la habilidad de invulnerabilidad (2)
+            self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
+
+    def dibujar(self):
+        if self.bloque_roto:
+            self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))  # Dibuja el sprite de la poción en la pantalla
+
+
+
+class Caramelos:  # Los caramelos son un objeto que se encuentra en el nivel, y al recogerlos, el jugador gana estadísticas (daño, rango, vida) -> POWER-UPS
     # Estos, al igual que la llave, se encuentran dentro de un bloque aleatorio del nivel, y aparecen al romperlo
     def __init__(self, x, y, jugar):
         self.x_bloque = x
