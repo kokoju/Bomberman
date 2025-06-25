@@ -517,9 +517,9 @@ class Llave:
 
 
 class Puerta:
-    def __init__(self, jugar, x, y):
+    def __init__(self, jugar, y):
         self.jugar = jugar
-        self.x_bloque = x
+        self.x_bloque = ANCHO_MATRIZ  # La puerta se encuentra en el borde derecho del nivel
         self.y_bloque = y
         self.nivel = jugar.nivel  # Nivel donde se encuentra la puerta (se usa para verificar colisiones)
         self.jugador = jugar.jugador  # Jugador que abrirá la puerta
@@ -537,7 +537,7 @@ class Puerta:
 
 class Pociones:  # Las pociones son un objeto que se encuentra en el nivel, y al recogerlos y usarlos, el jugador gana habilidades especiales temporalmente - ITEMS
     # Estos, al igual que la llave, se encuentran dentro de un bloque aleatorio del nivel, y aparecen al romperlo
-    def __init__(self, x, y, jugar):
+    def __init__(self, jugar, x, y):
         self.x_bloque = x
         self.y_bloque = y
         self.jugar = jugar
@@ -565,7 +565,7 @@ class Pociones:  # Las pociones son un objeto que se encuentra en el nivel, y al
 
 class Caramelos:  # Los caramelos son un objeto que se encuentra en el nivel, y al recogerlos, el jugador gana estadísticas (daño, rango, vida) -> POWER-UPS
     # Estos, al igual que la llave, se encuentran dentro de un bloque aleatorio del nivel, y aparecen al romperlo
-    def __init__(self, x, y, jugar):
+    def __init__(self, jugar, x, y):
         self.x_bloque = x
         self.y_bloque = y
         self.jugar = jugar
@@ -618,8 +618,7 @@ class Boton:
             return True
         else:
             self.presionado = False
-        return False
-            
+        return False    
         
     def dibujar(self):
         pg.draw.rect(self.pantalla, self.color, self.rect)  # Dibuja el botón en la pantalla
@@ -651,8 +650,6 @@ class Menu:
         self.musica = game.canciones[0]
         self.botones = self.crear_botones()  # Crea los botones del menú
         self.logo = cargar_logo()
-
-
 
     def crear_botones(self):
         botones = []  # Lista de botones del menú
@@ -819,7 +816,7 @@ class Jugar:
             (x, y) for y in range(1, ALTO_MATRIZ + 1) for x in range(1, ANCHO_MATRIZ + 1) if self.nivel[y][x] == 2
         ]  # Encuentra todos los bloques destructibles
         x, y = choice(bloques_disponibles)  # Selecciona un bloque aleatorio de los bloques destructibles
-        self.llave = Llave(x, y, self)
+        self.llave = Llave(self, x, y)
         return self.llave  # Retorna la llave generada aleatoriamente en el nivel actual
 
     def asignar_puerta(self):
@@ -828,7 +825,7 @@ class Jugar:
             (ANCHO_MATRIZ, y) for y in range(1, ALTO_MATRIZ + 1) if self.nivel[y][ANCHO_MATRIZ] == 0
         ]  # Encuentra todos los bloques donde se puede colocar la puerta
         x, y = choice(bloques_disponibles)  # Selecciona un bloque aleatorio de los bloques destructibles
-        self.puerta = Puerta(ANCHO_MATRIZ, y, self.nivel, self.jugador, self.pantalla_juego)
+        self.puerta = Puerta(self, y)
         return self.puerta
             
     def asignar_consumibles(self):
@@ -838,24 +835,25 @@ class Jugar:
         bloques_disponibles = [
             (x, y) for y in range(1, ALTO_MATRIZ + 1) for x in range(1, ANCHO_MATRIZ + 1) if self.nivel[y][x] == 2 and not (self.llave.x_bloque == x and self.llave.y_bloque == y)
         ]  # Encuentra todos los bloques destructibles que no sean el de la llave
+        print(bloques_disponibles)
         # Asegura que no se generen más pociones que bloques disponibles (se puede establecer una cantidad máxima de caramelos con CANTIDAD_CARAMELOS)
         cantidad_pociones = min(CANTIDAD_POCIONES, len(bloques_disponibles))        
         while len(pociones) < cantidad_pociones:  # Genera caramelos hasta alcanzar la cantidad deseada
             x, y = choice(bloques_disponibles)
-            pocion = Pociones(x, y, self)
+            pocion = Pociones(self, x, y)
             caramelos.append(pocion)
             bloques_disponibles.remove((x, y))  # Elimina el bloque donde se generó el caramelo para evitar duplicados
         cantidad_caramelos = min(CANTIDAD_CARAMELOS, len(bloques_disponibles))  # Asegura que no se generen más caramelos que bloques disponibles
         while len(caramelos) < cantidad_caramelos:  # Genera caramelos hasta alcanzar la cantidad deseada
             x, y = choice(bloques_disponibles)
-            caramelo = Caramelos(x, y, self)
+            caramelo = Caramelos(self, x, y)
             caramelos.append(caramelo)
             bloques_disponibles.remove((x, y))  # Elimina el bloque donde se generó el caramelo para evitar duplicados
         
         return pociones + caramelos  # Retorna una lista de caramelos generados aleatoriamente en el nivel actual
 
     def asignar_extras(self):
-        pass
+        return [self.asignar_llave(), self.asignar_puerta] + self.asignar_consumibles()  # Retorna una lista de objetos extras (llave, puerta, caramelos y pociones) generados aleatoriamente en el nivel actual
     
     def dibujar_HUD(self):
         pass
