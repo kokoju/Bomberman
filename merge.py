@@ -103,17 +103,17 @@ class Jugador:
             self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
                    
     def actualizar_frame_sprite(self):
-        if self.moviendose: #Jugador se mueve
+        if self.moviendose: # Jugador se mueve
             self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
             self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
-        else: #Jugador no se mueve
-            self.frame = 0 #Reinicia
+        else: # Jugador no se mueve
+            self.frame = 0 # Reinicia
         self.sprite = self.skin_hoja_sprites[self.direccion][self.frame]
 
 
     def dibujar(self):
         if self.jugar.debug:
-            #Dibuja la hitbox del jugador
+            # Dibuja la hitbox del jugador
             draw.rect(self.pantalla, ROJO, self.rect, 2)
             
         if self.invulnerable and time.get_ticks() % 200 < 100:
@@ -125,7 +125,7 @@ class Jugador:
         if not self.invulnerable and self.bombas > 0:
             bx = self.rect.centerx//MEDIDA_BLOQUE+1
             by = self.rect.centery//MEDIDA_BLOQUE+1
-            for bomba in self.jugar.capas[2]: #No poner bombas encima de otras
+            for bomba in self.jugar.capas[2]: # No poner bombas encima de otras
                 if (bomba.bx, bomba.by) == (bx, by):
                     return
                 
@@ -285,15 +285,15 @@ class Bomba:
         self.activa = True
         self.hitbox_activa = False #Se activa cuando el jugador se mueve fuera de la bomba
         
-        self.jugar.capas[2].append(self) #Capa de las bombas
+        self.jugar.capas[2].append(self) #  Capa de las bombas
         hilo = Thread(target=self.detonar) #Crea un hilo para la bomba
         hilo.daemon = True
         hilo.start()
 
     def detonar(self):
-        sleep(self.tiempo_detonar/1000) #Pasa el tiempo a segundos
+        sleep(self.tiempo_detonar/1000) #  Pasa el tiempo a segundos
         self.activa = False #Explota
-        self.jugar.nivel[self.by][self.bx] = 0 #Quita la hitbox
+        self.jugar.nivel[self.by][self.bx] = 0 #  Quita la hitbox
         Explosion(self, self.rango)
         self.jugar.capas[2].remove(self) #Ya no procesa la bomba
         
@@ -331,7 +331,7 @@ class Explosion:
         self.activa = True
         self.frame = 0
         self.disipador = 1 #Variable para subir los frames y devolverlos al final, dando un efecto de que se disipa la bomba
-        self.jugar.capas[4].append(self) #Agrega la explosion para ser procesada
+        self.jugar.capas[5].append(self) #  Agrega la explosion para ser procesada
         self.frame_expansion = len(self.sprites["centro"]) - len(self.sprites["izquierda"]) #Cuantos frames pasan del centro antes de la explosion hacia los lados
         self.ultima_actualizacion_frame = time.get_ticks()
         self.bloques_afectados, self.bloques_rotos = self.obtener_bloques_afectados()
@@ -369,11 +369,11 @@ class Explosion:
             if not self.jugador.invulnerable and (x, y) == (self.jugador.rect.centerx//MEDIDA_BLOQUE+1, self.jugador.rect.centery//MEDIDA_BLOQUE+1): #Si el jugador no esta invulnerable
                 self.jugador.morir()
                 break
-            for enemigo in self.jugar.capas[1]: #Capa donde se guardan los enemigos
+            for enemigo in self.jugar.capas[3]: #Capa donde se guardan los enemigos
                 if (x, y) == (enemigo.rect.centerx//MEDIDA_BLOQUE+1, enemigo.rect.centery//MEDIDA_BLOQUE+1):
                     enemigo.vidas -= 1
                     if enemigo.vidas < 1:
-                        self.jugar.capas[1].remove(enemigo)
+                        self.jugar.capas[3].remove(enemigo)
                         self.jugador.puntaje += 100  # Aumenta el puntaje del jugador al matar un enemigo
     
     def actualizar(self):
@@ -391,7 +391,7 @@ class Explosion:
             self.disipador = -1
             
         elif self.frame == self.frame_expansion and self.disipador == -1:
-            self.jugar.capas[4].remove(self) #En la capa 4 se guardan las explosiones, por tanto se remuve al terminar
+            self.jugar.capas[5].remove(self) #En la capa 5 se guardan las explosiones, por tanto se remuve al terminar
 
     def dibujar(self):
         if self.frame < self.frame_expansion:
@@ -437,28 +437,48 @@ class Jefe:
 
 # Función para cargar la llave, es especial, porque es un objeto que se encuentra dentro de un bloque aleatorio del nivel, y aparece al romperlo
 class Llave:
-    def __init__(self, x, y, nivel, jugador, pantalla):
+    def __init__(self, x, y, jugar):
         self.x_bloque = x  # Posición en el eje X del bloque donde se encuentra la llave
         self.y_bloque = y  # Posición en el eje Y del bloque donde se encuentra la llave
-        self.nivel = nivel  # Nivel donde se encuentra la llave (se usa para verificar colisiones)
-        self.jugador = jugador  # Jugador que recogerá la llave
-        self.pantalla = pantalla  # Pantalla donde se dibuja la llave
+        self.jugar = jugar
+        self.nivel = self.jugar.nivel  # Nivel donde se encuentra la llave (se usa para verificar colisiones)
+        self.jugador = self.jugar.jugador  # Jugador que recogerá la llave
+        self.pantalla = self.jugar.pantalla_juego  # Pantalla donde se dibuja la llave
         self.sprite = cargar_llave()  # Carga el sprite de la llave desde la hoja de sprites
         self.rect = Rect((self.x_bloque - 1)* MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la llave en el canvas (uso para colisiones)
         self.bloque_roto = False  # Indica si el bloque donde se encuentra la llave ha sido roto
 
     def actualizar(self):
+        print(self.nivel[self.y_bloque][self.x_bloque])
         if self.nivel[self.y_bloque][self.x_bloque] == 0:
             self.bloque_roto = True
         if self.rect.colliderect(self.jugador.rect):
             self.jugador.tiene_llave = True
-        print(self.sprite)
-        print(self.x_bloque, self.y_bloque)
+            self.jugar.capas[1].remove(self)  # Elimina la llave de la capa de objetos
+        # print(self.x_bloque, self.y_bloque)
 
     def dibujar(self):
-        if self.bloque_roto and not self.jugador.tiene_llave:  # Verifica si el bloque donde se encuentra la llave está vacío (aire)
+        if self.bloque_roto and not self.jugador.tiene_llave:
             self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))  # Dibuja el sprite de la llave en la pantalla
 
+
+class Puerta:
+    def __init__(self, x, y, nivel, jugador, pantalla):
+        self.x_bloque = x  # Posición en el eje X del bloque donde se encuentra la puerta
+        self.y_bloque = y  # Posición en el eje Y del bloque donde se encuentra la puerta
+        self.nivel = nivel  # Nivel donde se encuentra la puerta (se usa para verificar colisiones)
+        self.jugador = jugador  # Jugador que abrirá la puerta
+        self.pantalla = pantalla  # Pantalla donde se dibuja la puerta
+        self.sprite = cargar_puerta()  # Carga el sprite de la puerta desde la hoja de sprites
+
+    def actualizar(self):
+        if self.nivel[self.y_bloque][self.x_bloque] == 0 and self.jugador.tiene_llave:
+            self.jugador.tiene_llave = False
+            print("xd")
+            # TODO PONER LÓGICA PARA CAMBIAR DE NIVEL
+
+    def dibujar(self):
+        self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))
 
 
 class Objetos:
@@ -630,11 +650,11 @@ class Jugar:
         self.jugador = Jugador(self)
         self.capas = {
             0:[self.manager_niveles], #  El fondo
-            1:self.colocar_enemigos(),
+            1:[self.asignar_llave(), self.asignar_puerta()],  #  Capa para objetos (llave, objetos, etc)
             2:[], #  Capa para bomba
-            3:[self.jugador],
-            4:[], #  Capa para explosiones
-            5:self.asignar_llave()}  #  Capa para objetos (llave, objetos, etc)
+            3:self.colocar_enemigos(),
+            4:[self.jugador],
+            5:[]} #  Capa para explosiones
         
     def colocar_enemigos(self):
         coords_ocupadas = [(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR)]
@@ -668,12 +688,20 @@ class Jugar:
     
     def asignar_llave(self):
         # Generamos un x y un y aleatorios dentro del areajugable
-        while not hasattr(self, "llave"):
+        while not hasattr(self, "llave"):  # Mientras no tenga atributo "llave"
             x = randint(1, ANCHO_MATRIZ)
             y  = randint(1, ALTO_MATRIZ)
             if self.nivel[y][x] == 2:  # Si el bloque aleatoriamente generado es un bloque destructible
-                self.llave = Llave(x, y, self.nivel, self.jugador, self.pantalla_juego)
-                return [self.llave]
+                self.llave = Llave(x, y, self)
+                return self.llave
+    
+    def asignar_puerta(self):
+        # La puerta es un caso especial, ya que solo vamos a generarla al final del
+        while not hasattr(self, "puerta"):
+            y = randint(1, ALTO_MATRIZ)
+            if self.nivel[y][ANCHO_MATRIZ] == 0:
+                self.puerta = Puerta(ANCHO_MATRIZ, y, self.nivel, self.jugador, self.pantalla_juego)
+                return self.puerta
         
     
     def dibujar_HUD(self):
@@ -788,7 +816,7 @@ class Informacion:
     def actualizar(self):
         pass #No hay que poner nada, pero quitarlo rompe el ciclo del juego
     
-    def eventos(self, evento):
+    def eventos(self):
         mouse_pos = pg.mouse.get_pos()
         if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
             self.menu.cambiar_modo(self.menu)

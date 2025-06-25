@@ -51,7 +51,7 @@ def cargar_bloques():
         0:zacate,
         1:sprites_niveles.cargar_sprite(2*160, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE), #Bloque solido
         2:sprites_niveles.cargar_sprite(0, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE), #Ladrilo rompible
-        3:zacate #Bloque invisible (Zacate pero con hitbox)
+        3:zacate #  Bloque invisible (Zacate pero con hitbox)
     }
 
 def cargar_bomba():
@@ -126,3 +126,7 @@ def cargar_gameover():
 def cargar_llave():
     return pg.transform.scale(pg.image.load("assets/llave.png").convert_alpha(),
                                 (MEDIDA_BLOQUE, MEDIDA_BLOQUE))  # Ajusta el tamaño de la llave
+
+def cargar_puerta():
+    return pg.transform.scale(pg.image.load("assets/puerta.png").convert_alpha(),
+                                (MEDIDA_BLOQUE, MEDIDA_BLOQUE))  # Ajusta el tamaño de la puerta
