@@ -138,3 +138,7 @@ def cargar_llave():
 def cargar_puerta():
     return pg.transform.scale(pg.image.load("assets/puerta.png").convert_alpha(),
                                 (MEDIDA_BLOQUE, MEDIDA_BLOQUE))  # Ajusta el tamaño de la puerta
+
+def cargar_pegamento():
+    return pg.transform.scale(pg.image.load("assets/pegamento.png").convert_alpha(),
+                                (MEDIDA_BLOQUE, MEDIDA_BLOQUE))  # Ajusta el tamaño del pegamento

@@ -73,13 +73,17 @@ class Jugador:
     def actualizar(self):
         keys = pg.key.get_pressed()
         dx, dy = 0, 0
+        if any(self.rect.colliderect(el.rect) for el in self.jugar.lista_pegamento):  # Si el jugador colisiona con el pegamento
+            velocidad = RALENTIZACION_PEGAMENTO * self.velocidad  # Reduce la velocidad del jugador al pisar el pegamento
+        else:
+            velocidad = self.velocidad  # Velocidad normal del jugador
         # Saca el input del usuario
         self.moviendose = False
         self.movimientos_posibles = {
-            K_w: (0, -(self.velocidad), "arriba"),  # Arriba
-            K_s: (0, self.velocidad, "abajo"),     # Abajo
-            K_a: (-(self.velocidad), 0, "izquierda"), # Izquierda
-            K_d: (self.velocidad, 0, "derecha")     # Derecha
+            K_w: (0, -(velocidad), "arriba"),  # Arriba
+            K_s: (0, velocidad, "abajo"),     # Abajo
+            K_a: (-(velocidad), 0, "izquierda"), # Izquierda
+            K_d: (velocidad, 0, "derecha")     # Derecha
         }
 
         for tecla in self.movimientos_posibles.keys():
@@ -88,7 +92,7 @@ class Jugador:
                 tx, ty, self.direccion = self.movimientos_posibles[tecla]    
                 # Se suman para que no se reemplazen en el for por 0 (en caso de movimiento diagonal)
                 dx += tx
-                dy += ty   
+                dy += ty  
         
         # Movimiento del jugador
         # Si está dentro de los límites del mapa y camina en aire
@@ -212,6 +216,7 @@ class Enemigo:
 
     # Mueve al enemigo en una dirección aleatoria
     def actualizar(self):
+        self.soltar_pegamento()  # Si el enemigo puede soltar pegamento, lo hace
         dx, dy = self.movimientos[self.movimiento_elegido]
         # Movimiento en eje X
         rect_dx = self.rect.move(dx, 0)
@@ -261,11 +266,49 @@ class Enemigo:
             self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
         self.sprite = self.skin_hoja_sprites[self.movimiento_elegido][self.frame]
 
+    def soltar_pegamento(self):
+        pos = (self.rect.centerx // MEDIDA_BLOQUE + 1, self.rect.centery // MEDIDA_BLOQUE + 1)
+        posiciones_pegamento = [(el.bx, el.by) for el in self.jugar.lista_pegamento]
+        if pos not in posiciones_pegamento:
+            print("Soltando pegamento en", pos)
+            pegamento = Pegamento(self)  # Crea un pegamento si no hay uno en la misma posición
+            self.jugar.lista_pegamento.append(pegamento)
+            print(len(self.jugar.lista_pegamento))
+
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
         self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
         
-        
+
+class Pegamento:  # Los enemigos más avanzados sueltan pegamento al moverse, que ralentiza al jugador
+    def __init__(self, enemigo):
+        self.jugar = enemigo.jugar
+        self.pantalla = enemigo.pantalla
+        self.bx = enemigo.rect.centerx//MEDIDA_BLOQUE+1 #Bloque en x
+        self.by = enemigo.rect.centery//MEDIDA_BLOQUE+1 #Bloque en y
+        self.x = (self.bx-1) * MEDIDA_BLOQUE #X en pixeles
+        self.y = (self.by-1) * MEDIDA_BLOQUE #Y en pixeles
+        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al pegamento en el canvas
+        self.sprite = cargar_pegamento()  # Carga la skin del pegamento desde la hoja de sprites
+        self.activo = True  # Indica si el pegamento está activo
+        self.tiempo_creacion = pg.time.get_ticks()  # Tiempo de creación del pegamento
+        self.hilo = Thread(target=self.duracion)  # Crea un hilo para actualizar el pegamento
+        self.hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
+        self.hilo.start()
+
+    def actualizar(self):
+        pass
+
+    def duracion(self):
+        sleep(PEGAMENTO_DURACION / 1000) 
+        self.activo = False  # Desactiva el pegamento después de un tiempo
+        self.jugar.lista_pegamento.remove(self)
+
+    def dibujar(self):
+
+        self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja el sprite
+
+
 class Bomba:
     def __init__(self, jugador):
         self.rango = jugador.rango
@@ -683,6 +726,7 @@ class Jugar:
         self.manager_niveles = Niveles(self)
         self.nivel = self.manager_niveles.nivel
         self.jugador = Jugador(self)
+        self.lista_pegamento = []  # Lista para almacenar los pegamentos que sueltan los enemigos
         self.capas = {
             0:[self.manager_niveles], #  El fondo
             1:self.asignar_extras(),  #  Capa para objetos (llave, objetos, etc)
@@ -728,7 +772,7 @@ class Jugar:
     def asignar_extras(self):
         bloques = self.obtener_rompibles()
         coords = choice(bloques)
-        puerta = Puerta(self, coords[0], coords[1])
+        puerta = Puerta(self, coords[1])
         bloques.remove(coords)
         coords = choice(bloques)
         llave = Llave(self, coords[0], coords[1])
@@ -768,9 +812,13 @@ class Jugar:
         if not hasattr(self.jugador,"game_over"):  # Si el jugador ha perdido, dibuja la pantalla de Game Over
             self.pantalla_juego.fill(BLANCO)
             
+
             for capa in sorted(self.capas.keys()): #Dibuja entidades (jugador, enemigos, bombas...)
-                for entidad in self.capas[capa]:
+                for entidad in self.capas[capa]:  # Recorre cada capa y dibuja las entidades
                     entidad.dibujar()
+                if capa == 1:  # Después de dibujar los elementos de la capa 1, dibuja el pegamento
+                    for pegamento in self.lista_pegamento:  # Dibuja los pegamentos que sueltan los enemigos
+                        pegamento.dibujar()
             
             #Dibuja la pantalla de juego en la principal
             self.pantalla.blit(self.pantalla_juego, (SEPARACION_BORDES_PANTALLA, MEDIDA_HUD))
@@ -848,7 +896,7 @@ class Informacion:
     def actualizar(self):
         pass #No hay que poner nada, pero quitarlo rompe el ciclo del juego
     
-    def eventos(self):
+    def eventos(self, evento):
         mouse_pos = pg.mouse.get_pos()
         if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
             self.menu.cambiar_modo(self.menu)
