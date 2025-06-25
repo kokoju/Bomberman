@@ -192,8 +192,8 @@ class Enemigo:
         self.jugador = jugar.jugador
         self.pantalla = jugar.pantalla_juego
         self.nivel = jugar.nivel
-        self.x = y
-        self.y = x
+        self.x = x
+        self.y = y
 
         self.frame = 0
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
@@ -450,13 +450,11 @@ class Llave:
         self.bloque_roto = False  # Indica si el bloque donde se encuentra la llave ha sido roto
 
     def actualizar(self):
-        print(self.nivel[self.y_bloque][self.x_bloque])
         if self.nivel[self.y_bloque][self.x_bloque] == 0:
             self.bloque_roto = True
         if self.rect.colliderect(self.jugador.rect):
             self.jugador.tiene_llave = True
             self.jugar.capas[1].remove(self)  # Elimina la llave de la capa de objetos
-        # print(self.x_bloque, self.y_bloque)
 
     def dibujar(self):
         if self.bloque_roto and not self.jugador.tiene_llave:
@@ -464,23 +462,23 @@ class Llave:
 
 
 class Puerta:
-    def __init__(self, x, y, nivel, jugador, pantalla):
+    def __init__(self, jugar, x, y):
+        self.jugar = jugar
         self.x_bloque = x  # Posición en el eje X del bloque donde se encuentra la puerta
         self.y_bloque = y  # Posición en el eje Y del bloque donde se encuentra la puerta
-        self.nivel = nivel  # Nivel donde se encuentra la puerta (se usa para verificar colisiones)
-        self.jugador = jugador  # Jugador que abrirá la puerta
-        self.pantalla = pantalla  # Pantalla donde se dibuja la puerta
+        self.nivel = jugar.nivel  # Nivel donde se encuentra la puerta (se usa para verificar colisiones)
+        self.jugador = jugar.jugador  # Jugador que abrirá la puerta
+        self.pantalla = jugar.pantalla_juego  # Pantalla donde se dibuja la puerta
         self.sprite = cargar_puerta()  # Carga el sprite de la puerta desde la hoja de sprites
         self.rect = Rect((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la puerta en el canvas (uso para colisiones)
 
     def actualizar(self):
         if self.rect.colliderect(self.jugador.rect) and self.jugador.tiene_llave:
             self.jugador.tiene_llave = False
-            print("xd")
-            # TODO PONER LÓGICA PARA CAMBIAR DE NIVEL
+            self.jugar.pasar_nivel()
 
     def dibujar(self):
-        self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))
+        self.pantalla.blit(self.sprite, self.rect)
 
 
 class Objetos:
@@ -581,7 +579,12 @@ class Niveles:
         self.num_nivel = 1
         self.nivel = self.niveles[0] #Inicia en el nivel 1
             
-            
+    def pasar_nivel(self):
+        if 1 <= self.num_nivel+1 <= len(self.niveles):
+            self.nivel = self.niveles[self.num_nivel]
+            self.num_nivel += 1
+            return True #Cambio de nivel exitoso
+        #Cambio de nivel falla
     
     def dibujar(self):
         for y in range(1, ALTO_MATRIZ+1):
@@ -598,17 +601,8 @@ class Niveles:
                 
     def actualizar(self):
         pass
-    
-    def cambio_nivel(self, num_nivel):
-        if 1 <= num_nivel < len(self.niveles): #Verifica si existe el numero de nivel
-            self.num_nivel = num_nivel
-            self.nivel = self.niveles[num_nivel-1]
-            
-        elif num_nivel == len(self.niveles): #Se devuelve al primer nivel al terminar TODO (por que se devuelve? No deberia terminar y ya)
-            self.nivel = self.num_niveles[0]
-            
-        else:
-            pass #TODO poner resultados o no se que queria hacer Juan
+
+
 
 class DestruyeBloque:
     def __init__(self, jugar, x, y):
@@ -673,20 +667,15 @@ class Jugar:
         
         return enemigos
 
-    
-
-    def dibujar_nivel(self):
-        for y in range(1, ALTO_MATRIZ-20): #Por cada fila
-            for x in range(1, ANCHO_MATRIZ-20): #Por cada bloque
-                ID = self.nivel[y][x]
-                self.pantalla_juego.blit(self.sprites_bloques[ID], ((x-1)*MEDIDA_BLOQUE, (y-1)*MEDIDA_BLOQUE))
-                    
-        if self.debug:
-            #Dibuja las lineas del grid
-            for x in range(1, ANCHO_MATRIZ):
-                draw.line(self.pantalla_juego, NEGRO, (x*MEDIDA_BLOQUE, 0), (x*MEDIDA_BLOQUE, ALTO_PANTALLA))
-            for y in range(1, ALTO_MATRIZ):
-                draw.line(self.pantalla_juego, NEGRO, (0, y*MEDIDA_BLOQUE), (ANCHO_PANTALLA, y*MEDIDA_BLOQUE))
+    def pasar_nivel(self):
+        if self.manager_niveles.pasar_nivel():
+            self.nivel = self.manager_niveles.nivel #Cambia los datos de nivel
+            self.jugador.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
+            self.jugador.nivel = self.nivel #Cambia el nivel del jugador
+            self.jugador.bombas = BOMBAS_DISPONIBLES
+            #self.capas[1] = [self.asignar_llave(), self.asignar_puerta()]
+            self.capas[3] = self.colocar_enemigos() #Pone los enemigos
+        
     
     def asignar_llave(self):
         # Generamos un x y un y aleatorios dentro del areajugable
@@ -702,7 +691,7 @@ class Jugar:
         while not hasattr(self, "puerta"):
             y = randint(1, ALTO_MATRIZ)
             if self.nivel[y][ANCHO_MATRIZ] == 0:
-                self.puerta = Puerta(ANCHO_MATRIZ, y, self.nivel, self.jugador, self.pantalla_juego)
+                self.puerta = Puerta(self, ANCHO_MATRIZ, y)
                 return self.puerta
         
     
