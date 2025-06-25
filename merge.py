@@ -262,7 +262,7 @@ class Enemigo:
 
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
-        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))  # Dibuja el sprite del jugador en la pantalla
+        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
         
         
 class Bomba:
@@ -363,6 +363,7 @@ class Explosion:
         if self.frame == self.frame_expansion:
             for x, y in self.bloques_rotos:
                 self.nivel[y][x] = 0
+                self.jugador.puntaje += 20  # Aumenta el puntaje del jugador al destruir un bloque
                 DestruyeBloque(self.jugar, x, y)
             
         #Mata entidades
@@ -456,7 +457,6 @@ class Llave:
         if self.rect.colliderect(self.jugador.rect):
             self.jugador.tiene_llave = True
             self.jugar.capas[1].remove(self)  # Elimina la llave de la capa de objetos
-        # print(self.x_bloque, self.y_bloque)
 
     def dibujar(self):
         if self.bloque_roto and not self.jugador.tiene_llave:
@@ -464,20 +464,20 @@ class Llave:
 
 
 class Puerta:
-    def __init__(self, x, y, nivel, jugador, pantalla):
+    def __init__(self, jugar, x, y):
+        self.jugar = jugar
         self.x_bloque = x  # Posición en el eje X del bloque donde se encuentra la puerta
         self.y_bloque = y  # Posición en el eje Y del bloque donde se encuentra la puerta
-        self.nivel = nivel  # Nivel donde se encuentra la puerta (se usa para verificar colisiones)
-        self.jugador = jugador  # Jugador que abrirá la puerta
-        self.pantalla = pantalla  # Pantalla donde se dibuja la puerta
+        self.nivel = jugar.nivel  # Nivel donde se encuentra la puerta (se usa para verificar colisiones)
+        self.jugador = jugar.jugador  # Jugador que abrirá la puerta
+        self.pantalla = jugar.pantalla_juego  # Pantalla donde se dibuja la puerta
         self.sprite = cargar_puerta()  # Carga el sprite de la puerta desde la hoja de sprites
         self.rect = Rect((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa la puerta en el canvas (uso para colisiones)
 
     def actualizar(self):
         if self.rect.colliderect(self.jugador.rect) and self.jugador.tiene_llave:
             self.jugador.tiene_llave = False
-            print("xd")
-            # TODO PONER LÓGICA PARA CAMBIAR DE NIVEL
+            self.jugar.pasar_nivel()
 
     def dibujar(self):
         self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))
@@ -608,7 +608,12 @@ class Niveles:
         self.num_nivel = 1
         self.nivel = self.niveles[0]  # Inicia en el nivel 1
             
-            
+    def pasar_nivel(self):
+        if 1 <= self.num_nivel+1 <= len(self.niveles):
+            self.nivel = self.niveles[self.num_nivel]
+            self.num_nivel += 1
+            return True #Cambio de nivel exitoso
+        #Cambio de nivel falla
     
     def dibujar(self):
         for y in range(1, ALTO_MATRIZ+1):
