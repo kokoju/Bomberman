@@ -109,6 +109,13 @@ def cargar_bomba():
                        pg.transform.rotate(b3, 90)],
     }
     
+def cargar_pociones():
+    sprites_pociones = Spritesheet("assets/spritesheet_pociones.png")
+    return {
+        "velocidad": sprites_pociones.cargar_sprite(0, 0, 16, 16, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+        "invulnerabilidad": sprites_pociones.cargar_sprite(16, 0, 16, 16, MEDIDA_BLOQUE, MEDIDA_BLOQUE),
+    }
+
 def cargar_caramelos():
     sprites_caramelos = Spritesheet("assets/spritesheet_caramelos.png")
     return {
