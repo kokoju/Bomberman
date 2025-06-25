@@ -464,9 +464,9 @@ class Llave:
 
 
 class Puerta:
-    def __init__(self, jugar, x, y):
+    def __init__(self, jugar, y):
         self.jugar = jugar
-        self.x_bloque = x  # Posición en el eje X del bloque donde se encuentra la puerta
+        self.x_bloque = ANCHO_MATRIZ  # Posición en el eje X del bloque donde se encuentra la puerta
         self.y_bloque = y  # Posición en el eje Y del bloque donde se encuentra la puerta
         self.nivel = jugar.nivel  # Nivel donde se encuentra la puerta (se usa para verificar colisiones)
         self.jugador = jugar.jugador  # Jugador que abrirá la puerta
@@ -719,7 +719,7 @@ class Jugar:
             (ANCHO_MATRIZ, y) for y in range(1, ALTO_MATRIZ + 1) if self.nivel[y][ANCHO_MATRIZ] == 0
         ]  # Encuentra todos los bloques donde se puede colocar la puerta
         x, y = choice(bloques_disponibles)  # Selecciona un bloque aleatorio de los bloques destructibles
-        self.puerta = Puerta(ANCHO_MATRIZ, y, self.nivel, self.jugador, self.pantalla_juego)
+        self.puerta = Puerta(self, y)  # Crea una puerta en el bloque seleccionado
         return self.puerta
             
     def asignar_caramelos(self):
