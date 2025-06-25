@@ -842,7 +842,6 @@ class Jugar:
         ]  # Encuentra todos los bloques destructibles que no sean el de la llave
         # Asegura que no se generen más caramelos que bloques disponibles (se puede establecer una cantidad máxima de caramelos con CANTIDAD_CARAMELOS)
         cantidad = min(CANTIDAD_CARAMELOS, len(bloques_disponibles))
-        print(cantidad)
         while len(caramelos) < cantidad:  # Genera caramelos hasta alcanzar la cantidad deseada
             x, y = choice(bloques_disponibles)
             caramelo = Caramelos(x, y, self)
