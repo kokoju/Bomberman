@@ -16,11 +16,6 @@ from niveles import *
 font.init()  # Inicializa el módulo de fuentes de Pygame
 fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto del juego
 
-# Ideas de Items 
-# Fantasmal -> Permite al jugador atravesar bloques destructibles/indestructibles por un tiempo limitado 
-# Explosivo -> Aumenta el rango de las bombas del jugador por un tiempo limitado, además de no detenerse al contacto de un muro
-# Freeze -> Congela a los enemigos por un tiempo limitado
-
 # Clase Jugador
 class Jugador:
     def __init__(self, jugar, num_skin=1):
@@ -45,8 +40,13 @@ class Jugador:
         
         self.puntaje = 0  # Puntaje del jugador
 
-        self.tiene_habilidad1 = True  # Indica si el jugador tiene la habilidad 1
-        self.tiene_habilidad2 = False  # Indica si el jugador tiene la habilidad 2
+        # Habilidades e ítems del jugador
+        self.tiene_habilidad = True  # Indica si el jugador tiene la habilidad especial
+        self.tiene_item_1 = False  # Indica si el jugador tiene el item 1
+        self.tiene_item_2 = False  # Indica si el jugador tiene el item 2
+
+        self.enfriamiento_habilidad = ENFRIAMIENTO_HABILIDAD  # Tiempo de enfriamiento de la habilidad especial (en milisegundos)
+
         self.tiene_llave = False  # Indica si el jugador tiene la llave para abrir la puerta del siguente nivel
 
         self.rect = Rect(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR, ANCHO_JUGADOR, ALTO_JUGADOR) #  Rectangulo del jugador para posicion y colision
@@ -137,23 +137,38 @@ class Jugador:
             self.bombas -= 1
             Bomba(self)
 
-    def habilidad1(self):
-        if self.tiene_habilidad1:
-            self.tiene_habilidad1 = False  # Desactiva la bandera de la habilidad 1
-            self.velocidad += 10
-            self.inicio_habilidad1 = time.get_ticks()  # Guarda el tiempo de inicio de la habilidad
+    # TODO
+    # Fantasmal (Oveja común) -> Permite al jugador atravesar bloques destructibles/indestructibles por un tiempo limitado 
+    # Explosivo (Oveja albina) -> Aumenta el rango de las bombas del jugador por un tiempo limitado, además de no detenerse al contacto de un muro
+    # Freeze (Oveja rosada) -> Congela a los enemigos por un tiempo limitado
+    def habilidad(self):
+        pass
 
-            def restaurar_velocidad():
+    def item1(self):
+        if self.tiene_item_1:
+            self.tiene_item_1 = False  # Desactiva la bandera de la habilidad 1
+            self.velocidad += 10
+
+            def restaurar():
                 sleep(5)  # Espera 5 segundos
                 self.velocidad -= 10  # Vuelve a la velocidad normal
-                self.tiene_habilidad1 = True  # Permite volver a usar la habilidad
 
-            hilo = Thread(target=restaurar_velocidad)  # Se crea un hilo para restaurar la velocidad
+            hilo = Thread(target=restaurar)  # Se crea un hilo para restaurar la velocidad
             hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
             hilo.start()  # Inicia el hilo
     
-    def habilidad2(self):
-        pass
+    def item2(self):
+        if self.tiene_item_2:
+            self.tiene_item_2 = False  # Desactiva la bandera de la habilidad 2
+            self.invulnerable = True  # Activa la invulnerabilidad
+
+            def restaurar():
+                sleep(5)  # Espera 5 segundos
+                self.invulnerable = False  # Vuelve a la normalidad
+
+            hilo = Thread(target=restaurar)  # Se crea un hilo para restaurar la velocidad
+            hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
+            hilo.start()  # Inicia el hilo
     
     def morir(self):
         if self.vidas > 0:
@@ -720,7 +735,7 @@ class Jugar:
         self.pantalla_juego = Surface((ANCHO_PANTALLA - 2*SEPARACION_BORDES_PANTALLA, ALTO_PANTALLA - MEDIDA_HUD - SEPARACION_BORDES_PANTALLA))
         self.musica = game.canciones[1]
         self.sprites_bomba = game.sprites_bomba
-        self.dibujar_texto = game.dibujar_texto #Toma el metodo de dibujar texto
+        self.dibujar_texto = game.dibujar_texto # Toma el metodo de dibujar texto
         
         self.debug = False #G para cambiar (muestra hitboxes y gridlines)
         self.manager_niveles = Niveles(self)

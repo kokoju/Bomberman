@@ -33,6 +33,7 @@ ANCHO_JUGADOR = int(MEDIDA_BLOQUE * 0.75)
 ALTO_JUGADOR = int(MEDIDA_BLOQUE * 0.75)
 BOMBAS_DISPONIBLES = 10
 VIDAS = 3
+ENFRIAMIENTO_HABILIDAD = 8000  # Tiempo en milisegundos antes de que el jugador pueda usar la habilidad nuevamente
 
 # Configuración de la bomba
 TIEMPO_DETONACION_BOMBA = 2000 # Tiempo en milisegundos antes de que la bomba explote 
