@@ -356,7 +356,6 @@ class Bomba:
         Explosion(self, self.rango)
         self.jugar.capas[2].remove(self) #Ya no procesa la bomba
         
-    
     def actualizar(self):
         if not self.hitbox_activa and (self.bx,self.by) not in self.jugador.sacar_esquinas(self.jugador.rect): #Crea la hitbox de la bomba cuando el jugador se va
             self.hitbox_activa = True
@@ -395,7 +394,6 @@ class Explosion:
         self.ultima_actualizacion_frame = time.get_ticks()
         self.bloques_afectados, self.bloques_rotos = self.obtener_bloques_afectados()
         
-    
     def obtener_bloques_afectados(self):
         direcciones = (0, -1), (0, 1), (-1, 0), (1, 0) #Arriba, abajo, izq, der
         bloques_afectados = [(self.x, self.y)]
@@ -414,7 +412,6 @@ class Explosion:
                 else:
                     break
         return bloques_afectados, bloques_rotos
-    
 
     def matar(self):
         #Destruye bloques
@@ -556,9 +553,9 @@ class Pociones:  # Las pociones son un objeto que se encuentra en el nivel, y al
         if self.nivel[self.y_bloque][self.x_bloque] == 0:  # Si el bloque donde se encuentra la poción ha sido roto
             self.bloque_roto = True
         if self.rect.colliderect(self.jugador.rect):  # Si el jugador colisiona con el caramelo
-            if self.tipo == "velocidad":
+            if self.tipo == "velocidad" and not self.jugador.tiene_item_1:
                 self.jugador.tiene_item_1 = True  # Hace que el jugador pueda usar la habilidad de velocidad (1)
-            elif self.tipo == "invulnerabilidad":
+            elif self.tipo == "invulnerabilidad" and not self.jugador.tiene_item_2:
                 self.jugador.tiene_item_2 = True  # Hace que el jugador pueda usar la habilidad de invulnerabilidad (2)
             self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
 
@@ -841,11 +838,6 @@ class Jugar:
         bloques_disponibles = [
             (x, y) for y in range(1, ALTO_MATRIZ + 1) for x in range(1, ANCHO_MATRIZ + 1) if self.nivel[y][x] == 2 and not (self.llave.x_bloque == x and self.llave.y_bloque == y)
         ]  # Encuentra todos los bloques destructibles que no sean el de la llave
-<<<<<<< HEAD
-        # Asegura que no se generen más caramelos que bloques disponibles (se puede establecer una cantidad máxima de caramelos con CANTIDAD_CARAMELOS)
-        cantidad = min(CANTIDAD_CARAMELOS, len(bloques_disponibles))
-        while len(caramelos) < cantidad:  # Genera caramelos hasta alcanzar la cantidad deseada
-=======
         # Asegura que no se generen más pociones que bloques disponibles (se puede establecer una cantidad máxima de caramelos con CANTIDAD_CARAMELOS)
         cantidad_pociones = min(CANTIDAD_POCIONES, len(bloques_disponibles))        
         while len(pociones) < cantidad_pociones:  # Genera caramelos hasta alcanzar la cantidad deseada
@@ -855,7 +847,6 @@ class Jugar:
             bloques_disponibles.remove((x, y))  # Elimina el bloque donde se generó el caramelo para evitar duplicados
         cantidad_caramelos = min(CANTIDAD_CARAMELOS, len(bloques_disponibles))  # Asegura que no se generen más caramelos que bloques disponibles
         while len(caramelos) < cantidad_caramelos:  # Genera caramelos hasta alcanzar la cantidad deseada
->>>>>>> bd036f31d75d5aeb1fa32772bff870742ee78461
             x, y = choice(bloques_disponibles)
             caramelo = Caramelos(x, y, self)
             caramelos.append(caramelo)
