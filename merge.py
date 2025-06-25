@@ -151,13 +151,13 @@ class Jugador:
         pass
     
     def morir(self):
-        if self.vidas > -200:
+        if self.vidas > 0:
             self.vidas -= 1
             hilo = Thread(target=self.invulnerabilidad)
             hilo.daemon = True
             hilo.start()
-            if self.vidas <= 0:
-                self.game_over = GameOver(self.jugar.pantalla)  # Si no tiene vidas, se muestra la pantalla de Game Over
+        else:
+            self.game_over = GameOver(self.jugar.pantalla)  # Si no tiene vidas, se muestra la pantalla de Game Over
     
     def invulnerabilidad(self):
         self.invulnerable = True
@@ -363,7 +363,6 @@ class Explosion:
             for x, y in self.bloques_rotos:
                 self.nivel[y][x] = 0
                 self.jugador.puntaje += 20  # Aumenta el puntaje del jugador al destruir un bloque
-                DestruyeBloque(self.jugar, x, y)
             
         #Mata entidades
         for x, y in self.bloques_afectados:
@@ -438,7 +437,7 @@ class Jefe:
 
 # Función para cargar la llave, es especial, porque es un objeto que se encuentra dentro de un bloque aleatorio del nivel, y aparece al romperlo
 class Llave:
-    def __init__(self, x, y, jugar):
+    def __init__(self, jugar, x, y):
         self.x_bloque = x  # Posición en el eje X del bloque donde se encuentra la llave
         self.y_bloque = y  # Posición en el eje Y del bloque donde se encuentra la llave
         self.jugar = jugar
@@ -603,34 +602,6 @@ class Niveles:
         pass
 
 
-
-class DestruyeBloque:
-    def __init__(self, jugar, x, y):
-        self.jugar = jugar
-        self.pantalla = jugar.pantalla
-        self.jugar.capas[4].append(self) #Capa del nivel
-        self.x = x
-        self.y = y
-        self.sprite = jugar.manager_niveles.sprites[2]
-        self.frames_totales = 10
-        self.frame_actual = 0
-        self.terminado = False
-        
-    def actualizar(self):
-        self.frame_actual += 1
-        if self.frame_actual >= self.frames_totales:
-            self.jugar.capas[4].remove(self)
-
-    def dibujar(self):
-        # Escala proporcional inversa
-        escala = max(1, int(MEDIDA_BLOQUE * max(0.01, 1 - self.frame_actual / self.frames_totales)))
-        sprite_escalado = pg.transform.scale(self.sprite, (escala, escala))
-
-        # Para que se mantenga centrado al reducir tamaño
-        offset_x = (MEDIDA_BLOQUE - escala) // 2
-        offset_y = (MEDIDA_BLOQUE - escala) // 2
-        self.pantalla.blit(sprite_escalado, (self.x * MEDIDA_BLOQUE + offset_x, self.y * MEDIDA_BLOQUE + offset_y))
-
 # Clase del juego
 class Jugar:
     def __init__(self, game):
@@ -646,7 +617,7 @@ class Jugar:
         self.jugador = Jugador(self)
         self.capas = {
             0:[self.manager_niveles], #  El fondo
-            1:[self.asignar_llave(), self.asignar_puerta()],  #  Capa para objetos (llave, objetos, etc)
+            1:self.asignar_extras(),  #  Capa para objetos (llave, objetos, etc)
             2:[], #  Capa para bomba
             3:self.colocar_enemigos(),
             4:[self.jugador],
@@ -662,7 +633,7 @@ class Jugar:
             
             if (x, y) not in coords_ocupadas and self.nivel[y][x] == 0:
                 coords_ocupadas.append((x, y))
-                enemigo = Enemigo(self, x * MEDIDA_BLOQUE, y * MEDIDA_BLOQUE)
+                enemigo = Enemigo(self, (x-1) * MEDIDA_BLOQUE, (y-1) * MEDIDA_BLOQUE)
                 enemigos.append(enemigo)
         
         return enemigos
@@ -673,27 +644,28 @@ class Jugar:
             self.jugador.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
             self.jugador.nivel = self.nivel #Cambia el nivel del jugador
             self.jugador.bombas += BOMBAS_DISPONIBLES
-            self.capas[1] = [self.asignar_llave(), self.asignar_puerta()]
+            self.capas[1] = [self.asignar_extras()]
             self.capas[3] = self.colocar_enemigos() #Pone los enemigos
             self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
         
+    def obtener_rompibles(self):
+        bloques = [] #Guarda los bloques rompibles
+        for y in range(1, ALTO_MATRIZ+1):
+            for x in range(1, ANCHO_MATRIZ+1):
+                if self.nivel[y][x] == 2:
+                    bloques.append((x,y))
+        return bloques
+            
     
-    def asignar_llave(self):
-        # Generamos un x y un y aleatorios dentro del area jugable
-        while True:  # Cicla hasta encoentrar un lugar valido para la llave
-            x = randint(1, ANCHO_MATRIZ)
-            y  = randint(1, ALTO_MATRIZ)
-            if self.nivel[y][x] == 2:  # Si el bloque aleatoriamente generado es un bloque destructible
-                self.llave = Llave(x, y, self)
-                return self.llave
-    
-    def asignar_puerta(self):
-        # La puerta es un caso especial, ya que solo vamos a generarla al final del
-        while True:
-            y = randint(1, ALTO_MATRIZ)
-            if self.nivel[y][ANCHO_MATRIZ] == 0:
-                self.puerta = Puerta(self, ANCHO_MATRIZ, y)
-                return self.puerta
+    def asignar_extras(self):
+        bloques = self.obtener_rompibles()
+        coords = choice(bloques)
+        puerta = Puerta(self, coords[0], coords[1])
+        bloques.remove(coords)
+        coords = choice(bloques)
+        llave = Llave(self, coords[0], coords[1])
+        bloques.remove(coords)
+        return [puerta, llave]
         
     
     def dibujar_HUD(self):
