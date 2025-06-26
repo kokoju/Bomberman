@@ -30,7 +30,11 @@ def leer_archivo(path):
             return []
         return eval(contenido)
 
-puntajes = sorted(leer_archivo(ARCHIVO_PUNTAJES), reverse=True)  # Carga los puntajes del archivo, ordenandolos de mayor a menor
+# Ordena por el puntaje (índice 1) de mayor a menor
+# key=lambda x: x[1]  # Ordena por el segundo elemento de cada tupla (el puntaje)
+# key es una función que toma un elemento de la lista y devuelve el valor por el cual se ordenará
+# 
+puntajes = sorted(leer_archivo(ARCHIVO_PUNTAJES), key=lambda elemento: elemento[1], reverse=True)  
 print(puntajes)
 
 font.init()  # Inicializa el módulo de fuentes de Pygame
@@ -732,12 +736,12 @@ class Boton:
         self.fue_presionado = self.presionado #Actualiza fue_presionado
         return presionado
 
-# Clase Configuracion: aquí se pueden agregar las configuraciones del juego, como el volumen
-class Configuracion:
+# Clase Ajustes: aquí se pueden agregar las configuraciones del juego, como el volumen
+class Ajustes:
     def __init__(self, menu):
         self.menu = menu
         self.game = menu.game
-        self.pantalla = menu.pantalla  # Pantalla donde se dibuja la información\
+        self.pantalla = menu.pantalla  # Pantalla donde se dibuja la información
         self.musica = menu.game.canciones[0]
         self.boton_cerrar = menu.boton_cerrar
         self.fuente = fuente_texto  # Fuente del texto de la información
@@ -746,14 +750,14 @@ class Configuracion:
     def dibujar(self):
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
         
-        self.texto_renderizado = self.fuente.render("Configuración", True, BLANCO)  # Renderiza el texto de la configuración
+        self.texto_renderizado = self.fuente.render("Ajustes", True, BLANCO)  # Renderiza el texto de los ajustes
         self.texto_musica_renderizado = self.fuente.render("Volumen de la música", True, BLANCO)  # Renderiza el texto del volumen de la música
         
         self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
         self.pantalla.blit(self.texto_musica_renderizado, (SEPARACION_BORDES_PANTALLA * 4, SEPARACION_BORDES_PANTALLA * 8))
         
         self.barra_sonido.dibujar()
-        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar la información
+        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar la pantalla
         
     def eventos(self, evento):
         mouse_pos = pg.mouse.get_pos()
@@ -850,18 +854,17 @@ class Puntajes:
     def ordenar_puntajes(self):
         self.top = []  # Lista para almacenar los puntajes
         self.top_render = []  # Lista para almacenar los puntajes renderizados
-        for i in range(1, 6):  # Almacena los mejores 5 puntajes
+        for i in range(5):  # Almacena los mejores 5 puntajes
             if puntajes != []:
-                self.top.append((i, puntajes.pop(0)))
+                self.top.append((i + 1, puntajes[i]))  # Agrega el puntaje y su posición a la lista de puntajes
             else:
                 break
         
         for top_puntajes in self.top:
-            self.fuente.render(f"{top_puntajes[0]} - {top_puntajes[1]}", True, BLANCO)  # Renderiza el texto de los puntajes
-            self.top_render.append(self.fuente.render(f"{top_puntajes[0]} - {top_puntajes[1]}", True, BLANCO))  # Agrega el texto renderizado a la lista de puntajes renderizados
+            self.top_render.append(self.fuente.render(f"{top_puntajes[0]}. {top_puntajes[1][0]} - {top_puntajes[1][1]}", True, AMARILLO if top_puntajes[0] == 1 else BLANCO))  # Agrega el texto renderizado a la lista de puntajes renderizados
 
     def actualizar(self):  # Realmente no necesita actualizar nada, pero es necesario para el ciclo del juego
-        pass
+        self.ordenar_puntajes()  # Vuelve a ordenar los puntajes cada vez que se actualiza
 
     def eventos(self, evento):
         mouse_pos = pg.mouse.get_pos()
@@ -872,7 +875,7 @@ class Puntajes:
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
         self.boton_cerrar.dibujar()
         for i, texto in enumerate(self.top_render):
-            self.pantalla.blit(texto, (10 + i * 30, 10 + i * 30))
+            self.pantalla.blit(texto, (ANCHO_PANTALLA//2 - texto.get_width()//2, ALTO_PANTALLA//3 + self.fuente.get_height() * i))
 
 
 
@@ -886,10 +889,10 @@ class Menu:
         self.boton_cerrar = Boton(ANCHO_PANTALLA - 70, 20, 50, 50, "X", self.pantalla, ROJO, BLANCO)  # Botón para volver al menu desde alguna opcion
         
         #Opciones del menu
-        self.config = Configuracion(self)
+        self.ajustes = Ajustes(self)
         self.info = Informacion(self)
         self.puntajes = Puntajes(self)
-        self.opcion_a_funcion = {"Jugar":game.jugar, "Configuración":self.config, "Puntajes": self.puntajes,"Información":self.info, "Salir":None} #Mapea el nombre de las opciones a ellas
+        self.opcion_a_funcion = {"Jugar":game.jugar, "Ajustes":self.ajustes, "Puntajes": self.puntajes,"Información":self.info, "Salir":None} #Mapea el nombre de las opciones a ellas
 
         self.musica = game.canciones[0]
         self.botones = self.crear_botones()  # Crea los botones del menú

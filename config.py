@@ -21,6 +21,7 @@ GRIS = 100, 100, 100
 VERDE = 0, 255, 0
 VERDE_AGUA = 52, 235, 171
 AZUL = 52, 116, 235
+AMARILLO = 255, 255, 0
 
 # Variables para el juego
 MARGEN_DESLIZAMIENTO = 5  # Espacio de "spare" para ajustar el movimiento del jugador (en píxeles)
