@@ -35,7 +35,7 @@ def leer_archivo(path):
 # key es una función que toma un elemento de la lista y devuelve el valor por el cual se ordenará
 # 
 puntajes = sorted(leer_archivo(ARCHIVO_PUNTAJES), key=lambda elemento: elemento[1], reverse=True)  
-print(puntajes)
+# print(puntajes)
 
 font.init()  # Inicializa el módulo de fuentes de Pygame
 fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto del juego
@@ -57,7 +57,7 @@ class Jugador:
         
         self.vidas = VIDAS  # Cantidad de vidas del jugador
         self.vidas_max = VIDAS  # Cantidad de vidas máximas del jugador
-        self.bombas = 10
+        self.bombas = BOMBAS_DISPONIBLES  # Cantidad de bombas que el jugador puede colocar
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
         self.golpe = GOLPE_INICIAL_BOMBA  # Daño que causa el jugador al explotar una bomba
         self.rango = 1 #Rango inicial de la bomba
@@ -70,6 +70,7 @@ class Jugador:
         self.tiene_item_1 = False  # Indica si el jugador tiene el item 1
         self.tiene_item_2 = False  # Indica si el jugador tiene el item 2
 
+        self.tiempo_desde_habilidad = pg.time.get_ticks()  # Tiempo desde que se usó la habilidad especial (en milisegundos)
         self.enfriamiento_habilidad = ENFRIAMIENTO_HABILIDAD  # Tiempo de enfriamiento de la habilidad especial (en milisegundos)
 
         self.tiene_llave = False  # Indica si el jugador tiene la llave para abrir la puerta del siguente nivel
@@ -133,7 +134,7 @@ class Jugador:
             self.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
             self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
 
-        print(self.vidas)
+        print(self.tiene_habilidad)
 
     def actualizar_frame_sprite(self):
         if self.moviendose: # Jugador se mueve
@@ -170,15 +171,25 @@ class Jugador:
     # Explosivo (Oveja albina) -> Aumenta el rango de las bombas del jugador por un tiempo limitado, además de no detenerse al contacto de un muro
     # Freeze (Oveja rosada) -> Congela a los enemigos por un tiempo limitado
     def habilidad(self):
-        pass
+        if self.tiene_habilidad:  # Si el jugador no tiene la habilidad especial
+            self.tiene_habilidad = False  # Desactiva la bandera de la habilidad especial
+            self.tiempo_desde_habilidad = pg.time.get_ticks()  # Reinicia el tiempo desde que se usó la habilidad especial
 
+            def reestablecer_enfriamiento():
+                sleep(self.enfriamiento_habilidad / 1000)  # Espera el tiempo de enfriamiento de la habilidad especial
+                self.tiene_habilidad = True  # Vuelve a activar la bandera de la habilidad especial
+
+            self.hilo = Thread(target=reestablecer_enfriamiento)  # Crea un hilo para administrar el enfriamiento de la habilidad
+            self.hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
+            self.hilo.start()  # Inicia el hilo
+        
     def item1(self):
         if self.tiene_item_1:
             self.tiene_item_1 = False  # Desactiva la bandera de la habilidad 1
             self.velocidad += 10
 
             def restaurar():
-                sleep(5)  # Espera 5 segundos
+                sleep(DURACION_EFECTOS / 1000)  # Espera el tiempo de duración del efecto del item 1
                 self.velocidad -= 10  # Vuelve a la velocidad normal
 
             hilo = Thread(target=restaurar)  # Se crea un hilo para restaurar la velocidad
@@ -191,7 +202,7 @@ class Jugador:
             self.invulnerable = True  # Activa la invulnerabilidad
 
             def restaurar():
-                sleep(5)  # Espera 5 segundos
+                sleep(DURACION_EFECTOS / 1000)  # Espera el tiempo de duración del efecto del item 2
                 self.invulnerable = False  # Vuelve a la normalidad
 
             hilo = Thread(target=restaurar)  # Se crea un hilo para restaurar la velocidad
@@ -222,6 +233,9 @@ class Jugador:
                 
             elif evento.key == K_2: #O si le da a 2
                 self.item2()
+
+            elif evento.key == K_e:  # Si le da a E
+                self.habilidad()  # Usa la habilidad especial del jugador
 
 class GameOver:
     def __init__(self, pantalla):
@@ -583,12 +597,25 @@ class HUD:
 
         # Cuadros de 96x96 para los items del jugador
         condiciones = [self.jugador.tiene_item_1, self.jugador.tiene_item_2, self.jugador.tiene_llave]  # Lista de condiciones para los items del jugador
-        
-        for i in range(3):
+        for i in range(len(condiciones)):
             if condiciones[i]:
                 # Si el jugador tiene el item, dibuja el sprite correspondiente
                 self.pantalla.blit(self.sprites[i], (SEPARACION_BORDES_PANTALLA + 300 + i * 112, 40))
             pg.draw.rect(self.pantalla, BLANCO, (SEPARACION_BORDES_PANTALLA + 300 + i * 112, 40, 96, 96), 4)  # Dibuja los cuadros de los items del jugador
+        
+        pg.draw.rect(self.pantalla, ROJO, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, 40, 96, 96))  # Dibuja el cuadro del la habilidad del jugador
+        # Dibuja un cuadro que se rellenará con en base al CD de la habilidad del jugador (de abajo hacia arriba)
+        if self.jugador.tiene_habilidad:  # Si el jugador tiene la habilidad especial
+            pg.draw.rect(self.pantalla, VERDE, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, 40, 96, 96))  # Dibuja el borde del cuadro del item de velocidad
+        else:
+            ratio = (pg.time.get_ticks() - self.jugador.tiempo_desde_habilidad) / self.jugador.enfriamiento_habilidad  # Calcula el ratio de la habilidad del jugador (para que no se vea vacío si no tiene habilidad)
+            # Calcula la altura del rectángulo verde según el ratio
+            altura = int(96 * ratio)
+            y_base = 136 + 96 - altura  # La base es 136+96, restamos la altura para que crezca hacia arriba
+            pg.draw.rect(self.pantalla, VERDE, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, y_base, 96, altura))
+
+        pg.draw.rect(self.pantalla, BLANCO, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, 40, 96, 96), 4)  # Dibuja los cuadros de los items del jugador
+
     
 
 # Función para cargar la llave, es especial, porque es un objeto que se encuentra dentro de un bloque aleatorio del nivel, y aparece al romperlo
@@ -863,7 +890,7 @@ class Puntajes:
         for top_puntajes in self.top:
             self.top_render.append(self.fuente.render(f"{top_puntajes[0]}. {top_puntajes[1][0]} - {top_puntajes[1][1]}", True, AMARILLO if top_puntajes[0] == 1 else BLANCO))  # Agrega el texto renderizado a la lista de puntajes renderizados
 
-    def actualizar(self):  # Realmente no necesita actualizar nada, pero es necesario para el ciclo del juego
+    def actualizar(self):
         self.ordenar_puntajes()  # Vuelve a ordenar los puntajes cada vez que se actualiza
 
     def eventos(self, evento):
@@ -875,7 +902,6 @@ class Puntajes:
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
         self.texto_renderizado = self.fuente.render("Mejores 5 puntajes", True, BLANCO)  # Renderiza el texto de los ajustes
         self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
-
 
         self.boton_cerrar.dibujar()
         for i, texto in enumerate(self.top_render):
@@ -1194,20 +1220,20 @@ class Mejoras:
             
         if self.boton_vida.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
             self.puntos -= self.precio_vida
-            self.precio_vida += 200 #Incrementa el precio linearmente 200 cada vez
+            self.precio_vida += 200 #  Incrementa el precio linearmente 200 cada vez
             self.jugador.vidas += 1
-            self.jugador.vidas_max += 1 #Aumenta la vida maxima del jugador
+            self.jugador.vidas_max += 1 #  Aumenta la vida maxima del jugador
             self.boton_vida.texto = f"VIDA {self.precio_vida}"
                 
         elif self.boton_golpe.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_golpe:
             self.puntos -= self.precio_golpe
-            self.precio_golpe += 200 #Incrementa el precio linearmente 200 cada vez
+            self.precio_golpe += 200 #  Incrementa el precio linearmente 200 cada vez
             self.jugador.golpe += 1
             self.boton_golpe.texto = f"GOLPE {self.precio_golpe}"
                 
         elif self.boton_rango.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_rango:
             self.puntos -= self.precio_rango
-            self.precio_rango += 500 #Incrementa el precio linearmente 500 cada vez
+            self.precio_rango += 500 #  Incrementa el precio linearmente 500 cada vez
             self.jugador.rango += 1
             self.boton_rango.texto = f"RANGO {self.precio_rango}"
                 

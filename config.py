@@ -41,6 +41,7 @@ BOMBAS_DISPONIBLES = 15
 VIDAS = 3
 GOLPE = 1
 ENFRIAMIENTO_HABILIDAD = 8000  # Tiempo en milisegundos antes de que el jugador pueda usar la habilidad nuevamente
+DURACION_EFECTOS = 5000  # Duración de los efectos de las pociones y caramelos en milisegundos
 
 # Configuración de la bomba
 TIEMPO_DETONACION_BOMBA = 2000 # Tiempo en milisegundos antes de que la bomba explote 
