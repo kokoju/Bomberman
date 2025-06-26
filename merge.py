@@ -155,7 +155,7 @@ class Jugador:
         self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))  # Dibuja el sprite del jugador
 
     def poner_bomba(self):
-        if not self.invulnerable and self.bombas > 0:
+        if self.bombas > 0:
             bx = self.rect.centerx//MEDIDA_BLOQUE+1
             by = self.rect.centery//MEDIDA_BLOQUE+1
             for bomba in self.jugar.capas[2]: # No poner bombas encima de otras
