@@ -31,7 +31,8 @@ class Jugador:
         self.frame = 0  # Frame actual del sprite del jugador
         self.sprite = self.skin_hoja_sprites[self.direccion][self.frame] #Sprite inicial del jugador
         
-        self.vidas = 10
+        self.vidas = VIDAS  # Cantidad de vidas del jugador
+        self.vidas_max = VIDAS  # Cantidad de vidas máximas del jugador
         self.bombas = 10
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
         self.golpe = GOLPE_INICIAL_BOMBA  # Daño que causa el jugador al explotar una bomba
@@ -107,7 +108,9 @@ class Jugador:
         if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el jugador se está moviendo y han pasado 150ms
             self.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
             self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
-                   
+
+        print(self.vidas)
+
     def actualizar_frame_sprite(self):
         if self.moviendose: # Jugador se mueve
             self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
@@ -172,7 +175,7 @@ class Jugador:
             hilo.start()  # Inicia el hilo
     
     def morir(self):
-        if self.vidas > 0:
+        if self.vidas > 1:
             self.vidas -= 1  # Cada golpe (de bomba o enemigo) resta uno de vida (hecho así para que castigue menos si la bomba tiene más daño)
             hilo = Thread(target=self.invulnerabilidad)
             hilo.daemon = True
@@ -287,7 +290,7 @@ class Enemigo:
         if pos not in posiciones_pegamento:
             pegamento = Pegamento(self)  # Crea un pegamento si no hay uno en la misma posición
             self.jugar.lista_pegamento.append(pegamento)
-            print(len(self.jugar.lista_pegamento))
+            # print(len(self.jugar.lista_pegamento))  # Para debug, muestra la cantidad de pegamento en pantalla
 
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
@@ -491,6 +494,79 @@ class Explosion:
 class Jefe:
     pass
 
+class BarraVida:
+    def __init__(self, x, y, ancho, alto, jugar):
+        self.x = x
+        self.y = y
+        self.ancho = ancho
+        self.alto = alto
+        self.jugar = jugar  # Instancia del juego donde se dibuja la barra de vida
+        self.pantalla = jugar.pantalla
+        self.jugador = self.jugar.jugador
+        self.vida = self.jugador.vidas  # Vida actual del jugador
+        self.vida_maxima = self.jugador.vidas_max  # Vida máxima del jugador
+        self.ratio = self.vida / self.vida_maxima  # Calcula el ratio de vida actual sobre la máxima
+
+    def actualizar(self):
+        self.vida_maxima = self.jugador.vidas_max
+        self.vida = self.jugador.vidas  # Actualiza la vida actual del jugador
+        self.ratio = self.vida / self.vida_maxima  # Calcula el ratio de vida actual sobre la máxima
+
+    def dibujar(self):
+        pg.draw.rect(self.pantalla, ROJO, (self.x, self.y, self.ancho, self.alto))  # Dibuja el fondo de la barra de vida
+        pg.draw.rect(self.pantalla, VERDE, (self.x, self.y, self.ancho * self.ratio, self.alto))  # Dibuja la barra de vida actual del jugador
+
+
+# Clase HUD (Head-Up Display) que muestra información del juego en la pantalla
+class HUD:
+    def __init__(self, jugar):
+        self.jugar = jugar
+        self.pantalla = jugar.pantalla  # Pantalla donde se dibuja el HUD
+        self.jugador = jugar.jugador  # Jugador del juego
+        self.fuente = fuente_texto  # Fuente del texto del HUD
+        self.texto_vidas = self.fuente.render("Vida", True, BLANCO)
+        self.barra_vida = BarraVida(SEPARACION_BORDES_PANTALLA + self.texto_vidas.get_width(), 20, 200, 20, jugar)  # Barra de vida del jugador
+        self.textos = []  # Lista para almacenar los textos del HUD
+        self.cargar_sprites_en_proporcion()  # Carga los sprites de los items del jugador en proporción
+
+    def cargar_sprites_en_proporcion(self):
+        self.pociones = cargar_pociones()  # Carga los sprites de las pociones
+        self.llave = cargar_llave()  # Carga el sprite de la llave
+        self.llave = pg.transform.scale(self.llave, (96, 96))
+        for llave in self.pociones.keys():
+            # Escala los sprites de las pociones a 96x96 píxeles
+            self.pociones[llave] = pg.transform.scale(self.pociones[llave], (96, 96))
+        self.sprites = [self.pociones["velocidad"], self.pociones["invulnerabilidad"], self.llave]  # Lista con los sprites de los items (de esta forma para ordenarlos en el HUD)
+
+    def actualizar_textos(self):
+        # Actualiza el puntaje del jugador en el HUD
+        self.textos = [
+        self.fuente.render(f"Bombas: {self.jugador.bombas}", True, BLANCO),  # Texto de las bombas del jugador
+        self.fuente.render(f"Rango: {self.jugador.rango}", True, BLANCO),  # Texto del rango de las bombas del jugador
+        self.fuente.render(f"Puntaje: {self.jugador.puntaje}", True, BLANCO)  # Texto del puntaje del jugador
+        ]
+
+    def actualizar(self):
+        self.barra_vida.actualizar()  # Actualiza la barra de vida del jugador
+        self.actualizar_textos()
+        # Actualiza el HUD con la información del jugador
+
+    def dibujar(self):
+        self.pantalla.blit(self.texto_vidas, (10, 10))  # Dibuja el texto de "Vida" en la pantalla
+        for i, texto in enumerate(self.textos):  # Dibuja cada texto del HUD (consiguendo el índice y el elemento con enumerate)
+            self.pantalla.blit(texto, (SEPARACION_BORDES_PANTALLA, 40 + i * 30))
+        self.barra_vida.dibujar()  # Dibuja la barra de vida del jugador
+
+        # Cuadros de 96x96 para los items del jugador
+        condiciones = [self.jugador.tiene_item_1, self.jugador.tiene_item_2, self.jugador.tiene_llave]  # Lista de condiciones para los items del jugador
+        
+        for i in range(3):
+            if condiciones[i]:
+                # Si el jugador tiene el item, dibuja el sprite correspondiente
+                self.pantalla.blit(self.sprites[i], (SEPARACION_BORDES_PANTALLA + 300 + i * 112, 40))
+            pg.draw.rect(self.pantalla, BLANCO, (SEPARACION_BORDES_PANTALLA + 300 + i * 112, 40, 96, 96), 4)  # Dibuja los cuadros de los items del jugador
+    
+
 # Función para cargar la llave, es especial, porque es un objeto que se encuentra dentro de un bloque aleatorio del nivel, y aparece al romperlo
 class Llave:
     def __init__(self, jugar, x, y):
@@ -552,12 +628,13 @@ class Pociones:  # Las pociones son un objeto que se encuentra en el nivel, y al
     def actualizar(self):
         if self.nivel[self.y_bloque][self.x_bloque] == 0:  # Si el bloque donde se encuentra la poción ha sido roto
             self.bloque_roto = True
-        if self.rect.colliderect(self.jugador.rect):  # Si el jugador colisiona con el caramelo
+        if self.rect.colliderect(self.jugador.rect):  # Si el jugador colisiona con la poción
             if self.tipo == "velocidad" and not self.jugador.tiene_item_1:
                 self.jugador.tiene_item_1 = True  # Hace que el jugador pueda usar la habilidad de velocidad (1)
+                self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
             elif self.tipo == "invulnerabilidad" and not self.jugador.tiene_item_2:
                 self.jugador.tiene_item_2 = True  # Hace que el jugador pueda usar la habilidad de invulnerabilidad (2)
-            self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
+                self.jugar.capas[1].remove(self)  # Elimina la poción de la capa de objetos
 
     def dibujar(self):
         if self.bloque_roto:
@@ -582,12 +659,14 @@ class Caramelos:  # Los caramelos son un objeto que se encuentra en el nivel, y 
             self.bloque_roto = True
         if self.rect.colliderect(self.jugador.rect):  # Si el jugador colisiona con el caramelo
             if self.tipo == "daño":
+                self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
                 self.jugador.golpe += 1  # Aumenta el daño del jugador
             elif self.tipo == "rango":
+                self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
                 self.jugador.rango += 1  # Aumenta el rango de la bomba del jugador
-            elif self.tipo == "vida":
+            elif self.tipo == "vida" and self.jugador.vidas < self.jugador.vidas_max:  # Si el jugador tiene menos vidas que las máximas
                 self.jugador.vidas += 1  # Aumenta la vida del jugador
-            self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
+                self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
 
     def dibujar(self):
         if self.bloque_roto:
@@ -765,6 +844,7 @@ class Jugar:
         self.nivel = self.manager_niveles.nivel
         self.jugador = Jugador(self)
         self.mejoras = Mejoras(self)
+        self.hud = HUD(self)  # Crea el HUD del juego
         self.lista_pegamento = []  # Lista para almacenar los pegamentos que sueltan los enemigos
         self.capas = {
             0:[self.manager_niveles], #  El fondo
@@ -855,9 +935,6 @@ class Jugar:
     def asignar_extras(self):
         return [self.asignar_llave(), self.asignar_puerta()] + self.asignar_consumibles()  # Retorna una lista de objetos extras (llave, puerta, caramelos y pociones) generados aleatoriamente en el nivel actual
     
-    def dibujar_HUD(self):
-        pass
-    
     def matar_entidad(self, entidad):
         for capa in self.capas:
             if entidad in self.capas[capa]:
@@ -865,6 +942,7 @@ class Jugar:
                 break
     
     def actualizar(self):
+        self.hud.actualizar()
         for capa in sorted(self.capas.keys()): #Actualiza entidades (jugador, enemigos, bombas...)
             for entidad in self.capas[capa]:
                 entidad.actualizar()
@@ -900,12 +978,7 @@ class Jugar:
             
             #Dibuja la pantalla de juego en la principal
             self.pantalla.blit(self.pantalla_juego, (SEPARACION_BORDES_PANTALLA, MEDIDA_HUD))
-            
-            #Hud
-            self.dibujar_texto(f"Nivel: {self.manager_niveles.num_nivel}", 0, 0, color=BLANCO)
-            self.dibujar_texto(f"Vidas: {self.jugador.vidas}", 0, 25, color=BLANCO)
-            self.dibujar_texto(f"Bombas: {self.jugador.bombas}", 0, 50, color=BLANCO)
-            self.dibujar_texto(f"Puntaje: {self.jugador.puntaje}", 0, 75, color=BLANCO)
+            self.hud.dibujar()  # Dibuja el HUD del juego
         else:
             self.jugador.game_over.dibujar()
 
@@ -935,7 +1008,7 @@ class Mejoras:
         
         self.dibujar_texto("PRECIOS", 100, 50)
         self.dibujar_texto(f"PUNTOS: {self.puntos}", 100, 650)
-        self.dibujar_texto(f"VIDAS: {self.jugador.vidas}", 500, 150)
+        self.dibujar_texto(f"VIDAS MÁX: {self.jugador.vidas}", 500, 150)
         self.dibujar_texto(f"GOLPE: {self.jugador.golpe}", 500, 350)
         self.dibujar_texto(f"RANGO: {self.jugador.rango}", 500, 550)
         
@@ -952,6 +1025,7 @@ class Mejoras:
             self.puntos -= self.precio_vida
             self.precio_vida += 200 #Incrementa el precio linearmente 200 cada vez
             self.jugador.vidas += 1
+            self.jugador.vidas_max += 1 #Aumenta la vida maxima del jugador
             self.boton_vida.texto = f"VIDA {self.precio_vida}"
                 
         elif self.boton_golpe.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_golpe:
@@ -1203,18 +1277,11 @@ if __name__ == "__main__": #solo se ejecuta si se hace run, no si es import
 
 """
 # TODO:
-# 0. Crear un sistema de Objetos (consumibles) y Power-ups (mejoras de estadisticas temporales)
 # 1. Implementar la clase Enemigo con sus métodos de movimiento y ataque.
-# 2. Implementar la clase Bomba con su temporizador y explosión.
-# 3. Implementar la clase Obstaculos con diferentes tipos de obstáculos.
 # 4. Implementar la clase Jefe con sus mecánicas de ataque y vida.
-# 5. Implementar la clase Objetos con diferentes tipos de objetos coleccionables.
-# 6. Crear un sistema de colisiones entre el jugador, enemigos, bombas y obstáculos.
 # 7. Implementar un sistema de HUD para mostrar la vida del jugador, bombas restantes y puntaje.
-# 8. Implementar un sistema de niveles
 # 9. Implementar un sistema de guardados y almacenamiento de puntajes
-# 10. Implementar un sistema de menús y opciones de configuración
 # 11. Implementar un sistema de personalización del jugador (skins)
-# 12. Implementar el menú principal, opciones, créditos y pantallas de fin de juego. 
+# 12. Implementar pantallas de fin de juego. 
 # 13. Revisar todo lo que diga todo o pass
 """
