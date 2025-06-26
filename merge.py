@@ -873,6 +873,10 @@ class Puntajes:
 
     def dibujar(self):
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
+        self.texto_renderizado = self.fuente.render("Mejores 5 puntajes", True, BLANCO)  # Renderiza el texto de los ajustes
+        self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
+
+
         self.boton_cerrar.dibujar()
         for i, texto in enumerate(self.top_render):
             self.pantalla.blit(texto, (ANCHO_PANTALLA//2 - texto.get_width()//2, ALTO_PANTALLA//3 + self.fuente.get_height() * i))
