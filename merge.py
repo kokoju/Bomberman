@@ -13,6 +13,26 @@ from niveles import *
 # Además, dejé un espacio de 16 pixeles entre la matriz y el borde inferior, para que no se vea tan pegado
 # Haremos los niveles con matrices (11x26), y como no se requiere crear nuevos, podemos ponerlos dentro del archivo de código
 
+"""
+# Guarda un string en un archivo
+def guardar_archivo(file_path, content):
+        archivo = open(file_path, 'w')  # w crea o trunca el archivo
+        archivo.write(content)
+        archivo.close()
+"""
+        
+# Lee la información de un archivo y devuelve su contenido evaluado según su formato
+def leer_archivo(path):
+        archivo = open(path, 'r')
+        contenido = archivo.read()
+        archivo.close()
+        if not contenido.strip():  # Si el contenido está vacío, devuelve una lista vacía
+            return []
+        return eval(contenido)
+
+puntajes = sorted(leer_archivo(ARCHIVO_PUNTAJES), reverse=True)  # Carga los puntajes del archivo, ordenandolos de mayor a menor
+print(puntajes)
+
 font.init()  # Inicializa el módulo de fuentes de Pygame
 fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto del juego
 
@@ -712,6 +732,150 @@ class Boton:
         self.fue_presionado = self.presionado #Actualiza fue_presionado
         return presionado
 
+# Clase Configuracion: aquí se pueden agregar las configuraciones del juego, como el volumen
+class Configuracion:
+    def __init__(self, menu):
+        self.menu = menu
+        self.game = menu.game
+        self.pantalla = menu.pantalla  # Pantalla donde se dibuja la información\
+        self.musica = menu.game.canciones[0]
+        self.boton_cerrar = menu.boton_cerrar
+        self.fuente = fuente_texto  # Fuente del texto de la información
+        self.barra_sonido = Deslizante(self.pantalla, ANCHO_PANTALLA//2 - 200, SEPARACION_BORDES_PANTALLA*9, 400, 10, self.game.volumen)
+
+    def dibujar(self):
+        self.pantalla.fill(NEGRO)  # Limpia la pantalla
+        
+        self.texto_renderizado = self.fuente.render("Configuración", True, BLANCO)  # Renderiza el texto de la configuración
+        self.texto_musica_renderizado = self.fuente.render("Volumen de la música", True, BLANCO)  # Renderiza el texto del volumen de la música
+        
+        self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
+        self.pantalla.blit(self.texto_musica_renderizado, (SEPARACION_BORDES_PANTALLA * 4, SEPARACION_BORDES_PANTALLA * 8))
+        
+        self.barra_sonido.dibujar()
+        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar la información
+        
+    def eventos(self, evento):
+        mouse_pos = pg.mouse.get_pos()
+        
+        self.barra_sonido.eventos(evento)
+        
+        if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
+            self.menu.cambiar_modo(self.menu)
+    
+    def actualizar(self):
+        self.barra_sonido.actualizar()
+        if self.barra_sonido.deslizando: # Si se está deslizando la barra de sonido
+            self.game.volumen = self.barra_sonido.parametro #Cambia el volumen en todo el juego
+            self.musica.set_volume(self.game.volumen)  # Establece el volumen de la música
+
+class Informacion:
+    def __init__(self, menu):
+        self.menu = menu
+        self.pantalla = menu.pantalla  # Pantalla donde se dibuja la información
+        self.musica = menu.game.canciones[0]
+        self.boton_cerrar = menu.boton_cerrar
+        
+        self.texto = "Información del juego"  # Texto de la información del juego
+        self.fuente = fuente_texto  # Fuente del texto de la información
+        self.foto_juan = pg.image.load("assets/carnets/JuanFoto.png").convert_alpha()  # Carga la imagen de Juan
+        self.foto_pablo = pg.image.load("assets/carnets/PabloFoto.jpg").convert_alpha()  # Carga la imagen de Pablo
+        self.foto_juan = pg.transform.scale(self.foto_juan, (150, 150))  # Reescala la imagen de Juan a 150x150 píxeles
+        self.foto_pablo = pg.transform.scale(self.foto_pablo, (150, 150))  # Reescala la imagen de Pablo a 150x150 píxeles
+        
+        self.lineas = self.dividir_texto()
+
+    # El texto que pensamos poner en la pantalla de información es medianamente largo, por lo que se dividirá en varias líneas
+    def dividir_texto(self):
+        self.ancho_max = ANCHO_PANTALLA - 100  # Ancho máximo de cada línea de texto
+        self.fuente = fuente_texto  # Fuente del texto
+        self.texto = TEXTO_INFO  # Texto a dividir
+
+        bloques = self.texto.split("\n")  # Paso para dividir el texto y que respete los saltos de línea manuales 
+        lineas = []  # Lista para almacenar las líneas de texto
+
+        for bloque in bloques:
+            palabras = bloque.split(' ')  # "Split" divide el texto en palabras, cada que encuentra un espacio, borrándolo en el proceso
+            linea_actual = ""  # Línea actual que se está construyendo
+            
+            # Recorremos cada palabra y comprobamos para cada linea si cabe en el ancho máximo
+            # Si cabe, se agrega a la línea actual y seguimos revisando
+            # Si no cabe, se agrega la línea actual a la lista de líneas y se comienza una nueva línea con la palabra actual
+            # Añadimos los espacios manualmente
+            for palabra in palabras: 
+                prueba = linea_actual + palabra + " "
+                if self.fuente.size(prueba)[0] <= self.ancho_max:
+                    linea_actual = prueba
+                else:
+                    lineas.append(linea_actual)
+                    linea_actual = palabra + " "
+            # Si al final hay una línea actual que no está vacía, la agregamos a la lista de líneas
+            if linea_actual:
+                lineas.append(linea_actual)
+            # Devolvemos la lista de líneas
+
+        return lineas  # Devuelve la lista de líneas de texto divididas
+
+    def dibujar(self):
+        self.pantalla.fill(NEGRO)  # Limpia la pantalla
+        
+        y = 50
+        for linea in self.lineas:
+            render = self.fuente.render(linea, True, BLANCO)
+            x = (ANCHO_PANTALLA - render.get_width()) // 2  # Centra el texto en la pantalla
+            self.pantalla.blit(render, (x, y))
+            y += self.fuente.get_height() + 5
+        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar la información
+        
+        self.pantalla.blit(self.foto_juan, (ANCHO_PANTALLA // 2 - self.foto_juan.get_width() - 20, ALTO_PANTALLA // 2 + self.foto_juan.get_height() // 2))  # Dibuja la foto de Juan
+        self.pantalla.blit(self.foto_pablo, (ANCHO_PANTALLA // 2 + 20, ALTO_PANTALLA // 2 + self.foto_pablo.get_height() // 2))  # Dibuja la foto de Pablo B)
+        
+    def actualizar(self):  # Realmente no necesita actualizar nada, pero es necesario para el ciclo del juego
+        pass
+    
+    def eventos(self, evento):
+        mouse_pos = pg.mouse.get_pos()
+        if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
+            self.menu.cambiar_modo(self.menu)
+
+class Puntajes:
+    def __init__(self, menu):
+        self.menu = menu
+        self.pantalla = menu.pantalla  # Pantalla donde se dibuja la información
+        self.musica = menu.game.canciones[0]
+        self.boton_cerrar = menu.boton_cerrar
+        self.fuente = fuente_texto  # Fuente del texto de los puntajes
+        self.ordenar_puntajes()  # Carga los puntajes desde el archivo
+
+    def ordenar_puntajes(self):
+        self.top = []  # Lista para almacenar los puntajes
+        self.top_render = []  # Lista para almacenar los puntajes renderizados
+        for i in range(1, 6):  # Almacena los mejores 5 puntajes
+            if puntajes != []:
+                self.top.append((i, puntajes.pop(0)))
+            else:
+                break
+        
+        for top_puntajes in self.top:
+            self.fuente.render(f"{top_puntajes[0]} - {top_puntajes[1]}", True, BLANCO)  # Renderiza el texto de los puntajes
+            self.top_render.append(self.fuente.render(f"{top_puntajes[0]} - {top_puntajes[1]}", True, BLANCO))  # Agrega el texto renderizado a la lista de puntajes renderizados
+
+    def actualizar(self):  # Realmente no necesita actualizar nada, pero es necesario para el ciclo del juego
+        pass
+
+    def eventos(self, evento):
+        mouse_pos = pg.mouse.get_pos()
+        if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
+            self.menu.cambiar_modo(self.menu)
+
+    def dibujar(self):
+        self.pantalla.fill(NEGRO)  # Limpia la pantalla
+        self.boton_cerrar.dibujar()
+        for i, texto in enumerate(self.top_render):
+            self.pantalla.blit(texto, (10 + i * 30, 10 + i * 30))
+
+
+
 class Menu:
     def __init__(self, game):
         self.game = game
@@ -724,7 +888,8 @@ class Menu:
         #Opciones del menu
         self.config = Configuracion(self)
         self.info = Informacion(self)
-        self.opcion_a_funcion = {"Jugar":game.jugar, "Configuración":self.config, "Información":self.info, "Salir":None} #Mapea el nombre de las opciones a ellas
+        self.puntajes = Puntajes(self)
+        self.opcion_a_funcion = {"Jugar":game.jugar, "Configuración":self.config, "Puntajes": self.puntajes,"Información":self.info, "Salir":None} #Mapea el nombre de las opciones a ellas
 
         self.musica = game.canciones[0]
         self.botones = self.crear_botones()  # Crea los botones del menú
@@ -734,7 +899,7 @@ class Menu:
         botones = []  # Lista de botones del menú
         for i, nombre in enumerate(self.opcion_a_funcion):  # Crea un botón para cada opción del menú
             x = ANCHO_PANTALLA // 2 - 100  # Centra el botón en la pantalla (no cambia para los demás botones, ya que están alineados en el mismo x)
-            y = 480 + i * 60  # Espacio entre botones (en este caso, 60 píxeles entre cada botón)
+            y = 410 + i * 60  # Espacio entre botones (en este caso, 60 píxeles entre cada botón)
             self.boton = Boton(x, y, ANCHO_BOTON, ALTO_BOTON, nombre, self.pantalla)  # Crea un botón con las dimensiones y texto correspondientes
             botones.append(self.boton)  # Agrega el botón a la lista de botones del menú
         return botones
@@ -827,7 +992,6 @@ class DestruyeBloque:
         self.pantalla.blit(sprite_escalado, (self.x * MEDIDA_BLOQUE + offset_x, self.y * MEDIDA_BLOQUE + offset_y))
 
 
-
 # Clase del juego
 class Jugar:
     def __init__(self, game):
@@ -905,7 +1069,7 @@ class Jugar:
         bloques_disponibles = [
             (ANCHO_MATRIZ, y) for y in range(1, ALTO_MATRIZ + 1) if self.nivel[y][ANCHO_MATRIZ] == 0
         ]  # Encuentra todos los bloques donde se puede colocar la puerta
-        x, y = choice(bloques_disponibles)  # Selecciona un bloque aleatorio de los bloques destructibles
+        _, y = choice(bloques_disponibles)  # Selecciona un bloque aleatorio de los bloques destructibles
         self.puerta = Puerta(self, y)
         return self.puerta
             
@@ -1048,75 +1212,6 @@ class Mejoras:
     def eventos(self, evento):
         pass
 
-class Informacion:
-    def __init__(self, menu):
-        self.menu = menu
-        self.pantalla = menu.pantalla  # Pantalla donde se dibuja la información
-        self.musica = menu.game.canciones[0]
-        self.boton_cerrar = menu.boton_cerrar
-        
-        self.texto = "Información del juego"  # Texto de la información del juego
-        self.fuente = fuente_texto  # Fuente del texto de la información
-        self.foto_juan = pg.image.load("assets/carnets/JuanFoto.png").convert_alpha()  # Carga la imagen de Juan
-        self.foto_pablo = pg.image.load("assets/carnets/PabloFoto.jpg").convert_alpha()  # Carga la imagen de Pablo
-        self.foto_juan = pg.transform.scale(self.foto_juan, (150, 150))  # Reescala la imagen de Juan a 150x150 píxeles
-        self.foto_pablo = pg.transform.scale(self.foto_pablo, (150, 150))  # Reescala la imagen de Pablo a 150x150 píxeles
-        
-        self.lineas = self.dividir_texto()
-
-    # El texto que pensamos poner en la pantalla de información es medianamente largo, por lo que se dividirá en varias líneas
-    def dividir_texto(self):
-        self.ancho_max = ANCHO_PANTALLA - 100  # Ancho máximo de cada línea de texto
-        self.fuente = fuente_texto  # Fuente del texto
-        self.texto = TEXTO_INFO  # Texto a dividir
-
-        bloques = self.texto.split("\n")  # Paso para dividir el texto y que respete los saltos de línea manuales 
-        lineas = []  # Lista para almacenar las líneas de texto
-
-        for bloque in bloques:
-            palabras = bloque.split(' ')  # "Split" divide el texto en palabras, cada que encuentra un espacio, borrándolo en el proceso
-            linea_actual = ""  # Línea actual que se está construyendo
-            
-            # Recorremos cada palabra y comprobamos para cada linea si cabe en el ancho máximo
-            # Si cabe, se agrega a la línea actual y seguimos revisando
-            # Si no cabe, se agrega la línea actual a la lista de líneas y se comienza una nueva línea con la palabra actual
-            # Añadimos los espacios manualmente
-            for palabra in palabras: 
-                prueba = linea_actual + palabra + " "
-                if self.fuente.size(prueba)[0] <= self.ancho_max:
-                    linea_actual = prueba
-                else:
-                    lineas.append(linea_actual)
-                    linea_actual = palabra + " "
-            # Si al final hay una línea actual que no está vacía, la agregamos a la lista de líneas
-            if linea_actual:
-                lineas.append(linea_actual)
-            # Devolvemos la lista de líneas
-
-        return lineas  # Devuelve la lista de líneas de texto divididas
-
-    def dibujar(self):
-        self.pantalla.fill(NEGRO)  # Limpia la pantalla
-        
-        y = 50
-        for linea in self.lineas:
-            render = self.fuente.render(linea, True, BLANCO)
-            x = (ANCHO_PANTALLA - render.get_width()) // 2  # Centra el texto en la pantalla
-            self.pantalla.blit(render, (x, y))
-            y += self.fuente.get_height() + 5
-        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar la información
-        
-        self.pantalla.blit(self.foto_juan, (ANCHO_PANTALLA // 2 - self.foto_juan.get_width() - 20, ALTO_PANTALLA // 2 + self.foto_juan.get_height() // 2))  # Dibuja la foto de Juan
-        self.pantalla.blit(self.foto_pablo, (ANCHO_PANTALLA // 2 + 20, ALTO_PANTALLA // 2 + self.foto_pablo.get_height() // 2))  # Dibuja la foto de Pablo B)
-        
-    def actualizar(self):
-        pass #No hay que poner nada, pero quitarlo rompe el ciclo del juego
-    
-    def eventos(self, evento):
-        mouse_pos = pg.mouse.get_pos()
-        if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
-            self.menu.cambiar_modo(self.menu)
-
 class Deslizante:
     def __init__(self, pantalla, x, y, ancho, alto, parametro, min_parametro=0, max_parametro=1, radio_control=10):
         self.pantalla = pantalla
@@ -1150,44 +1245,6 @@ class Deslizante:
         pg.draw.rect(self.pantalla, GRIS, (self.x, self.y, self.ancho, self.alto))  # Dibuja el fondo de la barra
         pg.draw.rect(self.pantalla, VERDE, (self.x, self.y, self.ancho * self.parametro, self.alto))
         pg.draw.circle(self.pantalla, BLANCO, (self.x_control, self.y + self.alto // 2), self.radio)  # Dibuja el control deslizante en la barra de sonido
-
-# Clase Configuracion: aquí se pueden agregar las configuraciones del juego, como el volumen
-class Configuracion:
-    def __init__(self, menu):
-        self.menu = menu
-        self.game = menu.game
-        self.pantalla = menu.pantalla  # Pantalla donde se dibuja la información\
-        self.musica = menu.game.canciones[0]
-        self.boton_cerrar = menu.boton_cerrar
-        self.fuente = fuente_texto  # Fuente del texto de la información
-        self.barra_sonido = Deslizante(self.pantalla, ANCHO_PANTALLA//2 - 200, SEPARACION_BORDES_PANTALLA*9, 400, 10, self.game.volumen)
-
-    def dibujar(self):
-        self.pantalla.fill(NEGRO)  # Limpia la pantalla
-        
-        self.texto_renderizado = self.fuente.render("Configuración", True, BLANCO)  # Renderiza el texto de la configuración
-        self.texto_musica_renderizado = self.fuente.render("Volumen de la música", True, BLANCO)  # Renderiza el texto del volumen de la música
-        
-        self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
-        self.pantalla.blit(self.texto_musica_renderizado, (SEPARACION_BORDES_PANTALLA * 4, SEPARACION_BORDES_PANTALLA * 8))
-        
-        self.barra_sonido.dibujar()
-        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar la información
-        
-    def eventos(self, evento):
-        mouse_pos = pg.mouse.get_pos()
-        
-        self.barra_sonido.eventos(evento)
-        
-        if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
-            self.menu.cambiar_modo(self.menu)
-    
-    def actualizar(self):
-        self.barra_sonido.actualizar()
-        if self.barra_sonido.deslizando: # Si se está deslizando la barra de sonido
-            self.game.volumen = self.barra_sonido.parametro #Cambia el volumen en todo el juego
-            self.musica.set_volume(self.game.volumen)  # Establece el volumen de la música
-
         
 
 class Resultados:
