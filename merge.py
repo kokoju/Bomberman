@@ -191,10 +191,10 @@ class Jugador:
                 self.poner_bomba()
 
             if evento.key == K_1: #Si le da a 1
-                self.habilidad1()
+                self.item1()
                 
             elif evento.key == K_2: #O si le da a 2
-                self.habilidad2()
+                self.item2()
 
 class GameOver:
     def __init__(self, pantalla):
@@ -681,14 +681,15 @@ class Niveles:
         self.jugar = jugar
         self.pantalla = jugar.pantalla_juego
         self.niveles = cargar_niveles()
-        self.sprites = cargar_bloques()
         self.num_nivel = 1
+        self.sprites = cargar_bloques(self.num_nivel)
         self.nivel = self.niveles[0]  # Inicia en el nivel 1
             
     def pasar_nivel(self):
         if 1 <= self.num_nivel+1 <= len(self.niveles):
             self.nivel = self.niveles[self.num_nivel]
-            self.num_nivel += 1
+            self.num_nivel += 1  # Aumenta el numero de nivel
+            self.sprites = cargar_bloques(self.num_nivel)  # Carga los sprites del nuevo nivel
             return True #Cambio de nivel exitoso
         #Cambio de nivel falla
     

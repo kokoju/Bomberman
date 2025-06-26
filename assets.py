@@ -44,14 +44,20 @@ def cargar_skins(numero_skin, dict):
     return skin
 
 
-def cargar_bloques():
-    sprites_niveles = Spritesheet("assets/tiles_niveles.png")
-    zacate = sprites_niveles.cargar_sprite(5*160, 160, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE) #Zacate
+def cargar_bloques(nivel):
+    niveles = {1: "assets/niveles/spritesheet_normal.png",
+              2: "assets/niveles/spritesheet_playa.png",
+              3: "assets/niveles/spritesheet_hielo.png",
+              4: "assets/niveles/spritesheet_castillo.png"}
+
+    sprites_niveles = Spritesheet(niveles[nivel])  # Los bloques del nivel 1 son de 160x160 y los del nivel 2 en adelante son de 32x32
+    medida = (160 if nivel == 1 else 32)  # Usamos 1 para el primer nivel y 2 para los demás
+    vacio = sprites_niveles.cargar_sprite(2*medida, 0, medida, medida, MEDIDA_BLOQUE, MEDIDA_BLOQUE) # Bloque vacío
     return {
-        0:zacate,
-        1:sprites_niveles.cargar_sprite(2*160, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE), #Bloque solido
-        2:sprites_niveles.cargar_sprite(0, 0, 160, 160, MEDIDA_BLOQUE, MEDIDA_BLOQUE), #Ladrilo rompible
-        3:zacate #  Bloque invisible (Zacate pero con hitbox)
+        0:vacio,  # Bloque vacío
+        1:sprites_niveles.cargar_sprite(1*medida, 0, medida, medida, MEDIDA_BLOQUE, MEDIDA_BLOQUE),  # Bloque solido
+        2:sprites_niveles.cargar_sprite(0, 0, medida, medida, MEDIDA_BLOQUE, MEDIDA_BLOQUE),  # Ladrilo rompible
+        3:vacio  # Bloque vacío pero con hitbox, usado para que la bomba tenga colision
     }
 
 def cargar_bomba():
