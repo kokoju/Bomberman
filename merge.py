@@ -60,7 +60,7 @@ class Jugador:
         self.bombas = BOMBAS_DISPONIBLES  # Cantidad de bombas que el jugador puede colocar
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
         self.golpe = GOLPE_INICIAL_BOMBA  # Daño que causa el jugador al explotar una bomba
-        self.rango = 1 #Rango inicial de la bomba
+        self.rango = 1 # Rango inicial de la bomba
         self.moviendose = False  # Indica si el jugador se está moviendo o no
         
         self.puntaje = 100000  # Puntaje del jugador
@@ -76,7 +76,9 @@ class Jugador:
         self.tiene_llave = False  # Indica si el jugador tiene la llave para abrir la puerta del siguente nivel
 
         self.rect = Rect(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR, ANCHO_JUGADOR, ALTO_JUGADOR) #  Rectangulo del jugador para posicion y colision
-        
+        self.contador_rojos = 0  # Contador de caramelos de daño consumidos (para hacer reset al pasar de nivel)
+        self.contador_azules = 0  # Contador de caramelos de rango consumidos (para hacer reset al pasar de nivel)
+
         self.invulnerable = False
         self.invulnerabilidad() #Inicia invulnerable
         
@@ -611,7 +613,7 @@ class HUD:
             ratio = (pg.time.get_ticks() - self.jugador.tiempo_desde_habilidad) / self.jugador.enfriamiento_habilidad  # Calcula el ratio de la habilidad del jugador (para que no se vea vacío si no tiene habilidad)
             # Calcula la altura del rectángulo verde según el ratio
             altura = int(96 * ratio)
-            y_base = 136 + 96 - altura  # La base es 136+96, restamos la altura para que crezca hacia arriba
+            y_base = 136 - altura  # La base es 136, restamos la altura para que crezca hacia arriba
             pg.draw.rect(self.pantalla, VERDE, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, y_base, 96, altura))
 
         pg.draw.rect(self.pantalla, BLANCO, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, 40, 96, 96), 4)  # Dibuja los cuadros de los items del jugador
@@ -712,9 +714,11 @@ class Caramelos:  # Los caramelos son un objeto que se encuentra en el nivel, y 
             if self.tipo == "daño":
                 self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
                 self.jugador.golpe += 1  # Aumenta el daño del jugador
+                self.jugador.contador_rojos += 1  # Aumenta el contador de caramelos rojos del jugador
             elif self.tipo == "rango":
                 self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
                 self.jugador.rango += 1  # Aumenta el rango de la bomba del jugador
+                self.jugador.contador_azules += 1  # Aumenta el contador de caramelos azules del jugador
             elif self.tipo == "vida" and self.jugador.vidas < self.jugador.vidas_max:  # Si el jugador tiene menos vidas que las máximas
                 self.jugador.vidas += 1  # Aumenta la vida del jugador
                 self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
@@ -1075,6 +1079,14 @@ class Jugar:
             self.capas[1] = self.asignar_extras()
             self.capas[3] = self.colocar_enemigos() #Pone los enemigos
             self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
+            # Reinicio de las estadísticas de los caramelos
+            for _ in range(self.jugador.contador_rojos):
+                self.jugador.golpe -= 1
+            for _ in range(self.jugador.contador_azules):
+                self.jugador.rango -= 1
+            # Reinicio de los contadores de caramelos
+            self.jugador.contador_rojos = 0
+            self.jugador.contador_azules = 0
     
     def menu_mejoras(self):
         self.game.modo_previo = self
@@ -1143,6 +1155,7 @@ class Jugar:
         for capa in sorted(self.capas.keys()): #Actualiza entidades (jugador, enemigos, bombas...)
             for entidad in self.capas[capa]:
                 entidad.actualizar()
+        print(self.jugador.golpe)
 
     def eventos(self, evento):
         self.jugador.eventos(evento)
