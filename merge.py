@@ -410,6 +410,23 @@ class Pegamento:  # Los enemigos más avanzados sueltan pegamento al moverse, qu
 
         self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja el sprite
 
+class Veneno:
+    def __init__(self, jugar, x, y):
+        self.jugar = jugar
+        self.pantalla = jugar.pantalla_juego
+        self.jugador = jugar.jugador
+        self.x = x
+        self.y = y
+        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al veneno en el canvas
+        self.sprite = cargar_veneno()  # Carga la skin el veneno desde la hoja de sprites
+
+    def actualizar(self):
+        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
+            self.jugador.morir()
+
+    def dibujar(self):
+        self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja el sprite
+
 
 class Bomba:
     def __init__(self, jugador):
@@ -963,9 +980,48 @@ class Puntajes:
         self.boton_cerrar.dibujar()
         for i, texto in enumerate(self.top_render):
             self.pantalla.blit(texto, (ANCHO_PANTALLA//2 - texto.get_width()//2, ALTO_PANTALLA//3 + self.fuente.get_height() * i))
+"""
+# TODO
+# Clase para la caja de entrada de texto: necesario para el nombre del usuario y la dirección
+class InputBox:
+    def __init__(self, x, y, ancho, alto, placeholder, pantalla):
+        self.x = x  # Posición en el eje X
+        self.y = y  # Posición en el eje Y
+        self.ancho = ancho  # Ancho de la caja de entrada
+        self.alto = alto  # Alto de la caja de entrada
+        self.rect = pg.Rect(x, y, ancho, alto)  # Rectángulo que representa la caja de entrada (USADO PARA LA COLISIÓN DEL MOUSE AL HACER CLICK)
+        self.pantalla = pantalla
+        self.texto = ""  # Texto de la caja de entrada (lo que se escribe dentro de ella)
+        self.activo = False  # Indica si la caja de entrada está activa
+        self.fuente = fuente_texto  # Fuente del texto de la caja de entrada
+        self.placeholder = placeholder
+        self.limite_caracteres = LIMITE_CARACTERES_INPUTBOX  # Límite de caracteres que se pueden escribir en la caja de entrada
+        self.error = False  # Indica si hay un error al escribir en la caja de entrada (por ejemplo, si esta se encuentra vacía)
+    
+    def escritura(self, evento):
+        if evento.key == pg.K_BACKSPACE:
+            self.texto = self.texto[:-1]  # Elimina el último carácter al presionar BACKSPACE (la tecla de borrar)
+        else:
+            # Obtiene el carácter Unicode de la acción (tecla que fue presionada + estado de las teclas modificadoras (como Shift, Alt, Ctrl))
+            self.texto += evento.unicode  
+    
+    def obtener_texto(self):
+        # Devuelve el texto de la caja de entrada
+        return self.texto
 
-
-
+    def dibujar(self):
+        # Dibuja la caja de entrada en la pantalla
+        pg.draw.rect(self.pantalla, (255, 255, 255), self.rect)  # Rectángulo blanco (el fondo de la caja de entrada, donde se escribe el texto)
+        pg.draw.rect(self.pantalla, (0, 0, 0), self.rect, 2)  # Borde (indicado por el 2, que es el grosor del borde)
+        if self.texto == "" and not self.activo and not self.error:  # Si no hay texto y la caja de entrada no está activa, muestra un texto (placeholder)
+            self.texto_renderizado = self.fuente.render(self.placeholder, True, (150, 150, 150))  # Placeholder, en gris claro
+        elif self.texto == "" and not self.activo and self.error:
+            self.texto_renderizado = self.fuente.render(self.placeholder, True, (255, 0, 0))  # Placeholder, en rojo (indica un error)
+        else:
+            self.texto_renderizado = self.fuente.render(self.texto, True, (0, 0, 0))  # Texto normal, en negro
+        # Dibuja el texto en la caja de entrada
+        self.pantalla.blit(self.texto_renderizado, (self.rect.x + 5, self.rect.y)) # Dibuja el texto centrado verticalmente en la caja de entrada
+"""
 class Menu:
     def __init__(self, game):
         self.game = game
@@ -1024,8 +1080,8 @@ class Niveles:
             self.nivel = self.niveles[self.num_nivel]
             self.num_nivel += 1  # Aumenta el numero de nivel
             self.sprites = cargar_bloques(self.num_nivel)  # Carga los sprites del nuevo nivel
-            return True #Cambio de nivel exitoso
-        #Cambio de nivel falla
+            return True  # Cambio de nivel exitoso
+        # Cambio de nivel falla
     
     def dibujar(self):
         for y in range(1, ALTO_MATRIZ+1):
@@ -1093,7 +1149,7 @@ class Jugar:
         self.sprites_bomba = game.sprites_bomba
         self.dibujar_texto = game.dibujar_texto # Toma el metodo de dibujar texto
         
-        self.debug = False #G para cambiar (muestra hitboxes y gridlines)
+        self.debug = False  # G para cambiar (muestra hitboxes y gridlines)
         self.manager_niveles = Niveles(self)
         self.nivel = self.manager_niveles.nivel
         self.jugador = Jugador(self)
@@ -1101,12 +1157,12 @@ class Jugar:
         self.hud = HUD(self)  # Crea el HUD del juego
         self.lista_pegamento = []  # Lista para almacenar los pegamentos que sueltan los enemigos
         self.capas = {
-            0:[self.manager_niveles], #  El fondo
-            1:self.asignar_extras(),  #  Capa para objetos (llave, objetos, etc)
-            2:[], #  Capa para bombas y pegamento
-            3:self.colocar_enemigos(),
+            0:[self.manager_niveles],  # El fondo
+            1:self.asignar_extras(),  # Capa para objetos (llave, objetos, etc)
+            2:[],  # Capa para bombas y pegamento
+            3:self.colocar_enemigos(),  # Capa para enemigos y elementos que dañan al jugador
             4:[self.jugador],
-            5:[]} #  Capa para explosiones
+            5:[]}  # Capa para explosiones
         
     def colocar_enemigos(self):
         coords_ocupadas = [(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR)]
@@ -1120,8 +1176,21 @@ class Jugar:
                 coords_ocupadas.append((x, y))
                 enemigo = Enemigo(self, (x-1) * MEDIDA_BLOQUE, (y-1) * MEDIDA_BLOQUE)
                 enemigos.append(enemigo)
-        
         return enemigos
+    
+    def colocar_venenos(self):
+        # Coloca los venenos en posiciones aleatorias del nivel, evitando que aparezcan cerca del jugador, a partir del nivel 2
+        coords_ocupadas = [(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR)]
+        venenos = []
+        while len(venenos) < CANTIDAD_VENENOS:
+            x = randint(5, ANCHO_MATRIZ) # Inicia desde 5 para evitar que aparezcan cerca del jugador
+            y = randint(5, ALTO_MATRIZ)  # Inicia desde 5 para evitar que aparezcan cerca del jugador
+                
+            if (x, y) not in coords_ocupadas and self.nivel[y][x] == 0:
+                coords_ocupadas.append((x, y))
+                veneno = Veneno(self, (x-1) * MEDIDA_BLOQUE, (y-1) * MEDIDA_BLOQUE)
+                venenos.append(veneno)
+        return venenos
 
     def pasar_nivel(self):
         if self.manager_niveles.pasar_nivel():
@@ -1130,7 +1199,7 @@ class Jugar:
             self.jugador.nivel = self.nivel #Cambia el nivel del jugador
             self.jugador.bombas += BOMBAS_DISPONIBLES
             self.capas[1] = self.asignar_extras()
-            self.capas[3] = self.colocar_enemigos() #Pone los enemigos
+            self.capas[3] = self.colocar_venenos() + self.colocar_enemigos() # Pone los elementos que dañan al jugador
             self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
             # Reinicio de las estadísticas de los caramelos
             for _ in range(self.jugador.contador_rojos):

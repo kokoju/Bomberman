@@ -155,3 +155,7 @@ def cargar_puerta():
 def cargar_pegamento():
     return pg.transform.scale(pg.image.load("assets/pegamento.png").convert_alpha(),
                                 (MEDIDA_BLOQUE, MEDIDA_BLOQUE))  # Ajusta el tamaño del pegamento
+
+def cargar_veneno():
+    return pg.transform.scale(pg.image.load("assets/veneno.png").convert_alpha(),
+                                (MEDIDA_BLOQUE, MEDIDA_BLOQUE))  # Ajusta el tamaño del veneno

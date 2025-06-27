@@ -48,6 +48,7 @@ TIEMPO_DETONACION_BOMBA = 2000 # Tiempo en milisegundos antes de que la bomba ex
 GOLPE_INICIAL_BOMBA = 1  # Daño que causa la bomba al jugador y a los enemigos
 
 # Configuración de los caramelos
+CANTIDAD_VENENOS = 8  # Cantidad de venenos que aparecen en cada nivel
 CANTIDAD_CARAMELOS = 5  # Cantidad de caramelos máximos que aparecen en cada nivel (se toma si hay más bloques destructibles que caramelos requeridos)
 CANTIDAD_POCIONES = 2  # Cantidad de pociones que aparecen en cada nivel (se toma si hay más bloques destructibles que pociones requeridas)
 
