@@ -299,12 +299,13 @@ class Enemigo:
         self.nivel = jugar.nivel
         self.x = x
         self.y = y
+        self.num_nivel = jugar.manager_niveles.num_nivel
 
         self.frame = 0
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
-        self.numero_skin = 1  # Número de skin del enemigo (se puede cambiar para hacerlo más complicado)
+        self.numero_skin = self.num_nivel  # Número de skin del enemigo (se puede cambiar para hacerlo más complicado)
         self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_inciales_skins_enemigos)  # Carga la skin del enemigo desde la hoja de sprites
-        self.vidas = 1
+        self.vidas = self.num_nivel # La cantidad de vida de los enemigos será igual al número de nivel
         self.velocidad = 2
         self.rect = Rect(self.x, self.y, int(MEDIDA_BLOQUE*0.75), int(MEDIDA_BLOQUE*0.75))  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
         self.movimientos = {"arriba" : (0, -self.velocidad), "abajo" : (0, self.velocidad), "izquierda" : (-self.velocidad, 0), "derecha" : (self.velocidad, 0)}  # Diccionario con los movimientos posibles
@@ -317,7 +318,8 @@ class Enemigo:
     def actualizar(self):
         if self.jugador.enemigos_congelados:  # Si el jugador tiene enemigos congelados, no se mueve
             return
-        self.soltar_pegamento()  # Si el enemigo puede soltar pegamento, lo hace
+        if self.num_nivel >= 3:  # Si el nivel es 3, el enemigo suelta pegamento
+            self.soltar_pegamento()
         dx, dy = self.movimientos[self.movimiento_elegido]
         # Movimiento en eje X
         rect_dx = self.rect.move(dx, 0)
@@ -1268,9 +1270,9 @@ class Mejoras:
         
         self.dibujar_texto("PRECIOS", 100, 50)
         self.dibujar_texto(f"PUNTOS: {self.puntos}", 100, 650)
-        self.dibujar_texto(f"VIDAS MÁX: {self.jugador.vidas}", 500, 150)
-        self.dibujar_texto(f"GOLPE: {self.jugador.golpe}", 500, 350)
-        self.dibujar_texto(f"RANGO: {self.jugador.rango}", 500, 550)
+        self.dibujar_texto(f"VIDAS MÁX: {self.jugador.vidas}", 400, 100 + self.boton_vida.alto // 4)
+        self.dibujar_texto(f"GOLPE: {self.jugador.golpe}", 400, 300 + self.boton_golpe.alto // 4)
+        self.dibujar_texto(f"RANGO: {self.jugador.rango}", 400, 500 + self.boton_rango.alto // 4)
         
         self.boton_vida.dibujar()
         self.boton_golpe.dibujar()
