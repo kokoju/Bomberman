@@ -67,6 +67,7 @@ class Jugador:
 
         # Habilidades e ítems del jugador
         self.tiene_habilidad = True  # Indica si el jugador tiene la habilidad especial
+        self.habilidad_en_uso = False  # Indica si la habilidad especial está en uso
         self.tiene_item_1 = False  # Indica si el jugador tiene el item 1
         self.tiene_item_2 = False  # Indica si el jugador tiene el item 2
 
@@ -136,7 +137,7 @@ class Jugador:
             self.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
             self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
 
-        print(self.tiene_habilidad)
+        # print(self.tiene_habilidad)
 
     def actualizar_frame_sprite(self):
         if self.moviendose: # Jugador se mueve
@@ -174,14 +175,34 @@ class Jugador:
     # Freeze (Oveja rosada) -> Congela a los enemigos por un tiempo limitado
     def habilidad(self):
         if self.tiene_habilidad:  # Si el jugador no tiene la habilidad especial
+            self.habilidad_en_uso = True
             self.tiene_habilidad = False  # Desactiva la bandera de la habilidad especial
-            self.tiempo_desde_habilidad = pg.time.get_ticks()  # Reinicia el tiempo desde que se usó la habilidad especial
+            if self.numero_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
+                pass
+            elif self.numero_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
+                self.rango += 3  # Aumenta el rango de las bombas del jugador
+            elif self.numero_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
+                pass
+
+            def reestablecer():
+                sleep(DURACION_EFECTOS / 1000)  # Espera el tiempo de duración del efecto de la habilidad especial
+                if self.numero_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
+                    pass
+                elif self.numero_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
+                    self.rango -= 3  # Vuelve al rango normal de las bombas del jugador
+                elif self.numero_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
+                    pass
+                self.habilidad_en_uso = False  # Vuelve a activar la bandera de la habilidad especial
+                self.tiempo_desde_habilidad = pg.time.get_ticks()  # Reinicia el tiempo desde que se usó la habilidad especial
+                hilo = Thread(target=reestablecer_enfriamiento)  # Crea un hilo para administrar el enfriamiento de la habilidad
+                hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
+                hilo.start()  # Inicia el hilo
 
             def reestablecer_enfriamiento():
                 sleep(self.enfriamiento_habilidad / 1000)  # Espera el tiempo de enfriamiento de la habilidad especial
                 self.tiene_habilidad = True  # Vuelve a activar la bandera de la habilidad especial
 
-            self.hilo = Thread(target=reestablecer_enfriamiento)  # Crea un hilo para administrar el enfriamiento de la habilidad
+            self.hilo = Thread(target=reestablecer)  # Crea un hilo para administrar el enfriamiento de la habilidad
             self.hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
             self.hilo.start()  # Inicia el hilo
         
@@ -609,6 +630,8 @@ class HUD:
         # Dibuja un cuadro que se rellenará con en base al CD de la habilidad del jugador (de abajo hacia arriba)
         if self.jugador.tiene_habilidad:  # Si el jugador tiene la habilidad especial
             pg.draw.rect(self.pantalla, VERDE, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, 40, 96, 96))  # Dibuja el borde del cuadro del item de velocidad
+        elif self.jugador.habilidad_en_uso:  # Si el jugador está usando la habilidad especial
+            pg.draw.rect(self.pantalla, AZUL, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, 40, 96, 96))  # Dibuja el borde del cuadro del item de velocidad
         else:
             ratio = (pg.time.get_ticks() - self.jugador.tiempo_desde_habilidad) / self.jugador.enfriamiento_habilidad  # Calcula el ratio de la habilidad del jugador (para que no se vea vacío si no tiene habilidad)
             # Calcula la altura del rectángulo verde según el ratio
@@ -1155,7 +1178,7 @@ class Jugar:
         for capa in sorted(self.capas.keys()): #Actualiza entidades (jugador, enemigos, bombas...)
             for entidad in self.capas[capa]:
                 entidad.actualizar()
-        print(self.jugador.golpe)
+        # print(self.jugador.golpe)
 
     def eventos(self, evento):
         self.jugador.eventos(evento)
