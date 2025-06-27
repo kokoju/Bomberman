@@ -412,6 +412,7 @@ class Explosion:
         self.sprites = bomba.sprites
         self.nivel = self.jugar.nivel
         
+        self.poder = 4
         self.rango = rango
         self.activa = True
         self.frame = 0
@@ -426,6 +427,7 @@ class Explosion:
         bloques_afectados = [(self.x, self.y)]
         bloques_rotos = []
         for dx, dy in direcciones: #Por cada direccion
+            poder_restante = self.poder
             for i in range(1, self.rango+1): #Por cada bloque en el rango
                 bloque_x = self.x + dx*i
                 bloque_y = self.y + dy*i
@@ -434,8 +436,11 @@ class Explosion:
                 if bloque == 0: #Aire
                     bloques_afectados.append((bloque_x, bloque_y)) #Explosion ocurre en ese tile
                 elif bloque == 2: #Bloque rompible
+                    poder_restante -= 1
+                    bloques_afectados.append((bloque_x, bloque_y)) #Explosion ocurre en ese tile
                     bloques_rotos.append((bloque_x, bloque_y))
-                    break
+                    if poder_restante == 0:
+                        break
                 else:
                     break
         return bloques_afectados, bloques_rotos
@@ -515,8 +520,6 @@ class Explosion:
 
             self.pantalla.blit(self.sprites[llave][subframe], (x-MEDIDA_BLOQUE, y-MEDIDA_BLOQUE))
 
-class Jefe:
-    pass
 
 class BarraVida:
     def __init__(self, x, y, ancho, alto, jugar):
