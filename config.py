@@ -29,15 +29,22 @@ MARGEN_DESLIZAMIENTO = 5  # Espacio de "spare" para ajustar el movimiento del ju
 ANCHO_BOTON = 200  # Ancho de los botones en el menú
 ALTO_BOTON = 50  # Alto de los botones en el menú
 
+# Elementos de los menús (ajustes, créditos, etc.)
 TEXTO_INFO = "Desarrollado por: \n Juan Andrés Bastidas López - 2025066242\n Pablo Vargas Monge - 2025064957\nAmbos son estudiantes del ITCR, cursando la carrera de Ingeniería en Computación y entregando este trabajo como el III proyecto de Introducción a la programación.\nAño 2025 - Primer Semestre\n Profesores: Diego Mora Rojas y Jeff Schmidt Peralta\n Versión 1.0" 
 VALOR_INCIAL_VOLUMEN = 0.0  # Valor inicial del volumen de la música (entre 0 y 1)  # TODO PONER EN 0.5
+INFORMACION_PERSONAJES = {
+    1: "La ovejita original, se destaca por su ternura y su habilidad para saltar sobre muros destructibles con su habilidad",
+    2: "La oveja albina destructiva, se destaca por su habilidad para aumentar el rango de sus bombas y sus ataques penetrantes",
+    3: "La oveja rosada: orginaria de un mundo muy cuadrado, resalta de las demás por su habilidad para congelar a los enemigos y por su llamativo color"
+    }
+
 
 # Jugador
 X_INICIAL_JUGADOR = 0
 Y_INICIAL_JUGADOR = 0
 ANCHO_JUGADOR = int(MEDIDA_BLOQUE * 0.75)
 ALTO_JUGADOR = int(MEDIDA_BLOQUE * 0.75)
-BOMBAS_DISPONIBLES = 15
+CANTIDAD_BOMBAS = 2  # Cantidad de bombas que el jugador puede colocar al mismo tiempo
 VIDAS = 3
 GOLPE = 1
 ENFRIAMIENTO_HABILIDAD = 8000  # Tiempo en milisegundos antes de que el jugador pueda usar la habilidad nuevamente
@@ -48,7 +55,7 @@ TIEMPO_DETONACION_BOMBA = 2000 # Tiempo en milisegundos antes de que la bomba ex
 GOLPE_INICIAL_BOMBA = 1  # Daño que causa la bomba al jugador y a los enemigos
 
 # Configuración de los caramelos
-CANTIDAD_VENENOS = 8  # Cantidad de venenos que aparecen en cada nivel
+CANTIDAD_VENENOS = 15  # Cantidad de venenos que aparecen en cada nivel
 CANTIDAD_CARAMELOS = 5  # Cantidad de caramelos máximos que aparecen en cada nivel (se toma si hay más bloques destructibles que caramelos requeridos)
 CANTIDAD_POCIONES = 2  # Cantidad de pociones que aparecen en cada nivel (se toma si hay más bloques destructibles que pociones requeridas)
 
