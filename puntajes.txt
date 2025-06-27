@@ -1,1 +1,1 @@
-[["Juan", 2], ["Lanna", 3000], ["Steadman", 4000], ["Pablo", 2500], ["Benja", 3500], ["Diego", 1200]]
+[["Juan", 2], ["Lanna", 5000], ["Steadman", 4000], ["Pablo", 2500], ["Benja", 3500], ["Diego", 1200]]
