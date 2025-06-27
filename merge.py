@@ -42,7 +42,7 @@ fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto 
 
 # Clase Jugador
 class Jugador:
-    def __init__(self, jugar, num_skin=1):
+    def __init__(self, jugar, num_skin=2):
         self.jugar = jugar
         self.pantalla = jugar.pantalla_juego  # Pantalla donde se dibuja el jugador
         self.nivel = jugar.nivel  # Nivel actual del jugador (se usa para verificar colisiones)
@@ -80,6 +80,10 @@ class Jugador:
         self.contador_rojos = 0  # Contador de caramelos de daño consumidos (para hacer reset al pasar de nivel)
         self.contador_azules = 0  # Contador de caramelos de rango consumidos (para hacer reset al pasar de nivel)
 
+        self.atraviesa_destructibles = False  # Indica si el jugador puede atravesar bloques destructibles (por la habilidad de la oveja común)
+        self.golpes_penetrantes = False  # Indica si las bombas del jugador no se detienen al tocar muros destructibles (por la habilidad de la oveja albina)
+        self.enemigos_congelados = False  # Indica si el jugador tiene enemigos congelados (por la habilidad de la oveja rosada)
+
         self.invulnerable = False
         self.invulnerabilidad() #Inicia invulnerable
         
@@ -95,9 +99,20 @@ class Jugador:
     def verificar_colision(self, rect):
         #Verifica si alguna esquina esta en un tile que no sea aire
         for x, y in self.sacar_esquinas(rect):
-            if self.nivel[y][x] != 0:
-                return False
+            if self.atraviesa_destructibles:
+                if self.nivel[y][x] != 0 and self.nivel[y][x] != 2:
+                    return 
+            elif not self.atraviesa_destructibles:
+                if self.nivel[y][x] != 0:
+                    return False
         return True
+    
+    def verificar_en_bloque_destructible(self, rect):
+        # Verifica si el jugador está en un bloque destructible
+        for x, y in self.sacar_esquinas(rect):
+            if self.nivel[y][x] == 2:
+                return True
+        return False  # Si no está en un bloque destructible, devuelve False
     
     def actualizar(self):
         keys = pg.key.get_pressed()
@@ -169,8 +184,7 @@ class Jugador:
             self.bombas -= 1
             Bomba(self)
 
-    # TODO
-    # Fantasmal (Oveja común) -> Permite al jugador atravesar bloques destructibles/indestructibles por un tiempo limitado 
+    # No-clip (Oveja común) -> Permite al jugador atravesar bloques destructibles por un tiempo limitado
     # Explosivo (Oveja albina) -> Aumenta el rango de las bombas del jugador por un tiempo limitado, además de no detenerse al contacto de un muro
     # Freeze (Oveja rosada) -> Congela a los enemigos por un tiempo limitado
     def habilidad(self):
@@ -178,20 +192,26 @@ class Jugador:
             self.habilidad_en_uso = True
             self.tiene_habilidad = False  # Desactiva la bandera de la habilidad especial
             if self.numero_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
-                pass
+                self.atraviesa_destructibles = True
             elif self.numero_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
                 self.rango += 3  # Aumenta el rango de las bombas del jugador
+                self.golpes_penetrantes = True  # Las bombas del jugador no se detienen al tocar muros destructibles
             elif self.numero_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
-                pass
+                self.enemigos_congelados = True  # Congela a los enemigos por un tiempo limitado
 
             def reestablecer():
                 sleep(DURACION_EFECTOS / 1000)  # Espera el tiempo de duración del efecto de la habilidad especial
                 if self.numero_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
-                    pass
+                    # Reduce el lag usando un sleep más largo y chequeos menos frecuentes
+                    while self.verificar_en_bloque_destructible(self.rect):
+                        self.atraviesa_destructibles = True
+                        sleep(0.1)  # Chequea cada 100ms en vez de un bucle apretado
+                    self.atraviesa_destructibles = False  # Vuelve a la normalidad al salir del bloque destructible
                 elif self.numero_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
                     self.rango -= 3  # Vuelve al rango normal de las bombas del jugador
+                    self.golpes_penetrantes = False  # Las bombas del jugador se detienen al tocar muros destructibles00000
                 elif self.numero_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
-                    pass
+                    self.enemigos_congelados = False  # Descongela a los enemigos
                 self.habilidad_en_uso = False  # Vuelve a activar la bandera de la habilidad especial
                 self.tiempo_desde_habilidad = pg.time.get_ticks()  # Reinicia el tiempo desde que se usó la habilidad especial
                 hilo = Thread(target=reestablecer_enfriamiento)  # Crea un hilo para administrar el enfriamiento de la habilidad
@@ -295,6 +315,8 @@ class Enemigo:
 
     # Mueve al enemigo en una dirección aleatoria
     def actualizar(self):
+        if self.jugador.enemigos_congelados:  # Si el jugador tiene enemigos congelados, no se mueve
+            return
         self.soltar_pegamento()  # Si el enemigo puede soltar pegamento, lo hace
         dx, dy = self.movimientos[self.movimiento_elegido]
         # Movimiento en eje X
@@ -404,33 +426,33 @@ class Bomba:
         self.frame = 0
         self.sprite = self.sprites["bomba"][0]
         self.tiempo_detonar = 2000  # Tiempo en ms para que la bomba explote
-        self.golpe = jugador.golpe # Daño que causa la bomba al explotar
+        self.golpe = jugador.golpe  # Daño que causa la bomba al explotar
         self.activa = True
-        self.hitbox_activa = False #Se activa cuando el jugador se mueve fuera de la bomba
+        self.hitbox_activa = False  # Se activa cuando el jugador se mueve fuera de la bomba
         
-        self.jugar.capas[2].append(self) #  Capa de las bombas
-        hilo = Thread(target=self.detonar) #Crea un hilo para la bomba
+        self.jugar.capas[2].append(self)  # Capa de las bombas
+        hilo = Thread(target=self.detonar)  # Crea un hilo para la bomba
         hilo.daemon = True
         hilo.start()
 
     def detonar(self):
-        sleep(self.tiempo_detonar/1000) #  Pasa el tiempo a segundos
+        sleep(self.tiempo_detonar/1000)  # Pasa el tiempo a segundos
         self.activa = False #Explota
-        self.jugar.nivel[self.by][self.bx] = 0 #  Quita la hitbox
+        self.jugar.nivel[self.by][self.bx] = 0  # Quita la hitbox
         Explosion(self, self.rango)
-        self.jugar.capas[2].remove(self) #Ya no procesa la bomba
+        self.jugar.capas[2].remove(self) # Ya no procesa la bomba
         
     def actualizar(self):
-        if not self.hitbox_activa and (self.bx,self.by) not in self.jugador.sacar_esquinas(self.jugador.rect): #Crea la hitbox de la bomba cuando el jugador se va
+        if not self.hitbox_activa and (self.bx,self.by) not in self.jugador.sacar_esquinas(self.jugador.rect):  # Crea la hitbox de la bomba cuando el jugador se va
             self.hitbox_activa = True
-            self.jugar.nivel[self.by][self.bx] = 3 #Pone un bloque invisible
+            self.jugar.nivel[self.by][self.bx] = 3  # Pone un bloque invisible
         
-        #Acelera que tan rapido cambia el frame de la bomba entre menos tiempo le queda
+        # Acelera que tan rapido cambia el frame de la bomba entre menos tiempo le queda
         tiempo_actual = pg.time.get_ticks()
-        intervalo_frame = max(100, (self.tiempo_detonar + self.tiempo_creacion - tiempo_actual)//5) #Cambia cada 1/5 parte del tiempo restante
+        intervalo_frame = max(100, (self.tiempo_detonar + self.tiempo_creacion - tiempo_actual)//5) # Cambia cada 1/5 parte del tiempo restante
         
-        if tiempo_actual - self.ultima_actualizacion_frame > intervalo_frame: #Si han pasado 200 ms
-            #Actualiza el frame a dibujar
+        if tiempo_actual - self.ultima_actualizacion_frame > intervalo_frame: # Si han pasado 200 ms
+            # Actualiza el frame a dibujar
             self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
             self.frame = (self.frame + 1) % len(self.sprites["bomba"]) # Frame ciclico, se reinicia cuando llega al final
             self.sprite = self.sprites["bomba"][self.frame] # Actualiza self.sprite
@@ -468,23 +490,27 @@ class Explosion:
                 bloque_y = self.y + dy*i
                 bloque = self.nivel[bloque_y][bloque_x]
                 
-                if bloque == 0: #Aire
-                    bloques_afectados.append((bloque_x, bloque_y)) #Explosion ocurre en ese tile
-                elif bloque == 2: #Bloque rompible
+                if bloque == 0: # Aire
+                    bloques_afectados.append((bloque_x, bloque_y)) # Explosion ocurre en ese tile
+                elif bloque == 2: # Bloque rompible
                     bloques_rotos.append((bloque_x, bloque_y))
-                    break
+                    if not self.jugar.jugador.golpes_penetrantes:
+                        break
+                    else:
+                        bloques_afectados.append((bloque_x, bloque_y))  # Si el jugador tiene golpes penetrantes, sigue la explosion
+                        continue  # Si el jugador tiene golpes penetrantes, sigue la explosion
                 else:
                     break
         return bloques_afectados, bloques_rotos
 
     def matar(self):
-        #Destruye bloques
+        # Destruye bloques
         if self.frame == self.frame_expansion:
             for x, y in self.bloques_rotos:
                 self.nivel[y][x] = 0
                 self.jugador.puntaje += 20  # Aumenta el puntaje del jugador al destruir un bloque
             
-        #Mata entidades
+        # Mata entidades
         for x, y in self.bloques_afectados:
             if not self.jugador.invulnerable and (x, y) == (self.jugador.rect.centerx//MEDIDA_BLOQUE+1, self.jugador.rect.centery//MEDIDA_BLOQUE+1): #Si el jugador no esta invulnerable
                 self.jugador.morir()
@@ -586,7 +612,7 @@ class HUD:
         self.jugador = jugar.jugador  # Jugador del juego
         self.fuente = fuente_texto  # Fuente del texto del HUD
         self.texto_vidas = self.fuente.render("Vida", True, BLANCO)
-        self.barra_vida = BarraVida(SEPARACION_BORDES_PANTALLA + self.texto_vidas.get_width(), 20, 200, 20, jugar)  # Barra de vida del jugador
+        self.barra_vida = BarraVida(SEPARACION_BORDES_PANTALLA + self.texto_vidas.get_width() + 10, 20, 200, 20, jugar)  # Barra de vida del jugador
         self.textos = []  # Lista para almacenar los textos del HUD
         self.cargar_sprites_en_proporcion()  # Carga los sprites de los items del jugador en proporción
 
@@ -604,7 +630,8 @@ class HUD:
         self.textos = [
         self.fuente.render(f"Bombas: {self.jugador.bombas}", True, BLANCO),  # Texto de las bombas del jugador
         self.fuente.render(f"Rango: {self.jugador.rango}", True, BLANCO),  # Texto del rango de las bombas del jugador
-        self.fuente.render(f"Puntaje: {self.jugador.puntaje}", True, BLANCO)  # Texto del puntaje del jugador
+        self.fuente.render(f"Puntaje: {self.jugador.puntaje}", True, BLANCO),  # Texto del puntaje del jugador
+        self.fuente.render(f"Daño: {self.jugador.golpe}", True, BLANCO)  # Texto de las vidas del jugador
         ]
 
     def actualizar(self):
@@ -613,7 +640,7 @@ class HUD:
         # Actualiza el HUD con la información del jugador
 
     def dibujar(self):
-        self.pantalla.blit(self.texto_vidas, (10, 10))  # Dibuja el texto de "Vida" en la pantalla
+        self.pantalla.blit(self.texto_vidas, (SEPARACION_BORDES_PANTALLA, 10))  # Dibuja el texto de "Vida" en la pantalla
         for i, texto in enumerate(self.textos):  # Dibuja cada texto del HUD (consiguendo el índice y el elemento con enumerate)
             self.pantalla.blit(texto, (SEPARACION_BORDES_PANTALLA, 40 + i * 30))
         self.barra_vida.dibujar()  # Dibuja la barra de vida del jugador
@@ -659,7 +686,7 @@ class Llave:
     def actualizar(self):
         if self.nivel[self.y_bloque][self.x_bloque] == 0:
             self.bloque_roto = True
-        if self.rect.colliderect(self.jugador.rect):
+        if self.rect.colliderect(self.jugador.rect) and not self.jugador.atraviesa_destructibles:  # Si el jugador colisiona con la llave y no puede atravesar destructibles
             self.jugador.tiene_llave = True
             self.jugar.capas[1].remove(self)  # Elimina la llave de la capa de objetos
 
@@ -704,7 +731,7 @@ class Pociones:  # Las pociones son un objeto que se encuentra en el nivel, y al
     def actualizar(self):
         if self.nivel[self.y_bloque][self.x_bloque] == 0:  # Si el bloque donde se encuentra la poción ha sido roto
             self.bloque_roto = True
-        if self.rect.colliderect(self.jugador.rect):  # Si el jugador colisiona con la poción
+        if self.rect.colliderect(self.jugador.rect) and not self.jugador.atraviesa_destructibles:  # Si el jugador colisiona con la poción
             if self.tipo == "velocidad" and not self.jugador.tiene_item_1:
                 self.jugador.tiene_item_1 = True  # Hace que el jugador pueda usar la habilidad de velocidad (1)
                 self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
@@ -733,7 +760,7 @@ class Caramelos:  # Los caramelos son un objeto que se encuentra en el nivel, y 
     def actualizar(self):
         if self.nivel[self.y_bloque][self.x_bloque] == 0:  # Si el bloque donde se encuentra el caramelo ha sido roto
             self.bloque_roto = True
-        if self.rect.colliderect(self.jugador.rect):  # Si el jugador colisiona con el caramelo
+        if self.rect.colliderect(self.jugador.rect) and not self.jugador.atraviesa_destructibles:  # Si el jugador colisiona con el caramelo
             if self.tipo == "daño":
                 self.jugar.capas[1].remove(self)  # Elimina el caramelo de la capa de objetos
                 self.jugador.golpe += 1  # Aumenta el daño del jugador
@@ -1083,8 +1110,8 @@ class Jugar:
         enemigos = []
         
         while len(enemigos) < CANTIDAD_ENEMIGOS:
-            x = randint(1, ANCHO_MATRIZ)
-            y = randint(1, ALTO_MATRIZ)
+            x = randint(5, ANCHO_MATRIZ) # Inicia desde 5 para evitar que aparezcan cerca del jugador
+            y = randint(5, ALTO_MATRIZ)  # Inicia desde 5 para evitar que aparezcan cerca del jugador
             
             if (x, y) not in coords_ocupadas and self.nivel[y][x] == 0:
                 coords_ocupadas.append((x, y))
