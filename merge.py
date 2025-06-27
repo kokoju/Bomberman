@@ -422,6 +422,7 @@ class Bomba:
         self.x = (self.bx-1) * MEDIDA_BLOQUE #X en pixeles
         self.y = (self.by-1) * MEDIDA_BLOQUE #Y en pixeles
         self.sprites = self.jugar.sprites_bomba
+        self.golpes_penetrantes = jugador.golpes_penetrantes  # Si el jugador tiene golpes penetrantes, la bomba no se detiene al tocar muros destructibles
         
         self.tiempo_creacion = pg.time.get_ticks()
         self.ultima_actualizacion_frame = self.tiempo_creacion
@@ -496,7 +497,7 @@ class Explosion:
                     bloques_afectados.append((bloque_x, bloque_y)) # Explosion ocurre en ese tile
                 elif bloque == 2: # Bloque rompible
                     bloques_rotos.append((bloque_x, bloque_y))
-                    if not self.jugar.jugador.golpes_penetrantes:
+                    if not self.bomba.golpes_penetrantes:
                         break
                     else:
                         bloques_afectados.append((bloque_x, bloque_y))  # Si el jugador tiene golpes penetrantes, sigue la explosion
