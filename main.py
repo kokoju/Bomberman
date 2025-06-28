@@ -42,6 +42,39 @@ puntajes = sorted(leer_archivo(ARCHIVO_PUNTAJES), key=lambda elemento: elemento[
 font.init()  # Inicializa el módulo de fuentes de Pygame
 fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto del juego
 
+def dividir_texto(texto, indice_skin=None):
+    ancho_max = ANCHO_PANTALLA - 100  # Ancho máximo de cada línea de texto
+    fuente = fuente_texto  # Fuente del texto
+    if indice_skin is not None:  # Si se especifica un índice de skin, se usa para seleccionar el texto
+        texto = texto[indice_skin]  # Texto a dividir
+    else:
+        texto = texto  # Texto a dividir, si no se especifica un índice de skin
+
+    bloques = texto.split("\n")  # Paso para dividir el texto y que respete los saltos de línea manuales 
+    lineas = []  # Lista para almacenar las líneas de texto
+
+    for bloque in bloques:
+        palabras = bloque.split(' ')  # "Split" divide el texto en palabras, cada que encuentra un espacio, borrándolo en el proceso
+        linea_actual = ""  # Línea actual que se está construyendo
+            
+        # Recorremos cada palabra y comprobamos para cada linea si cabe en el ancho máximo
+        # Si cabe, se agrega a la línea actual y seguimos revisando
+        # Si no cabe, se agrega la línea actual a la lista de líneas y se comienza una nueva línea con la palabra actual
+        # Añadimos los espacios manualmente
+        for palabra in palabras: 
+            prueba = linea_actual + palabra + " "
+            if fuente.size(prueba)[0] <= ancho_max:
+                linea_actual = prueba
+            else:
+                lineas.append(linea_actual)
+                linea_actual = palabra + " "
+        # Si al final hay una línea actual que no está vacía, la agregamos a la lista de líneas
+        if linea_actual:
+            lineas.append(linea_actual)
+        # Devolvemos la lista de líneas
+
+    return lineas  # Devuelve la lista de líneas de texto divididas
+
 # ==========================================================================
 #  ELEMENTOS RELACIONADOS CON EL JUGADOR
 # ==========================================================================
@@ -98,7 +131,8 @@ class Jugador:
     def pasar_nivel(self, nivel):
         self.rect.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
         self.nivel = nivel #Cambia el nivel del jugador
-        self.bombas += BOMBAS_DISPONIBLES
+        self.cantidad_bombas += 1  # Aumenta la cantidad de bombas del jugador al pasar de nivel (+1 por nivel)
+        self.invulnerabilidad()
     
     def sacar_esquinas(self, rect):
         #Hay un offset de 1 porque hay un borde no visible de bloques solidos
@@ -166,7 +200,6 @@ class Jugador:
             self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
             self.mascara = pg.mask.from_surface(self.sprite)
 
-        # print(self.tiene_habilidad)
 
     def actualizar_frame_sprite(self):
         if self.moviendose: # Jugador se mueve
@@ -275,9 +308,16 @@ class Jugador:
             hilo.daemon = True
             hilo.start()
         else:
-            self.jugar.resultados = Resultados(self.jugar.game)  # Si no tiene vidas, se muestra la pantalla de Game Over
+            self.jugar.cambiar_modo(Resultados(self.jugar.game, self.jugar.num_skin))
     
     def invulnerabilidad(self):
+        if self.invulnerable:
+            return
+        hilo = Thread(target=self.hacer_invulnerable)
+        hilo.daemon = True
+        hilo.start()
+        
+    def hacer_invulnerable(self):
         self.invulnerable = True
         sleep(1.5)
         self.invulnerable = False
@@ -294,17 +334,7 @@ class Jugador:
                 self.item2()
 
             elif evento.key == K_e:  # Si le da a E
-                self.habilidad()  # Usa la habilidad especial del jugador
-
-class GameOver:
-    def __init__(self, pantalla):
-        self.pantalla = pantalla  # Pantalla donde se dibuja la pantalla de Game Over
-        self.imagen = cargar_gameover()
-
-    def dibujar(self):
-        self.pantalla.fill(NEGRO)  # Limpia la pantalla con un color
-        self.pantalla.blit(self.imagen, (0, 0))  # Dibuja la pantalla de Game Over
-        
+                self.habilidad()  # Usa la habilidad especial del jugador        
 
 
 class Enemigo:
@@ -391,7 +421,6 @@ class Enemigo:
         if pos not in posiciones_pegamento:
             pegamento = Pegamento(self)  # Crea un pegamento si no hay uno en la misma posición
             self.jugar.lista_pegamento.append(pegamento)
-            # print(len(self.jugar.lista_pegamento))  # Para debug, muestra la cantidad de pegamento en pantalla
 
     def quitar_vida(self, golpe):
         self.vidas -= golpe
@@ -403,18 +432,17 @@ class Enemigo:
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
         self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
+        if self.jugar.debug:
+            pg.draw.rect(self.pantalla, ROJO, self.rect, 2)
 
 class Jefe:
     def __init__(self, jugar, x, y):
         self.sprites = cargar_jefe()
+        self.summon_sprites = cargar_summons()
         self.sprites_actuales = self.sprites["idle"]
         self.direccion = "izquierda"
         self.frame = 0
         self.sprite = self.sprites_actuales[self.direccion][0]
-        
-        for sprites in self.sprites.values():
-            print(len(sprites[self.direccion]))
-
 
         self.jugar = jugar
         self.jugador = jugar.jugador
@@ -422,18 +450,21 @@ class Jefe:
         self.nivel = jugar.nivel
 
         self.mascara = pg.mask.from_surface(self.sprite)
-        self.rect = Rect(x*MEDIDA_BLOQUE, y*MEDIDA_BLOQUE, int(MEDIDA_BLOQUE*0.75), int(MEDIDA_BLOQUE*0.75))  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
+        self.rect = Rect(x*MEDIDA_BLOQUE, y*MEDIDA_BLOQUE, int(MEDIDA_BLOQUE*2), int(MEDIDA_BLOQUE*3))  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
         self.ultima_actualizacion_frame = pg.time.get_ticks()  # Tiempo de la última actualización del sprite
         
-        self.vidas = 20
+        self.vidas = 100
         self.velocidad = 1
         
         self.ultima_accion = pg.time.get_ticks()
-        self.acciones = {self.moverse:"idle", self.atacar:"atacar", self.summon:"summon"}
+        self.acciones = {self.atacar:"atacar", self.summon:"summon", self.idle:"idle"}
         self.accion = self.idle
         self.proxima_accion = self.summon
+        self.delay_acciones = 3000
         self.accion_terminada = True
         self.muriendo = False
+        
+        self.summons = []
 
     def quitar_vida(self, golpe):
         if self.muriendo:
@@ -451,11 +482,139 @@ class Jefe:
         pass
     
     def summon(self):
-        pass
+        self.summons.append(Summon(self.jugar, self))
     
     def atacar(self):
         pass
     
+    def moverse(self):
+        # Calcula la dirección hacia el jugador
+        dx = self.jugador.rect.centerx - self.rect.centerx
+        dy = self.jugador.rect.centery - self.rect.centery
+        distancia = hypot(dx, dy)
+        if distancia == 0:
+            return distancia
+
+        # Normaliza el vector y multiplica por la velocidad
+        dx = int(round(self.velocidad * dx / distancia))
+        dy = int(round(self.velocidad * dy / distancia))
+
+        # Movimiento en eje X
+        rect_dx = self.rect.move(dx, 0)
+        self.rect = rect_dx
+
+        # Movimiento en eje Y
+        rect_dy = self.rect.move(0, dy)
+        self.rect = rect_dy
+
+        self.direccion = "derecha" if dx > 0 else "izquierda"
+        return distancia
+            
+    def actualizar(self):
+        ahora = pg.time.get_ticks()
+        if not self.muriendo:
+            distancia = self.moverse()
+        else:
+            self.actualizar_frame_sprite(ahora)
+            return
+
+        
+        if self.accion == self.idle and ahora - self.ultima_accion > self.delay_acciones:
+            if len(self.summons) <= 3:
+                self.accion = self.summon
+                
+            elif distancia < 300:
+                self.accion = self.atacar
+                
+            else:
+                self.accion = self.idle
+            
+                    
+            self.actualizar_sprites(self.acciones[self.accion])
+            self.accion_terminada = False
+            self.frame = 0
+            self.ultima_accion = ahora
+        
+        self.accion()
+        
+
+        if self.accion_terminada:
+            self.accion = self.idle
+            self.actualizar_sprites("idle")
+            self.frame = 0
+            
+        self.actualizar_frame_sprite(ahora)
+
+    def actualizar_frame_sprite(self, ahora):
+        # Determina el nombre de la acción actual
+        if self.accion == self.idle:
+            accion_nombre = "idle"
+        elif self.accion == self.atacar:
+            accion_nombre = "atacar"
+        elif self.accion == self.summon:
+            accion_nombre = "summon"
+        elif self.accion == self.morir:
+            accion_nombre = "morir"
+        else:
+            accion_nombre = "idle"
+
+        # Controla el avance de frames según la acción
+        if ahora - self.ultima_actualizacion_frame > 200:
+            self.ultima_actualizacion_frame = ahora
+            frames = len(self.sprites_actuales[self.direccion])
+            if accion_nombre == "idle":
+                self.frame = (self.frame + 1) % frames
+                self.accion_terminada = False
+            else:
+                if self.frame < frames - 1:
+                    self.frame += 1
+                    self.accion_terminada = False
+                else:
+                    self.accion_terminada = True
+            self.sprite = self.sprites_actuales[self.direccion][self.frame]
+            self.mascara = pg.mask.from_surface(self.sprite)
+
+            # Si la acción es morir y termina, elimina al jefe y genera la llave
+            if accion_nombre == "morir" and self.accion_terminada:
+                self.jugador.puntaje += 1000  # Da un puntaje extra al matar al jefe
+                self.jugar.capas[3] = [] #Mata a todos los enemigos
+                self.jugar.capas[1].append(Llave(self.jugar, self.rect.x//MEDIDA_BLOQUE+1, self.rect.y//MEDIDA_BLOQUE+1))
+
+        # Colisión pixel-perfect con el jugador
+        jefe_draw_x, jefe_draw_y = self.rect.centerx - self.sprite.get_width() // 2, self.rect.centery - self.sprite.get_height() // 2
+        jugador_draw_x, jugador_draw_y = self.jugador.rect.centerx - self.jugador.sprite.get_width() // 2, self.jugador.rect.centery - self.jugador.sprite.get_height() // 2
+        offset = (jugador_draw_x - jefe_draw_x, jugador_draw_y - jefe_draw_y)
+        if self.mascara.overlap(self.jugador.mascara, offset):
+            self.jugador.morir()
+
+    def actualizar_sprites(self, llave):
+        self.sprites_actuales = self.sprites[llave]
+        self.current_frame = 0
+        self.sprite = self.sprites_actuales[self.direccion][0]
+
+
+
+    def dibujar(self):
+        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
+        if self.jugar.debug:
+            pg.draw.rect(self.pantalla, ROJO, self.rect, 2)
+        
+class Summon:
+    def __init__(self, jugar, jefe):
+        self.jugar = jugar
+        self.jefe = jefe
+        self.jugador = jugar.jugador
+        self.pantalla = jugar.pantalla_juego
+        self.rect = Rect(jefe.rect.x+randint(-3*MEDIDA_BLOQUE, 3*MEDIDA_BLOQUE), jefe.rect.y+randint(-3*MEDIDA_BLOQUE, 3*MEDIDA_BLOQUE), int(MEDIDA_BLOQUE*0.75), int(MEDIDA_BLOQUE*0.75))
+        self.sprites = jefe.summon_sprites
+        self.sprites_actuales = self.sprites["nacer"]
+        self.estado = "nacer"
+        self.frame = 0
+        self.ultima_actualizacion_frame = pg.time.get_ticks()
+        self.velocidad = 3
+        self.vidas = 3
+        jugar.capas[3].append(self)
+        
     def moverse(self):
         # Calcula la dirección hacia el jugador
         dx = self.jugador.rect.centerx - self.rect.centerx
@@ -472,58 +631,43 @@ class Jefe:
         rect_dx = self.rect.move(dx, 0)
         if self.verificar_colision(rect_dx):
             self.rect = rect_dx
-            self.x = self.rect.x
-            self.y = self.rect.y
-
+            
         # Movimiento en eje Y
         rect_dy = self.rect.move(0, dy)
         if self.verificar_colision(rect_dy):
             self.rect = rect_dy
-            self.x = self.rect.x
-            self.y = self.rect.y
-
-        self.direccion = "derecha" if dx > 0 else "izquierda"
             
     def actualizar(self):
-        #self.moverse()
+        self.moverse()
         ahora = pg.time.get_ticks()
         
-        if self.accion_terminada:
-            self.accion = choice(list(self.acciones.keys()))
-            self.actualizar_sprites(self.acciones[self.accion])
-            self.ultima_accion = ahora
-            self.accion_terminada = False
-            self.frame = 0
-        
-
-        if ahora - self.ultima_accion > 200:
-            self.ultima_accion = ahora
-            self.frame = (self.frame + 1) % len(self.sprites_actuales)
-            self.sprite = self.sprites_actuales[self.direccion][self.frame]
-            self.mascara = pg.mask.from_surface(self.sprite)
+        if self.estado == "nacer":
+            if ahora - self.ultima_actualizacion_frame > 100:  # Cambia el frame cada 100ms
+                self.ultima_actualizacion_frame = ahora
+                self.frame += 1
+                if self.frame >= len(self.sprites["nacer"]):
+                    self.estado = "idle"
+                    self.sprites_actuales = self.sprites["idle"]
+                    self.frame = 0
+                    
+        elif self.estado == "idle":
+            # Aquí puedes poner animación idle si tienes varios frames
+            if ahora - self.ultima_actualizacion_frame > 200:
+                self.ultima_actualizacion_frame = ahora
+                self.frame = (self.frame + 1) % len(self.sprites["idle"])
+                
+        elif self.estado == "morir":
+            if ahora - self.ultima_actualizacion_frame > 100:  # Cambia el frame cada 100ms
+                self.ultima_actualizacion_frame = ahora
+                self.frame += 1
+                if self.frame >= len(self.sprites["morir"]):
+                    self.estado = "muerto"
+                    self.frame = 0
+                    self.jugar.capas[3].remove(self)  # Elimina el summon de la capa de enemigos
+                    self.jefe.summons.remove(self)
             
-            # Si hemos completado un ciclo de animación
-            if self.frame == 0:
-                if self.muriendo:
-                    self.jugar.capas[3] = [] #Mata a todos los enemigos
-                    self.jugar.capas[1].append(Llave(self.jugar, self.rect.x//MEDIDA_BLOQUE+1, self.rect.y//MEDIDA_BLOQUE+1))
-                self.accion_terminada = True
-        
+        self.sprite = self.sprites_actuales[self.frame]
 
-        jefe_draw_x, jefe_draw_y = self.rect.centerx - self.sprite.get_width() // 2, self.rect.centery - self.sprite.get_height() // 2
-        jugador_draw_x, jugador_draw_y = self.jugador.rect.centerx - self.jugador.sprite.get_width() // 2, self.jugador.rect.centery - self.jugador.sprite.get_height() // 2
-
-        offset = (jugador_draw_x - jefe_draw_x, jugador_draw_y - jefe_draw_y)
-        if self.mascara.overlap(self.jugador.mascara, offset):
-            self.jugador.morir()
-
-    def actualizar_sprites(self, llave):
-        print(llave)
-        self.sprites_actuales = self.sprites[llave]
-        self.current_frame = 0
-        self.sprite = self.sprites_actuales[self.direccion][0]
-
-    
     def verificar_colision(self, rect):
         #Hay un offset de 1 porque hay un borde no visible de bloques solidos
         esquinas = (
@@ -535,17 +679,23 @@ class Jefe:
         
         #Verifica si alguna esquina esta en un tile que no sea aire
         for x, y in esquinas:
-            if self.nivel[y][x] != 0: #Si no es aire
-                return False
             for bomba in self.jugar.capas[2]: #Verificar si hay una bomba
                 if (x, y) == (bomba.bx, bomba.by):
                     return False
         return True
 
+    def quitar_vida(self, golpe):
+        self.vidas -= golpe
+        if self.vidas < 1:
+            self.estado = "morir"
+            self.sprites_actuales = self.sprites["morir"]
+            self.jugador.puntaje += 1
+
     def dibujar(self):
         self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
-        pg.draw.rect(self.pantalla, ROJO, self.rect, 2)
-    
+        if self.jugar.debug:
+            pg.draw.rect(self.pantalla, ROJO, self.rect, 2)
+        
 
 class Pegamento:  # Los enemigos más avanzados sueltan pegamento al moverse, que ralentiza al jugador
     def __init__(self, enemigo):
@@ -568,11 +718,29 @@ class Pegamento:  # Los enemigos más avanzados sueltan pegamento al moverse, qu
 
     def duracion(self):
         sleep(PEGAMENTO_DURACION / 1000) 
+        if self not in self.jugar.lista_pegamento:
+            return
         self.activo = False  # Desactiva el pegamento después de un tiempo
         self.jugar.lista_pegamento.remove(self)
 
     def dibujar(self):
+        self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja el sprite
+        
+class Veneno:
+    def __init__(self, jugar, x, y):
+        self.jugar = jugar
+        self.pantalla = jugar.pantalla_juego
+        self.jugador = jugar.jugador
+        self.x = x
+        self.y = y
+        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al veneno en el canvas
+        self.sprite = cargar_veneno()  # Carga la skin el veneno desde la hoja de sprites
 
+    def actualizar(self):
+        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
+            self.jugador.morir()
+
+    def dibujar(self):
         self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja el sprite
 
 
@@ -605,6 +773,8 @@ class Bomba:
 
     def detonar(self):
         sleep(self.tiempo_detonar/1000)  # Pasa el tiempo a segundos
+        if self not in self.jugar.capas[2]:
+            return
         self.activa = False #Explota
         self.jugar.nivel[self.by][self.bx] = 0  # Quita la hitbox
         Explosion(self, self.rango)
@@ -681,15 +851,15 @@ class Explosion:
                 self.jugador.puntaje += 50  # Aumenta el puntaje del jugador al destruir un bloque
             
         # Mata entidades
+        ya_afectados = []
         for x, y in self.bloques_afectados:
             if not self.jugador.invulnerable and (x, y) == (self.jugador.rect.centerx//MEDIDA_BLOQUE+1, self.jugador.rect.centery//MEDIDA_BLOQUE+1): #Si el jugador no esta invulnerable
                 self.jugador.morir()
                 break
             for enemigo in self.jugar.capas[3]:  # Capa donde se guardan los enemigos y venenos
-                if not isinstance(enemigo, Enemigo):
-                    continue
-                if (x, y) == (enemigo.rect.centerx//MEDIDA_BLOQUE+1, enemigo.rect.centery//MEDIDA_BLOQUE+1):
+                if (x, y) == (enemigo.rect.centerx//MEDIDA_BLOQUE+1, enemigo.rect.centery//MEDIDA_BLOQUE+1) and enemigo not in ya_afectados:  # Si el enemigo no ha sido afectado por la explosion
                     enemigo.quitar_vida(self.jugador.golpe)
+                    ya_afectados.append(enemigo)
     
     def actualizar(self):
         ahora = pg.time.get_ticks()
@@ -1004,6 +1174,10 @@ class Puerta:
 
     def actualizar(self):
         if self.rect.colliderect(self.jugador.rect) and self.jugador.tiene_llave:
+            if self.jugar.manager_niveles.jefe:
+                self.jugar.jugador.puntaje_total += self.jugar.jugador.puntaje
+                self.jugar.cambiar_modo(Resultados(self.jugar.game, self.jugar.num_skin))
+                return
             self.jugador.tiene_llave = False
             for _ in range(self.jugador.contador_rojos):
                 self.jugador.golpe -= 1
@@ -1013,7 +1187,6 @@ class Puerta:
             self.jugador.contador_rojos = 0
             self.jugador.contador_azules = 0
             self.jugador.puntaje_total += self.jugar.jugador.puntaje  # Suma el puntaje del jugador al puntaje total
-            self.jugar.mejoras = Mejoras(self.jugar)  # Si el jugador colisiona con la puerta y tiene la llave, se abre el menú de mejoras
             self.jugar.menu_mejoras()
 
     def dibujar(self):
@@ -1242,7 +1415,6 @@ class Personalizacion:
         self.imagen_mostrada = self.imagenes_skins["derecha"][0]  # Imagen que se muestra en la pantalla (por defecto es la imagen de la derecha del skin 1)
         self.imagen_mostrada = pg.transform.scale(self.imagen_mostrada, (128, 128))  # Escala la imagen
         self.lineas = dividir_texto(INFORMACION_PERSONAJES, self.num_skin)  # Divide el texto de información del personaje en líneas para que se ajuste a la pantalla
-        # print(self.num_skin)
 
     def dibujar(self):
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
@@ -1316,39 +1488,38 @@ class Mejoras:
         self.boton_rango.dibujar()
         self.pasar_nivel.dibujar()
        
-    def actualizar(self):  # No es necesario actualizar nada en este caso, pero se deja para mantener la estructura
-        pass
+    def actualizar(self):
+        self.puntos = self.jugador.puntaje
 
     def eventos(self, evento):  # Maneja los eventos de los botones (no se necesita evento porque no se tocan las teclas)
         mouse_pos = pg.mouse.get_pos()
         click_izq = pg.mouse.get_pressed()[0] #Click izquierdo
             
         if self.boton_vida.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
-            self.puntos -= self.precio_vida
+            self.jugador.puntaje -= self.precio_vida
             self.precio_vida += 200 #  Incrementa el precio linearmente 200 cada vez
             self.jugador.vidas += 1
             self.jugador.vidas_max += 1 #  Aumenta la vida maxima del jugador
             self.boton_vida.texto = f"VIDA {self.precio_vida}"
                 
         elif self.boton_golpe.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_golpe:
-            self.puntos -= self.precio_golpe
+            self.jugador.puntaje -= self.precio_golpe
             self.precio_golpe += 200 #  Incrementa el precio linearmente 200 cada vez
             self.jugador.golpe += 1
             self.boton_golpe.texto = f"GOLPE {self.precio_golpe}"
                 
         elif self.boton_rango.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_rango:
-            self.puntos -= self.precio_rango
-            self.precio_rango += 500 #  Incrementa el precio linearmente 500 cada vez
+            self.jugador.puntaje -= self.precio_rango
+            self.precio_rango += 200 #  Incrementa el precio linearmente 200 cada vez
             self.jugador.rango += 1
             self.boton_rango.texto = f"RANGO {self.precio_rango}"
                 
         elif self.pasar_nivel.detectar_presionado(mouse_pos, click_izq):
             self.jugar.cambiar_modo(self.jugar)
             self.jugar.pasar_nivel()
-            self.jugador.puntaje = self.puntos
 
 class Resultados:
-    def __init__(self, game):
+    def __init__(self, game, num_skin):
         self.game = game  # Acceso al menú del juego
         self.pantalla = self.game.pantalla
         self.musica = self.game.canciones[2]
@@ -1362,7 +1533,7 @@ class Resultados:
         self.puntaje_mostrado = 0
         self.puntaje_renderizado = self.fuente.render(f"{self.puntaje_mostrado}", True, BLANCO)  # Renderiza el puntaje del jugador
 
-        self.num_skin = self.game.menu.jugar.jugador.num_skin  # Número del skin seleccionado en el menú de personalización
+        self.num_skin = num_skin  # Número del skin seleccionado en el menú de personalización
         self.texto_resultado = f"¡Felicidades, {self.game.nombre_jugador}, llegando hasta el nivel {self.game.menu.jugar.manager_niveles.num_nivel} conseguiste un puntaje de:"
 
         self.imagenes_skins = cargar_skins(self.num_skin, puntos_iniciales_skins_jugador)  # Carga las imágenes de los skins desde la carpeta de personajes
@@ -1371,7 +1542,7 @@ class Resultados:
         self.lineas = dividir_texto(self.texto_resultado)  # Divide el texto de información del personaje en líneas para que se ajuste a la pantalla
         puntajes.append([self.game.nombre_jugador, self.game.menu.jugar.jugador.puntaje_total])  # Agrega el puntaje del jugador a la lista de puntajes
 
-    def actualizar(self):  
+    def actualizar(self):
         # Animación del puntaje
         if self.puntaje_mostrado < self.game.menu.jugar.jugador.puntaje_total:
             self.puntaje_mostrado += 3
@@ -1423,8 +1594,6 @@ class Menu:
         self.botones = self.crear_botones()  # Crea los botones del menú
         self.logo = cargar_logo()
 
-    def crear_juego(self):
-        self.game.jugar = Jugar(self.game, 2)
 
     def crear_botones(self):
         botones = []  # Lista de botones del menú
@@ -1463,11 +1632,13 @@ class Niveles:
         self.num_nivel = 1
         self.sprites = cargar_bloques(self.num_nivel)
         self.nivel = self.niveles[0]  # Inicia en el nivel 1
+        self.jefe = False
             
     def pasar_nivel(self):
         if 1 <= self.num_nivel+1 <= len(self.niveles):
             self.nivel = self.niveles[self.num_nivel]
             self.num_nivel += 1  # Aumenta el numero de nivel
+            self.jefe = self.num_nivel % 4 == 0
             self.sprites = cargar_bloques(self.num_nivel)  # Carga los sprites del nuevo nivel
             return self.nivel
         #Cambio de nivel falla
@@ -1506,12 +1677,14 @@ class Jugar:
         self.musica = game.canciones[1]
         self.sprites_bomba = game.sprites_bomba
         self.dibujar_texto = game.dibujar_texto # Toma el metodo de dibujar texto
+        self.num_skin = num_skin
         
         self.debug = False  # G para cambiar (muestra hitboxes y gridlines)
         self.manager_niveles = Niveles(self)
         self.nivel = self.manager_niveles.nivel
         self.jugador = Jugador(self, num_skin)  # Crea el jugador con el skin seleccionado
-        self.hud = HUD(self)  # Crea el HUD del juego
+        self.mejoras = Mejoras(self)
+        self.hud = HUD(self)  # Crea el HUD del juego)
         self.lista_pegamento = []  # Lista para almacenar los pegamentos que sueltan los enemigos
         self.capas = {
             0:[self.manager_niveles],  # El fondo
@@ -1550,15 +1723,32 @@ class Jugar:
         return venenos
 
     def pasar_nivel(self):
-        if self.manager_niveles.pasar_nivel():
-            self.nivel = self.manager_niveles.nivel #Cambia los datos de nivel
-            self.jugador.rect.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
-            self.jugador.nivel = self.nivel #Cambia el nivel del jugador
-            self.jugador.cantidad_bombas += 1  # Aumenta la cantidad de bombas del jugador al pasar de nivel (+1 por niveldw)
-            self.capas[1] = self.asignar_extras()
-            self.capas[3] = self.colocar_venenos() + self.colocar_enemigos() # Pone los elementos que dañan al jugador
-            self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
-            # Reinicio de las estadísticas de los caramelos
+        self.nivel = self.manager_niveles.pasar_nivel()
+        self.jugador.pasar_nivel(self.nivel)
+        self.lista_pegamento = []
+        self.capas[2] = []
+        self.capas[5] = []
+        if self.manager_niveles.jefe:  # Si es un nivel de jefe
+            self.iniciar_nivel_jefe()
+        else:
+            self.iniciar_nivel_normal()
+            
+    
+    def iniciar_nivel_normal(self):
+        self.capas[1] = self.asignar_extras()
+        self.capas[3] = self.colocar_enemigos() #Pone los enemigos
+        # Reinicio de las estadísticas de los caramelos
+        for _ in range(self.jugador.contador_rojos):
+            self.jugador.golpe -= 1
+        for _ in range(self.jugador.contador_azules):
+            self.jugador.rango -= 1
+        # Reinicio de los contadores de caramelos
+        self.jugador.contador_rojos = 0
+        self.jugador.contador_azules = 0
+    
+    def iniciar_nivel_jefe(self):
+        self.capas[1] = [self.asignar_puerta()]
+        self.capas[3] = [Jefe(self, 10, 5)]
     
     def menu_mejoras(self):
         self.game.modo_previo = self
@@ -1627,7 +1817,7 @@ class Jugar:
         for capa in sorted(self.capas.keys()): #Actualiza entidades (jugador, enemigos, bombas...)
             for entidad in self.capas[capa]:
                 entidad.actualizar()
-        # print(self.jugador.golpe)
+        print(self.capas[2])
 
     def eventos(self, evento):
         self.jugador.eventos(evento)
@@ -1674,6 +1864,7 @@ class Game:
         init()  # Inicializamos Pygame
         self.pantalla = display.set_mode((ANCHO_PANTALLA, ALTO_PANTALLA))  # Configura la ventana
         display.set_caption("Wooly Warfare")  # Título de la ventana
+        pg.display.set_icon(cargar_logo())
         self.clock = time.Clock()  # Crea un objeto de reloj para controlar la tasa de refresco, necesario para la física y el movimiento
         self.running = True  # Variable para controlar el bucle del juego
         self.dt = 0  # Delta time, tiempo entre frames
@@ -1735,16 +1926,8 @@ class Game:
             self.eventos() #Toma input del usuario
             self.actualizar()  # Actualiza el estado del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
             self.dibujar()  # Dibuja los elementos del juego (HACER, AGARRA LAS FUNCIONES DE CADA OBJETO Y LAS APLICA)
-
                 
 # Ejecutar el juego
 if __name__ == "__main__": #solo se ejecuta si se hace run, no si es import
     game = Game()
     game.run()
-
-
-
-"""
-# TODO:
-# 4. Implementar la clase Jefe con sus mecánicas de ataque y vida.
-"""

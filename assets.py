@@ -162,7 +162,7 @@ def cargar_jefe():
     sprites_ataques = [ataques.cargar_sprite(i*100, 0, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(5)]
     sprites_idle = [idle.cargar_sprite(i*100, 0, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(4)]
     sprites_skill = [skill.cargar_sprite(i*100, j*100, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(6) for j in range(2)]
-    sprites_summon = [summon.cargar_sprite(i*100, 0, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(4)]
+    sprites_summon = [summon.cargar_sprite(i*100, 0, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(4)] + [summon.cargar_sprite(0, 100, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10)]
     sprites_morir = [muerte.cargar_sprite(i*100, 0, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(10)] + [muerte.cargar_sprite(i*100, 100, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(8)]
     
     return {
@@ -193,12 +193,12 @@ def cargar_jefe():
         }
     
 def cargar_summons():
-    appear = Spritesheet("assets/jefe/appear.png")
-    death = Spritesheet("assets/summonDeath.png")
-    idle = Spritesheet("assets/summonIdle.png")
+    appear = Spritesheet("assets/jefe/summonAppear.png")
+    death = Spritesheet("assets/jefe/summonDeath.png")
+    idle = Spritesheet("assets/jefe/summonIdle.png")
     return {
-        "appear":[appear.cargar_sprite(i*50, j*50, 50, 50, MEDIDA_BLOQUE, MEDIDA_BLOQUE) for i in range(3) for j in range(2)],
-        "death":[death.cargar_sprite(i*50, j*50, 50, 50, MEDIDA_BLOQUE, MEDIDA_BLOQUE) for i in range(3) for j in range(2)],
+        "nacer":[appear.cargar_sprite(i*50, j*50, 50, 50, MEDIDA_BLOQUE, MEDIDA_BLOQUE) for i in range(3) for j in range(2)],
+        "morir":[death.cargar_sprite(i*50, j*50, 50, 50, MEDIDA_BLOQUE, MEDIDA_BLOQUE) for i in range(3) for j in range(2)],
         "idle":[idle.cargar_sprite(i*50, 0, 50, 50, MEDIDA_BLOQUE, MEDIDA_BLOQUE) for i in range(4)]
     }
     

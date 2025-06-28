@@ -31,7 +31,7 @@ ALTO_BOTON = 50  # Alto de los botones en el menú
 
 # Elementos de los menús (ajustes, créditos, etc.)
 TEXTO_INFO = "Desarrollado por: \n Juan Andrés Bastidas López - 2025066242\n Pablo Vargas Monge - 2025064957\nAmbos son estudiantes del ITCR, cursando la carrera de Ingeniería en Computación y entregando este trabajo como el III proyecto de Introducción a la programación.\nAño 2025 - Primer Semestre\n Profesores: Diego Mora Rojas y Jeff Schmidt Peralta\n Versión 1.0" 
-VALOR_INCIAL_VOLUMEN = 0.0  # Valor inicial del volumen de la música (entre 0 y 1)  # TODO PONER EN 0.5
+VALOR_INCIAL_VOLUMEN = 0.5  # Valor inicial del volumen de la música (entre 0 y 1)
 INFORMACION_PERSONAJES = {
     1: "La ovejita original, se destaca por su ternura y su habilidad para saltar sobre muros destructibles.",
     2: "La oveja albina destructiva, se destaca por su habilidad para aumentar el rango de sus bombas y sus ataques penetrantes.",
