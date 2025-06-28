@@ -155,3 +155,61 @@ def cargar_puerta():
 def cargar_pegamento():
     return pg.transform.scale(pg.image.load("assets/pegamento.png").convert_alpha(),
                                 (MEDIDA_BLOQUE, MEDIDA_BLOQUE))  # Ajusta el tamaño del pegamento
+    
+def cargar_jefe():
+    ataques = Spritesheet("assets/jefe/attacking.png")
+    muerte = Spritesheet("assets/jefe/death.png")
+    idle = Spritesheet("assets/jefe/idle.png")
+    skill = Spritesheet("assets/jefe/skill1.png")
+    summon = Spritesheet("assets/jefe/summon.png")
+    
+    sprites_ataques = [ataques.cargar_sprite(i*100, 0, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(5)]
+    sprites_idle = [idle.cargar_sprite(i*100, 0, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(4)]
+    sprites_skill = [skill.cargar_sprite(i*100, j*100, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(6) for j in range(2)]
+    sprites_summon = [summon.cargar_sprite(i*100, 0, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(4)]
+    sprites_morir = [muerte.cargar_sprite(i*100, 0, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(10)] + [muerte.cargar_sprite(i*100, 100, 100, 100, MEDIDA_BLOQUE*10, MEDIDA_BLOQUE*10) for i in range(8)]
+    
+    return {
+        "atacar":{
+            "derecha":sprites_ataques,
+            "izquierda":[pg.transform.flip(sprites_ataques[i], True, False) for i in range(len(sprites_ataques))]
+            },
+
+        "idle":{
+            "derecha":sprites_idle,
+            "izquierda":[pg.transform.flip(sprites_idle[i], True, False) for i in range(len(sprites_idle))]
+            },
+        
+        "skill":{
+            "derecha":sprites_skill,
+            "izquierda":[pg.transform.flip(sprites_skill[i], True, False) for i in range(len(sprites_skill))]
+            },
+    
+        "summon":{
+            "derecha":sprites_summon,
+            "izquierda":[pg.transform.flip(sprites_summon[i], True, False) for i in range(len(sprites_summon))]
+            },
+        
+        "morir":{
+            "derecha":sprites_morir,
+            "izquierda":sprites_morir
+            }
+        }
+    
+def cargar_summons():
+    appear = Spritesheet("assets/jefe/appear.png")
+    death = Spritesheet("assets/summonDeath.png")
+    idle = Spritesheet("assets/summonIdle.png")
+    return {
+        "appear":[appear.cargar_sprite(i*50, j*50, 50, 50, MEDIDA_BLOQUE, MEDIDA_BLOQUE) for i in range(3) for j in range(2)],
+        "death":[death.cargar_sprite(i*50, j*50, 50, 50, MEDIDA_BLOQUE, MEDIDA_BLOQUE) for i in range(3) for j in range(2)],
+        "idle":[idle.cargar_sprite(i*50, 0, 50, 50, MEDIDA_BLOQUE, MEDIDA_BLOQUE) for i in range(4)]
+    }
+    
+def cargar_fuentes():
+    return {
+        30:pg.font.Font("assets/FuenteTexto.ttf", 30),
+        32:pg.font.Font("assets/FuenteTexto.ttf", 32),
+        40:pg.font.Font("assets/FuenteTexto.ttf", 40),
+        48:pg.font.Font("assets/FuenteTexto.ttf", 30)
+    }

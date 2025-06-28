@@ -6,6 +6,7 @@ from threading import Thread  # Importa los Threads para el manejo de entidades 
 from config import *  # Importa las configuraciones del juego, como dimensiones y FPS
 from assets import *  # Importa los sprites del jugador y otros elementos visuales
 from niveles import *
+from math import hypot
 
 # Usaremos una definición HD (1280x720p)
 # En la parte superior de la pantalla, dejaremos una HUD de tamaño 1280x176 
@@ -35,7 +36,6 @@ def leer_archivo(path):
 # key es una función que toma un elemento de la lista y devuelve el valor por el cual se ordenará
 # 
 puntajes = sorted(leer_archivo(ARCHIVO_PUNTAJES), key=lambda elemento: elemento[1], reverse=True)  
-# print(puntajes)
 
 font.init()  # Inicializa el módulo de fuentes de Pygame
 fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto del juego
@@ -66,16 +66,17 @@ class Jugador:
         self.puntaje = 100000  # Puntaje del jugador
 
         # Habilidades e ítems del jugador
-        self.tiene_habilidad = True  # Indica si el jugador tiene la habilidad especial
-        self.habilidad_en_uso = False  # Indica si la habilidad especial está en uso
-        self.tiene_item_1 = False  # Indica si el jugador tiene el item 1
-        self.tiene_item_2 = False  # Indica si el jugador tiene el item 2
+        self.tiene_habilidad = True
+        self.habilidad_en_uso = False
+        self.tiene_item_1 = False 
+        self.tiene_item_2 = False
 
-        self.tiempo_desde_habilidad = pg.time.get_ticks()  # Tiempo desde que se usó la habilidad especial (en milisegundos)
-        self.enfriamiento_habilidad = ENFRIAMIENTO_HABILIDAD  # Tiempo de enfriamiento de la habilidad especial (en milisegundos)
+        self.tiempo_desde_habilidad = pg.time.get_ticks()
+        self.enfriamiento_habilidad = ENFRIAMIENTO_HABILIDAD
 
         self.tiene_llave = False  # Indica si el jugador tiene la llave para abrir la puerta del siguente nivel
 
+        self.mascara = pg.mask.from_surface(self.sprite)
         self.rect = Rect(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR, ANCHO_JUGADOR, ALTO_JUGADOR) #  Rectangulo del jugador para posicion y colision
         self.contador_rojos = 0  # Contador de caramelos de daño consumidos (para hacer reset al pasar de nivel)
         self.contador_azules = 0  # Contador de caramelos de rango consumidos (para hacer reset al pasar de nivel)
@@ -86,7 +87,12 @@ class Jugador:
 
         self.invulnerable = False
         self.invulnerabilidad() #Inicia invulnerable
-        
+    
+    def pasar_nivel(self, nivel):
+        self.rect.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
+        self.nivel = nivel #Cambia el nivel del jugador
+        self.bombas += BOMBAS_DISPONIBLES
+    
     def sacar_esquinas(self, rect):
         #Hay un offset de 1 porque hay un borde no visible de bloques solidos
         return (
@@ -151,6 +157,7 @@ class Jugador:
         if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el jugador se está moviendo y han pasado 150ms
             self.actualizar_frame_sprite()  # Actualiza el frame del sprite del jugador
             self.ultima_actualizacion_frame = time.get_ticks()  # Reinicia el tiempo de la última actualización del sprite
+            self.mascara = pg.mask.from_surface(self.sprite)
 
         # print(self.tiene_habilidad)
 
@@ -253,6 +260,8 @@ class Jugador:
             hilo.start()  # Inicia el hilo
     
     def morir(self):
+        if self.invulnerable:
+            return
         if self.vidas > 1:
             self.vidas -= 1  # Cada golpe (de bomba o enemigo) resta uno de vida (hecho así para que castigue menos si la bomba tiene más daño)
             hilo = Thread(target=self.invulnerabilidad)
@@ -377,10 +386,159 @@ class Enemigo:
             self.jugar.lista_pegamento.append(pegamento)
             # print(len(self.jugar.lista_pegamento))  # Para debug, muestra la cantidad de pegamento en pantalla
 
+    def quitar_vida(self, golpe):
+        self.vidas -= golpe
+        if self.vidas < 1:
+            self.jugar.capas[3].remove(self)
+            self.jugador.puntaje += 100
+        
+    
     #  Dibuja al enemigo en la pantalla
     def dibujar(self):
         self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
+
+class Jefe:
+    def __init__(self, jugar, x, y):
+        self.sprites = cargar_jefe()
+        self.sprites_actuales = self.sprites["idle"]
+        self.direccion = "izquierda"
+        self.frame = 0
+        self.sprite = self.sprites_actuales[self.direccion][0]
         
+        for sprites in self.sprites.values():
+            print(len(sprites[self.direccion]))
+
+
+        self.jugar = jugar
+        self.jugador = jugar.jugador
+        self.pantalla = jugar.pantalla_juego
+        self.nivel = jugar.nivel
+
+        self.mascara = pg.mask.from_surface(self.sprite)
+        self.rect = Rect(x*MEDIDA_BLOQUE, y*MEDIDA_BLOQUE, int(MEDIDA_BLOQUE*0.75), int(MEDIDA_BLOQUE*0.75))  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
+        self.ultima_actualizacion_frame = pg.time.get_ticks()  # Tiempo de la última actualización del sprite
+        
+        self.vidas = 20
+        self.velocidad = 1
+        
+        self.ultima_accion = pg.time.get_ticks()
+        self.acciones = {self.moverse:"idle", self.atacar:"atacar", self.summon:"summon"}
+        self.accion = self.idle
+        self.proxima_accion = self.summon
+        self.accion_terminada = True
+        self.muriendo = False
+
+    def quitar_vida(self, golpe):
+        if self.muriendo:
+            return
+        self.vidas -= golpe
+        if self.vidas < 1:
+            self.muriendo = True
+            self.accion = self.morir
+            self.actualizar_sprites("morir")
+            
+    def morir(self):
+        pass
+        
+    def idle(self):
+        pass
+    
+    def summon(self):
+        pass
+    
+    def atacar(self):
+        pass
+    
+    def moverse(self):
+        # Calcula la dirección hacia el jugador
+        dx = self.jugador.rect.centerx - self.rect.centerx
+        dy = self.jugador.rect.centery - self.rect.centery
+        distancia = hypot(dx, dy)
+        if distancia == 0:
+            return  # Ya está en la misma posición
+
+        # Normaliza el vector y multiplica por la velocidad
+        dx = int(round(self.velocidad * dx / distancia))
+        dy = int(round(self.velocidad * dy / distancia))
+
+        # Movimiento en eje X
+        rect_dx = self.rect.move(dx, 0)
+        if self.verificar_colision(rect_dx):
+            self.rect = rect_dx
+            self.x = self.rect.x
+            self.y = self.rect.y
+
+        # Movimiento en eje Y
+        rect_dy = self.rect.move(0, dy)
+        if self.verificar_colision(rect_dy):
+            self.rect = rect_dy
+            self.x = self.rect.x
+            self.y = self.rect.y
+
+        self.direccion = "derecha" if dx > 0 else "izquierda"
+            
+    def actualizar(self):
+        #self.moverse()
+        ahora = pg.time.get_ticks()
+        
+        if self.accion_terminada:
+            self.accion = choice(list(self.acciones.keys()))
+            self.actualizar_sprites(self.acciones[self.accion])
+            self.ultima_accion = ahora
+            self.accion_terminada = False
+            self.frame = 0
+        
+
+        if ahora - self.ultima_accion > 200:
+            self.ultima_accion = ahora
+            self.frame = (self.frame + 1) % len(self.sprites_actuales)
+            self.sprite = self.sprites_actuales[self.direccion][self.frame]
+            self.mascara = pg.mask.from_surface(self.sprite)
+            
+            # Si hemos completado un ciclo de animación
+            if self.frame == 0:
+                if self.muriendo:
+                    self.jugar.capas[3] = [] #Mata a todos los enemigos
+                    self.jugar.capas[1].append(Llave(self.jugar, self.rect.x//MEDIDA_BLOQUE+1, self.rect.y//MEDIDA_BLOQUE+1))
+                self.accion_terminada = True
+        
+
+        jefe_draw_x, jefe_draw_y = self.rect.centerx - self.sprite.get_width() // 2, self.rect.centery - self.sprite.get_height() // 2
+        jugador_draw_x, jugador_draw_y = self.jugador.rect.centerx - self.jugador.sprite.get_width() // 2, self.jugador.rect.centery - self.jugador.sprite.get_height() // 2
+
+        offset = (jugador_draw_x - jefe_draw_x, jugador_draw_y - jefe_draw_y)
+        if self.mascara.overlap(self.jugador.mascara, offset):
+            self.jugador.morir()
+
+    def actualizar_sprites(self, llave):
+        print(llave)
+        self.sprites_actuales = self.sprites[llave]
+        self.current_frame = 0
+        self.sprite = self.sprites_actuales[self.direccion][0]
+
+    
+    def verificar_colision(self, rect):
+        #Hay un offset de 1 porque hay un borde no visible de bloques solidos
+        esquinas = (
+            (izq := rect.left // MEDIDA_BLOQUE+1, arriba := rect.top // MEDIDA_BLOQUE+1), #Superior izquierda
+            (izq, abajo := rect.bottom // MEDIDA_BLOQUE+1), #Inferior izquierda
+            (der := rect.right // MEDIDA_BLOQUE+1, arriba), #Superior derecha
+            (der, abajo) #Inferior derecha
+        )
+        
+        #Verifica si alguna esquina esta en un tile que no sea aire
+        for x, y in esquinas:
+            if self.nivel[y][x] != 0: #Si no es aire
+                return False
+            for bomba in self.jugar.capas[2]: #Verificar si hay una bomba
+                if (x, y) == (bomba.bx, bomba.by):
+                    return False
+        return True
+
+    def dibujar(self):
+        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
+        pg.draw.rect(self.pantalla, ROJO, self.rect, 2)
+    
 
 class Pegamento:  # Los enemigos más avanzados sueltan pegamento al moverse, que ralentiza al jugador
     def __init__(self, enemigo):
@@ -521,10 +679,7 @@ class Explosion:
                 break
             for enemigo in self.jugar.capas[3]: #Capa donde se guardan los enemigos
                 if (x, y) == (enemigo.rect.centerx//MEDIDA_BLOQUE+1, enemigo.rect.centery//MEDIDA_BLOQUE+1):
-                    enemigo.vidas -= 1
-                    if enemigo.vidas < 1:
-                        self.jugar.capas[3].remove(enemigo)
-                        self.jugador.puntaje += 100  # Aumenta el puntaje del jugador al matar un enemigo
+                    enemigo.quitar_vida(self.jugador.golpe)
     
     def actualizar(self):
         ahora = pg.time.get_ticks()
@@ -1023,7 +1178,7 @@ class Niveles:
             self.nivel = self.niveles[self.num_nivel]
             self.num_nivel += 1  # Aumenta el numero de nivel
             self.sprites = cargar_bloques(self.num_nivel)  # Carga los sprites del nuevo nivel
-            return True #Cambio de nivel exitoso
+            return self.nivel
         #Cambio de nivel falla
     
     def dibujar(self):
@@ -1123,22 +1278,30 @@ class Jugar:
         return enemigos
 
     def pasar_nivel(self):
-        if self.manager_niveles.pasar_nivel():
-            self.nivel = self.manager_niveles.nivel #Cambia los datos de nivel
-            self.jugador.rect.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
-            self.jugador.nivel = self.nivel #Cambia el nivel del jugador
-            self.jugador.bombas += BOMBAS_DISPONIBLES
-            self.capas[1] = self.asignar_extras()
-            self.capas[3] = self.colocar_enemigos() #Pone los enemigos
-            self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
-            # Reinicio de las estadísticas de los caramelos
-            for _ in range(self.jugador.contador_rojos):
-                self.jugador.golpe -= 1
-            for _ in range(self.jugador.contador_azules):
-                self.jugador.rango -= 1
-            # Reinicio de los contadores de caramelos
-            self.jugador.contador_rojos = 0
-            self.jugador.contador_azules = 0
+        self.nivel = self.manager_niveles.pasar_nivel()
+        self.jugador.pasar_nivel(self.nivel)
+        if self.manager_niveles.num_nivel == len(self.manager_niveles.niveles):
+            self.iniciar_nivel_jefe()
+        else:
+            self.iniciar_nivel_jefe() #CAMBIAR
+            
+    
+    def iniciar_nivel_normal(self):
+        self.capas[1] = self.asignar_extras()
+        self.capas[3] = self.colocar_enemigos() #Pone los enemigos
+        self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
+        # Reinicio de las estadísticas de los caramelos
+        for _ in range(self.jugador.contador_rojos):
+            self.jugador.golpe -= 1
+        for _ in range(self.jugador.contador_azules):
+            self.jugador.rango -= 1
+        # Reinicio de los contadores de caramelos
+        self.jugador.contador_rojos = 0
+        self.jugador.contador_azules = 0
+    
+    def iniciar_nivel_jefe(self):
+        self.capas[3] = [Jefe(self, 10, 5)]
+        
     
     def menu_mejoras(self):
         self.game.modo_previo = self
@@ -1223,7 +1386,7 @@ class Jugar:
                     self.jugador.bombas = BOMBAS_DISPONIBLES
             
             elif evento.key == K_p:
-                self.menu_mejoras()
+                self.pasar_nivel()
 
     def dibujar(self):
         #Juego
