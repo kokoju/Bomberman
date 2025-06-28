@@ -1074,12 +1074,14 @@ class Puntajes:
         self.musica = menu.game.canciones[0]
         self.boton_cerrar = Boton(ANCHO_PANTALLA - 70, 20, 50, 50, "X", self.pantalla, ROJO, BLANCO)  # Botón para volver al menu desde alguna opcion
         self.fuente = fuente_texto  # Fuente del texto de los puntajes
+        self.mensaje = "No hay puntajes aún"  # Mensaje que se muestra si no hay puntajes
         self.ordenar_puntajes()  # Carga los puntajes desde el archivo
 
     def ordenar_puntajes(self):
         self.top = []  # Lista para almacenar los puntajes
         self.top_render = []  # Lista para almacenar los puntajes renderizados
-        for i in range(5):  # Almacena los mejores 5 puntajes
+        self.cantidad_mostrada = min(5, len(puntajes))  # Cantidad de puntajes a mostrar (máximo 5)
+        for i in range(self.cantidad_mostrada):  # Almacena los mejores 5 puntajes
             if puntajes != []:
                 self.top.append((i + 1, puntajes[i]))  # Agrega el puntaje y su posición a la lista de puntajes
             else:
@@ -1087,6 +1089,7 @@ class Puntajes:
         
         for top_puntajes in self.top:
             self.top_render.append(self.fuente.render(f"{top_puntajes[0]}. {top_puntajes[1][0]} - {top_puntajes[1][1]}", True, AMARILLO if top_puntajes[0] == 1 else BLANCO))  # Agrega el texto renderizado a la lista de puntajes renderizados
+
 
     def actualizar(self):
         self.ordenar_puntajes()  # Vuelve a ordenar los puntajes cada vez que se actualiza
@@ -1102,8 +1105,12 @@ class Puntajes:
         self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
 
         self.boton_cerrar.dibujar()
-        for i, texto in enumerate(self.top_render):
-            self.pantalla.blit(texto, (ANCHO_PANTALLA//2 - texto.get_width()//2, ALTO_PANTALLA//3 + self.fuente.get_height() * i))
+        if self.top != []:
+            for i, texto in enumerate(self.top_render):
+                self.pantalla.blit(texto, (ANCHO_PANTALLA//2 - texto.get_width()//2, ALTO_PANTALLA//3 + self.fuente.get_height() * i))
+        else:
+            self.mensaje_renderizado = self.fuente.render(self.mensaje, True, BLANCO)
+            self.pantalla.blit(self.mensaje_renderizado, (ANCHO_PANTALLA//2 - self.mensaje_renderizado.get_width()//2, ALTO_PANTALLA//2))
 
 class Personalizacion:
     def __init__(self, menu):
@@ -1311,7 +1318,11 @@ class Menu:
         self.info = Informacion(self)
         self.puntajes = Puntajes(self)
         self.personalizacion = Personalizacion(self)
-        self.opcion_a_funcion = {"Jugar":self.personalizacion, "Ajustes":self.ajustes, "Puntajes": self.puntajes,"Información":self.info, "Salir":self.salir} #Mapea el nombre de las opciones a ellas
+        self.opcion_a_funcion = {"Jugar":self.personalizacion, 
+                                 "Ajustes":self.ajustes, 
+                                 "Puntajes": self.puntajes,
+                                 "Información":self.info, 
+                                 "Salir":None} #Mapea el nombre de las opciones a ellas
 
         self.musica = game.canciones[0]
         self.botones = self.crear_botones()  # Crea los botones del menú
@@ -1328,10 +1339,6 @@ class Menu:
             self.boton = Boton(x, y, ANCHO_BOTON, ALTO_BOTON, nombre, self.pantalla)  # Crea un botón con las dimensiones y texto correspondientes
             botones.append(self.boton)  # Agrega el botón a la lista de botones del menú
         return botones
-
-    def salir(self):
-        guardar_archivo(ARCHIVO_PUNTAJES, str(puntajes))  # Guarda los puntajes en el archivo antes de salir
-        quit()  # Cierra Pygame y termina el programa
 
     def dibujar(self):
         self.pantalla.fill(NEGRO)
@@ -1613,6 +1620,7 @@ class Game:
 
     def cambiar_modo(self, modo):
         if modo == None:
+            guardar_archivo(ARCHIVO_PUNTAJES, str(puntajes))  # Guarda los puntajes en el archivo antes de salir
             self.running = False
         else:
             self.modo_previo = modo
@@ -1646,7 +1654,6 @@ class Game:
 if __name__ == "__main__": #solo se ejecuta si se hace run, no si es import
     game = Game()
     game.run()
-
 
 
 
