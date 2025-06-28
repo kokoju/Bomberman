@@ -104,6 +104,7 @@ class Jugador:
         self.rango = 1 # Rango inicial de la bomba
         self.moviendose = False  # Indica si el jugador se está moviendo o no
         
+        self.puntaje_total = 0  # Puntaje total del jugador
         self.puntaje = 0  # Puntaje del jugador
 
         # Habilidades e ítems del jugador
@@ -920,6 +921,15 @@ class Puerta:
     def actualizar(self):
         if self.rect.colliderect(self.jugador.rect) and self.jugador.tiene_llave:
             self.jugador.tiene_llave = False
+            for _ in range(self.jugador.contador_rojos):
+                self.jugador.golpe -= 1
+            for _ in range(self.jugador.contador_azules):
+                self.jugador.rango -= 1
+            # Reinicio de los contadores de caramelos
+            self.jugador.contador_rojos = 0
+            self.jugador.contador_azules = 0
+            self.jugador.puntaje_total += self.jugar.jugador.puntaje  # Suma el puntaje del jugador al puntaje total
+            self.jugar.mejoras = Mejoras(self.jugar)  # Si el jugador colisiona con la puerta y tiene la llave, se abre el menú de mejoras
             self.jugar.menu_mejoras()
 
     def dibujar(self):
@@ -1221,11 +1231,11 @@ class Mejoras:
         self.boton_golpe.dibujar()
         self.boton_rango.dibujar()
         self.pasar_nivel.dibujar()
-    
+       
     def actualizar(self):  # No es necesario actualizar nada en este caso, pero se deja para mantener la estructura
         pass
 
-    def eventos(self, evento):
+    def eventos(self, evento):  # Maneja los eventos de los botones (no se necesita evento porque no se tocan las teclas)
         mouse_pos = pg.mouse.get_pos()
         click_izq = pg.mouse.get_pressed()[0] #Click izquierdo
             
@@ -1275,16 +1285,16 @@ class Resultados:
         self.imagen_mostrada = self.imagenes_skins["derecha"][0]  # Imagen que se muestra en la pantalla (por defecto es la imagen de la derecha del skin 1)
         self.imagen_mostrada = pg.transform.scale(self.imagen_mostrada, (128, 128))  # Escala la imagen
         self.lineas = dividir_texto(self.texto_resultado)  # Divide el texto de información del personaje en líneas para que se ajuste a la pantalla
-        puntajes.append([self.game.nombre_jugador, self.game.menu.jugar.jugador.puntaje])  # Agrega el puntaje del jugador a la lista de puntajes
+        puntajes.append([self.game.nombre_jugador, self.game.menu.jugar.jugador.puntaje_total])  # Agrega el puntaje del jugador a la lista de puntajes
 
     def actualizar(self):  
         # Animación del puntaje
-        if self.puntaje_mostrado < self.game.menu.jugar.jugador.puntaje:
+        if self.puntaje_mostrado < self.game.menu.jugar.jugador.puntaje_total:
             self.puntaje_mostrado += 3
             self.puntaje_renderizado = self.fuente.render(f"{self.puntaje_mostrado}", True, BLANCO)  # Renderiza el puntaje del jugador
         # Si nos pasamos, lo ajustamos al puntaje del jugador
-        elif self.puntaje_mostrado > self.game.menu.jugar.jugador.puntaje:
-            self.puntaje_mostrado = self.game.menu.jugar.jugador.puntaje
+        elif self.puntaje_mostrado > self.game.menu.jugar.jugador.puntaje_total:
+            self.puntaje_mostrado = self.game.menu.jugar.jugador.puntaje_total
             self.puntaje_renderizado = self.fuente.render(f"{self.puntaje_mostrado}", True, AMARILLO)  # Renderiza el puntaje del jugador en amarillo al terminar el conteo
         
     def dibujar(self):
@@ -1305,6 +1315,7 @@ class Resultados:
     def eventos(self, evento):  # evento no se usa realmente, ya que no se escribe nada, pero es por continuidad y para que se pueda usar en el bucle de eventos del juego
         mouse_pos = pg.mouse.get_pos()
         if self.boton_confirmar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
+            mouse_pos = None  # Resetea la posición del mouse
             self.game.cambiar_modo(self.game.menu)  # Cambia el modo del juego al menú principal
 
 class Menu:
@@ -1416,7 +1427,6 @@ class Jugar:
         self.manager_niveles = Niveles(self)
         self.nivel = self.manager_niveles.nivel
         self.jugador = Jugador(self, num_skin)  # Crea el jugador con el skin seleccionado
-        self.mejoras = Mejoras(self)
         self.hud = HUD(self)  # Crea el HUD del juego
         self.lista_pegamento = []  # Lista para almacenar los pegamentos que sueltan los enemigos
         self.capas = {
@@ -1465,13 +1475,6 @@ class Jugar:
             self.capas[3] = self.colocar_venenos() + self.colocar_enemigos() # Pone los elementos que dañan al jugador
             self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
             # Reinicio de las estadísticas de los caramelos
-            for _ in range(self.jugador.contador_rojos):
-                self.jugador.golpe -= 1
-            for _ in range(self.jugador.contador_azules):
-                self.jugador.rango -= 1
-            # Reinicio de los contadores de caramelos
-            self.jugador.contador_rojos = 0
-            self.jugador.contador_azules = 0
     
     def menu_mejoras(self):
         self.game.modo_previo = self
