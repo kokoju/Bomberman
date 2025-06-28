@@ -18,9 +18,9 @@ puntos_iniciales_skins_jugador = {1 : (0, 21), 2 : (4, 21), 3 : (8, 21)}
 puntos_inciales_skins_enemigos = {1 : (0, 24), 2 : (4, 24), 3 : (8, 24), 4 : (12, 24), 5 : (0, 27), 6 : (4, 27)}
 
 # Carga una skin completa a partir de su número, devolviendo una lista de sprites (derecha, abajo, arriba, izquierda)
-def cargar_skins(numero_skin, dict):
+def cargar_skins(num_skin, dict):
     sprites_jugador = Spritesheet("assets/spritesheet.png")
-    inicio_x, inicio_y = dict[numero_skin]
+    inicio_x, inicio_y = dict[num_skin]
     skin = {"derecha": [], "abajo": [], "arriba": [], "izquierda": []}
     
     direcciones = ["derecha", "abajo", "arriba"]
@@ -140,10 +140,6 @@ def cargar_canciones():
         pg.mixer.Sound("assets/musica/MusicaResultados.mp3")  # Carga la música de los resultados
     ]
 
-def cargar_gameover():
-    return pg.transform.scale(pg.image.load("assets/gameover.jpg").convert_alpha(),
-                              (ANCHO_PANTALLA, ALTO_PANTALLA))  # Ajusta el tamaño a la pantalla del juego
-
 def cargar_llave():
     return pg.transform.scale(pg.image.load("assets/llave.png").convert_alpha(),
                                 (MEDIDA_BLOQUE, MEDIDA_BLOQUE))  # Ajusta el tamaño de la llave
@@ -212,4 +208,18 @@ def cargar_fuentes():
         32:pg.font.Font("assets/FuenteTexto.ttf", 32),
         40:pg.font.Font("assets/FuenteTexto.ttf", 40),
         48:pg.font.Font("assets/FuenteTexto.ttf", 30)
+    }
+
+def cargar_veneno():
+    return pg.transform.scale(pg.image.load("assets/veneno.png").convert_alpha(),
+                                (MEDIDA_BLOQUE, MEDIDA_BLOQUE))  # Ajusta el tamaño del veneno
+
+def cargar_habilidades():
+    return {
+        1: pg.transform.scale(pg.image.load("assets/habilidades/noclip.png").convert_alpha(),
+                                (96, 96)),
+        2: pg.transform.scale(pg.image.load("assets/habilidades/explosive.png").convert_alpha(),
+                                (96, 96)),
+        3: pg.transform.scale(pg.image.load("assets/habilidades/freeze.png").convert_alpha(),
+                                (96, 96)),
     }

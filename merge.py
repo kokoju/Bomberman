@@ -14,13 +14,15 @@ from math import hypot
 # Además, dejé un espacio de 16 pixeles entre la matriz y el borde inferior, para que no se vea tan pegado
 # Haremos los niveles con matrices (11x26), y como no se requiere crear nuevos, podemos ponerlos dentro del archivo de código
 
-"""
+# ==========================================================================
+#  GUARDADO Y LECTURA DE ARCHIVOS
+# ==========================================================================
+
 # Guarda un string en un archivo
 def guardar_archivo(file_path, content):
         archivo = open(file_path, 'w')  # w crea o trunca el archivo
         archivo.write(content)
         archivo.close()
-"""
         
 # Lee la información de un archivo y devuelve su contenido evaluado según su formato
 def leer_archivo(path):
@@ -40,6 +42,10 @@ puntajes = sorted(leer_archivo(ARCHIVO_PUNTAJES), key=lambda elemento: elemento[
 font.init()  # Inicializa el módulo de fuentes de Pygame
 fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto del juego
 
+# ==========================================================================
+#  ELEMENTOS RELACIONADOS CON EL JUGADOR
+# ==========================================================================
+
 # Clase Jugador
 class Jugador:
     def __init__(self, jugar, num_skin=2):
@@ -48,8 +54,8 @@ class Jugador:
         self.nivel = jugar.nivel  # Nivel actual del jugador (se usa para verificar colisiones)
 
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
-        self.numero_skin = num_skin  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
-        self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
+        self.num_skin = num_skin  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
+        self.skin_hoja_sprites = cargar_skins(self.num_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
 
         self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
         self.frame = 0  # Frame actual del sprite del jugador
@@ -57,13 +63,13 @@ class Jugador:
         
         self.vidas = VIDAS  # Cantidad de vidas del jugador
         self.vidas_max = VIDAS  # Cantidad de vidas máximas del jugador
-        self.bombas = BOMBAS_DISPONIBLES  # Cantidad de bombas que el jugador puede colocar
+        self.cantidad_bombas = CANTIDAD_BOMBAS  # Cantidad de bombas que puede colocar el jugador AL MISMO TIEMPO, sus bombas son infinitas
         self.velocidad = 5  # Velocidad de movimiento del jugador (en pixeles)
         self.golpe = GOLPE_INICIAL_BOMBA  # Daño que causa el jugador al explotar una bomba
         self.rango = 1 # Rango inicial de la bomba
         self.moviendose = False  # Indica si el jugador se está moviendo o no
         
-        self.puntaje = 100000  # Puntaje del jugador
+        self.puntaje = 0  # Puntaje del jugador
 
         # Habilidades e ítems del jugador
         self.tiene_habilidad = True
@@ -181,14 +187,14 @@ class Jugador:
         self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))  # Dibuja el sprite del jugador
 
     def poner_bomba(self):
-        if self.bombas > 0:
+        if self.cantidad_bombas > 0:
             bx = self.rect.centerx//MEDIDA_BLOQUE+1
             by = self.rect.centery//MEDIDA_BLOQUE+1
             for bomba in self.jugar.capas[2]: # No poner bombas encima de otras
                 if (bomba.bx, bomba.by) == (bx, by):
                     return
                 
-            self.bombas -= 1
+            self.cantidad_bombas -= 1
             Bomba(self)
 
     # No-clip (Oveja común) -> Permite al jugador atravesar bloques destructibles por un tiempo limitado
@@ -198,26 +204,26 @@ class Jugador:
         if self.tiene_habilidad:  # Si el jugador no tiene la habilidad especial
             self.habilidad_en_uso = True
             self.tiene_habilidad = False  # Desactiva la bandera de la habilidad especial
-            if self.numero_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
+            if self.num_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
                 self.atraviesa_destructibles = True
-            elif self.numero_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
+            elif self.num_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
                 self.rango += 3  # Aumenta el rango de las bombas del jugador
                 self.golpes_penetrantes = True  # Las bombas del jugador no se detienen al tocar muros destructibles
-            elif self.numero_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
+            elif self.num_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
                 self.enemigos_congelados = True  # Congela a los enemigos por un tiempo limitado
 
             def reestablecer():
                 sleep(DURACION_EFECTOS / 1000)  # Espera el tiempo de duración del efecto de la habilidad especial
-                if self.numero_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
+                if self.num_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
                     # Reduce el lag usando un sleep más largo y chequeos menos frecuentes
                     while self.verificar_en_bloque_destructible(self.rect):
                         self.atraviesa_destructibles = True
                         sleep(0.1)  # Chequea cada 100ms en vez de un bucle apretado
                     self.atraviesa_destructibles = False  # Vuelve a la normalidad al salir del bloque destructible
-                elif self.numero_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
+                elif self.num_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
                     self.rango -= 3  # Vuelve al rango normal de las bombas del jugador
                     self.golpes_penetrantes = False  # Las bombas del jugador se detienen al tocar muros destructibles00000
-                elif self.numero_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
+                elif self.num_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
                     self.enemigos_congelados = False  # Descongela a los enemigos
                 self.habilidad_en_uso = False  # Vuelve a activar la bandera de la habilidad especial
                 self.tiempo_desde_habilidad = pg.time.get_ticks()  # Reinicia el tiempo desde que se usó la habilidad especial
@@ -236,11 +242,11 @@ class Jugador:
     def item1(self):
         if self.tiene_item_1:
             self.tiene_item_1 = False  # Desactiva la bandera de la habilidad 1
-            self.velocidad += 10
+            self.velocidad += 5
 
             def restaurar():
                 sleep(DURACION_EFECTOS / 1000)  # Espera el tiempo de duración del efecto del item 1
-                self.velocidad -= 10  # Vuelve a la velocidad normal
+                self.velocidad -= 5  # Vuelve a la velocidad normal
 
             hilo = Thread(target=restaurar)  # Se crea un hilo para restaurar la velocidad
             hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
@@ -268,7 +274,7 @@ class Jugador:
             hilo.daemon = True
             hilo.start()
         else:
-            self.game_over = GameOver(self.jugar.pantalla)  # Si no tiene vidas, se muestra la pantalla de Game Over
+            self.jugar.resultados = Resultados(self.jugar.game)  # Si no tiene vidas, se muestra la pantalla de Game Over
     
     def invulnerabilidad(self):
         self.invulnerable = True
@@ -602,6 +608,7 @@ class Bomba:
         self.jugar.nivel[self.by][self.bx] = 0  # Quita la hitbox
         Explosion(self, self.rango)
         self.jugar.capas[2].remove(self) # Ya no procesa la bomba
+        self.jugador.cantidad_bombas += 1  # El contador de bombas vuelve a subir
         
     def actualizar(self):
         if not self.hitbox_activa and (self.bx,self.by) not in self.jugador.sacar_esquinas(self.jugador.rect):  # Crea la hitbox de la bomba cuando el jugador se va
@@ -670,14 +677,16 @@ class Explosion:
         if self.frame == self.frame_expansion:
             for x, y in self.bloques_rotos:
                 self.nivel[y][x] = 0
-                self.jugador.puntaje += 20  # Aumenta el puntaje del jugador al destruir un bloque
+                self.jugador.puntaje += 50  # Aumenta el puntaje del jugador al destruir un bloque
             
         # Mata entidades
         for x, y in self.bloques_afectados:
             if not self.jugador.invulnerable and (x, y) == (self.jugador.rect.centerx//MEDIDA_BLOQUE+1, self.jugador.rect.centery//MEDIDA_BLOQUE+1): #Si el jugador no esta invulnerable
                 self.jugador.morir()
                 break
-            for enemigo in self.jugar.capas[3]: #Capa donde se guardan los enemigos
+            for enemigo in self.jugar.capas[3]:  # Capa donde se guardan los enemigos y venenos
+                if not isinstance(enemigo, Enemigo):
+                    continue
                 if (x, y) == (enemigo.rect.centerx//MEDIDA_BLOQUE+1, enemigo.rect.centery//MEDIDA_BLOQUE+1):
                     enemigo.quitar_vida(self.jugador.golpe)
     
@@ -738,6 +747,129 @@ class Explosion:
             self.pantalla.blit(self.sprites[llave][subframe], (x-MEDIDA_BLOQUE, y-MEDIDA_BLOQUE))
 
 
+# ==========================================================================
+#  ELEMENTOS DE INTERFAZ DE USUARIO
+# ==========================================================================
+
+# Clase para botones: necesario para los botones del menú
+class Boton:
+    def __init__(self, x, y, ancho, alto, texto, pantalla, color=BLANCO, color_texto=NEGRO):
+        self.x = x  # Posición en el eje X
+        self.y = y  # Posición en el eje Y
+        self.ancho = ancho  # Ancho del botón
+        self.alto = alto  # Alto del botón
+        self.texto = texto  # Texto del botón
+        self.pantalla = pantalla  # Pantalla donde se dibuja el botón
+        self.color = color  # Color del botón (por defecto es blanco)
+        self.color_texto = color_texto  # Color del texto del botón (por defecto es negro)
+        self.rect = pg.Rect(self.x, self.y, self.ancho, self.alto)  # Rectángulo que representa el botón para colisiones
+        self.fuente = fuente_texto
+        
+        # Permite que no detecta un click todo el tiempo que mantiene click si no solo uno
+        self.fue_presionado = False # Pasado
+        self.presionado = False  # Presente
+
+    def detectar(self, mouse_pos, *botones):
+        if self.rect.collidepoint(mouse_pos) and any(botones) and not self.presionado:
+            self.presionado = True
+            return True
+        else:
+            self.presionado = False
+        return False    
+        
+    def dibujar(self):
+        pg.draw.rect(self.pantalla, self.color, self.rect)  # Dibuja el botón en la pantalla
+        pg.draw.rect(self.pantalla, NEGRO, self.rect, 2)  # Le crea un borde al botón (eso es lo que indica el 2, que es el grosor del borde)
+        texto_renderizado = self.fuente.render(self.texto, True, self.color_texto)  # Renderiza el texto del botón
+        self.pantalla.blit(texto_renderizado, (self.rect.x + (self.rect.width - texto_renderizado.get_width()) // 2, self.rect.y + (self.rect.height - texto_renderizado.get_height()) // 2))  # Dibuja el texto centrado en el botón
+
+    def detectar_presionado(self, mouse_pos, *presses):
+        ahora_presionado = any(presses) # Si presiono cualquier boton valido
+        self.presionado = self.rect.collidepoint(mouse_pos) and ahora_presionado # self.presionado = mouse encima del boton y lo presiona
+        presionado = self.presionado and not self.fue_presionado # Si acaba de presionar (no solo esta manteniendo click)
+        self.fue_presionado = self.presionado #Actualiza fue_presionado
+        return presionado
+
+# Clase para la caja de entrada de texto: necesario para el nombre del usuario y la dirección
+class InputBox:
+    def __init__(self, pantalla, x, y, max_ancho:float=500, color_fuente=NEGRO, color_fondo=BLANCO,):
+            self.pantalla = pantalla
+            self.x = x
+            self.y = y
+            self.fuente = fuente_texto
+            self.color_fuente = color_fuente
+            self.color_fondo = color_fondo
+            self.max_ancho = max_ancho
+            self.color_activo = VERDE_AGUA
+            self.color_pasivo = GRIS
+            self.caracteres_validos = "012345789AaBbCcDdEeFfGgHhIiJjKkLlMmNnÑñOoPpQqRrSsTtUuVvWwXxYyZz "
+            self.texto = ""
+            self.altura = self.fuente.get_height()
+            self.rect = pg.Rect(x, y, max_ancho, self.altura*1.1) # La barra es un poco más grande que el texto que recibe
+            self.activa = False
+            
+    def escribir(self, evento, mouse_pos, click_izq):
+        pasar_encima = self.rect.collidepoint(mouse_pos)
+        if pasar_encima and click_izq:  # Si se le pasa por encima a la barra y se le hace click
+            self.activa = True  # La barra se activa
+        elif click_izq and not pasar_encima and self.activa == True:  # Si se hace click fuera de la barra y la barra está activa
+            self.activa = None  # Si se hace click fuera de la barra, se desactiva
+        
+        if self.activa:  # Si la caja de entrada está activa
+            if evento.type == pg.KEYDOWN: # Si se presiona una tecla
+                if evento.key == pg.K_BACKSPACE and len(self.texto) >= 1: # Si se presiona la tecla de retroceso y hay texto
+                    self.texto = self.texto[:-1] # Elimina el último carácter del texto
+                else:
+                    letra = evento.unicode  
+                    if letra in self.caracteres_validos:  # Si la letra es válida
+                        ancho_letra = self.fuente.size(self.texto + letra)[0]
+                        if ancho_letra < self.max_ancho:  # Si el ancho del texto con la nueva letra es menor que el máximo
+                            self.texto += letra  # Agrega la letra al texto
+        return False  # Caso en donde no es escribe un caracter válido
+
+    def dibujar(self):
+        pg.draw.rect(self.pantalla, self.color_fondo, self.rect)  # Dibuja el fondo de la caja de entrada
+        self.texto_render = self.fuente.render(self.texto, True, self.color_fuente)  # Renderiza el texto de la caja de entrada
+        self.pantalla.blit(self.texto_render, (self.x + self.max_ancho//2 - self.texto_render.get_width()//2, self.y))  # Dibuja el texto en la caja de entrada 
+        if not self.activa:  # Si la caja de entrada no está activa, dibuja un borde pasivo
+            pg.draw.rect(self.pantalla, self.color_pasivo, self.rect, width=1)  # Pone frame pasivo
+        else:
+            pg.draw.rect(self.pantalla, self.color_activo, self.rect, width=1)  # Pone frame activo
+
+class Deslizante:
+    def __init__(self, pantalla, x, y, ancho, alto, parametro, min_parametro=0, max_parametro=1, radio_control=10):
+        self.pantalla = pantalla
+        self.x = x
+        self.y = y
+        self.ancho = ancho
+        self.alto = alto
+        self.parametro = parametro #Valor a cambiar cuando se desliza la barra
+        self.min_parametro = min_parametro #Minimo valor que puede tomar
+        self.max_parametro = max_parametro #Maximo valor que puede tomar
+        self.radio = radio_control
+        
+        self.x_control = self.x + int(self.ancho * self.parametro)  # Posición del control en x
+        self.deslizando = False #Indica si se esta deslizando la barra
+        
+    def eventos(self, evento):
+        mouse_pos = pg.mouse.get_pos()
+        if evento.type == pg.MOUSEBUTTONDOWN:
+            if abs(mouse_pos[0] - self.x_control) <= self.radio and abs(mouse_pos[1] - (self.y) + self.alto // 2) <= self.radio:  # Si el cursor está cerca del control deslizante
+                self.deslizando = True  # Indica que se está arrastrando el control de la barra
+            
+        elif evento.type == pg.MOUSEBUTTONUP:
+            self.deslizando = False #Suelta el deslizante
+            
+    def actualizar(self):
+        if self.deslizando:  # Si se está arrastrando la barra de sonido
+            self.x_control = self.x + int(self.ancho * self.parametro)  # Posición del control en x
+            self.parametro = max(0, min(1, (pg.mouse.get_pos()[0] - self.x) / self.ancho))  # Calcula el nuevo valor del parametro según la posición del mouse
+    
+    def dibujar(self):
+        pg.draw.rect(self.pantalla, GRIS, (self.x, self.y, self.ancho, self.alto))  # Dibuja el fondo de la barra
+        pg.draw.rect(self.pantalla, VERDE, (self.x, self.y, self.ancho * self.parametro, self.alto))
+        pg.draw.circle(self.pantalla, BLANCO, (self.x_control, self.y + self.alto // 2), self.radio)  # Dibuja el control deslizante en la barra de sonido
+
 class BarraVida:
     def __init__(self, x, y, ancho, alto, jugar):
         self.x = x
@@ -760,17 +892,18 @@ class BarraVida:
         pg.draw.rect(self.pantalla, ROJO, (self.x, self.y, self.ancho, self.alto))  # Dibuja el fondo de la barra de vida
         pg.draw.rect(self.pantalla, VERDE, (self.x, self.y, self.ancho * self.ratio, self.alto))  # Dibuja la barra de vida actual del jugador
 
-
 # Clase HUD (Head-Up Display) que muestra información del juego en la pantalla
 class HUD:
     def __init__(self, jugar):
         self.jugar = jugar
         self.pantalla = jugar.pantalla  # Pantalla donde se dibuja el HUD
         self.jugador = jugar.jugador  # Jugador del juego
+        self.num_skin = self.jugador.num_skin  # Número de skin del jugador
         self.fuente = fuente_texto  # Fuente del texto del HUD
         self.texto_vidas = self.fuente.render("Vida", True, BLANCO)
         self.barra_vida = BarraVida(SEPARACION_BORDES_PANTALLA + self.texto_vidas.get_width() + 10, 20, 200, 20, jugar)  # Barra de vida del jugador
         self.textos = []  # Lista para almacenar los textos del HUD
+        self.iconos_habilidades = cargar_habilidades()  # Carga los iconos de las habilidades del jugador
         self.cargar_sprites_en_proporcion()  # Carga los sprites de los items del jugador en proporción
 
     def cargar_sprites_en_proporcion(self):
@@ -785,7 +918,7 @@ class HUD:
     def actualizar_textos(self):
         # Actualiza el puntaje del jugador en el HUD
         self.textos = [
-        self.fuente.render(f"Bombas: {self.jugador.bombas}", True, BLANCO),  # Texto de las bombas del jugador
+        self.fuente.render(f"Bombas: {self.jugador.cantidad_bombas}", True, BLANCO),  # Texto de las bombas del jugador
         self.fuente.render(f"Rango: {self.jugador.rango}", True, BLANCO),  # Texto del rango de las bombas del jugador
         self.fuente.render(f"Puntaje: {self.jugador.puntaje}", True, BLANCO),  # Texto del puntaje del jugador
         self.fuente.render(f"Daño: {self.jugador.golpe}", True, BLANCO)  # Texto de las vidas del jugador
@@ -822,10 +955,16 @@ class HUD:
             altura = int(96 * ratio)
             y_base = 136 - altura  # La base es 136, restamos la altura para que crezca hacia arriba
             pg.draw.rect(self.pantalla, VERDE, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, y_base, 96, altura))
+        
+        # Dibuja los íconos de las habilidades
+        self.pantalla.blit(self.iconos_habilidades[self.num_skin], (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, 40))
 
+        # Dibuja el marco de la habilidad del jugador
         pg.draw.rect(self.pantalla, BLANCO, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, 40, 96, 96), 4)  # Dibuja los cuadros de los items del jugador
 
-    
+# ==========================================================================
+#  CONSUMIBLES DEL JUEGO + PUERTA Y LLAVE
+# ==========================================================================
 
 # Función para cargar la llave, es especial, porque es un objeto que se encuentra dentro de un bloque aleatorio del nivel, y aparece al romperlo
 class Llave:
@@ -850,7 +989,6 @@ class Llave:
     def dibujar(self):
         if self.bloque_roto and not self.jugador.tiene_llave:
             self.pantalla.blit(self.sprite, self.rect)  # Dibuja el sprite de la llave en la pantalla
-
 
 class Puerta:
     def __init__(self, jugar, y):
@@ -933,46 +1071,10 @@ class Caramelos:  # Los caramelos son un objeto que se encuentra en el nivel, y 
     def dibujar(self):
         if self.bloque_roto:
             self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))  # Dibuja el sprite del caramelo en la pantalla
-    
 
-# Clase para botones: necesario para los botones del menú
-class Boton:
-    def __init__(self, x, y, ancho, alto, texto, pantalla, color=BLANCO, color_texto=NEGRO):
-        self.x = x  # Posición en el eje X
-        self.y = y  # Posición en el eje Y
-        self.ancho = ancho  # Ancho del botón
-        self.alto = alto  # Alto del botón
-        self.texto = texto  # Texto del botón
-        self.pantalla = pantalla  # Pantalla donde se dibuja el botón
-        self.color = color  # Color del botón (por defecto es blanco)
-        self.color_texto = color_texto  # Color del texto del botón (por defecto es negro)
-        self.rect = pg.Rect(self.x, self.y, self.ancho, self.alto)  # Rectángulo que representa el botón para colisiones
-        self.fuente = fuente_texto
-        
-        # Permite que no detecta un click todo el tiempo que mantiene click si no solo uno
-        self.fue_presionado = False # Pasado
-        self.presionado = False  # Presente
-
-    def detectar(self, mouse_pos, *botones):
-        if self.rect.collidepoint(mouse_pos) and any(botones) and not self.presionado:
-            self.presionado = True
-            return True
-        else:
-            self.presionado = False
-        return False    
-        
-    def dibujar(self):
-        pg.draw.rect(self.pantalla, self.color, self.rect)  # Dibuja el botón en la pantalla
-        pg.draw.rect(self.pantalla, NEGRO, self.rect, 2)  # Le crea un borde al botón (eso es lo que indica el 2, que es el grosor del borde)
-        texto_renderizado = self.fuente.render(self.texto, True, self.color_texto)  # Renderiza el texto del botón
-        self.pantalla.blit(texto_renderizado, (self.rect.x + (self.rect.width - texto_renderizado.get_width()) // 2, self.rect.y + (self.rect.height - texto_renderizado.get_height()) // 2))  # Dibuja el texto centrado en el botón
-
-    def detectar_presionado(self, mouse_pos, *presses):
-        ahora_presionado = any(presses) # Si presiono cualquier boton valido
-        self.presionado = self.rect.collidepoint(mouse_pos) and ahora_presionado # self.presionado = mouse encima del boton y lo presiona
-        presionado = self.presionado and not self.fue_presionado # Si acaba de presionar (no solo esta manteniendo click)
-        self.fue_presionado = self.presionado #Actualiza fue_presionado
-        return presionado
+# ==========================================================================
+#  PESTAÑAS DENTRO Y FUERA DEL MENU
+# ==========================================================================
 
 # Clase Ajustes: aquí se pueden agregar las configuraciones del juego, como el volumen
 class Ajustes:
@@ -981,7 +1083,7 @@ class Ajustes:
         self.game = menu.game
         self.pantalla = menu.pantalla  # Pantalla donde se dibuja la información
         self.musica = menu.game.canciones[0]
-        self.boton_cerrar = menu.boton_cerrar
+        self.boton_cerrar = Boton(ANCHO_PANTALLA - 70, 20, 50, 50, "X", self.pantalla, ROJO, BLANCO)  # Botón para volver al menu desde alguna opcion
         self.fuente = fuente_texto  # Fuente del texto de la información
         self.barra_sonido = Deslizante(self.pantalla, ANCHO_PANTALLA//2 - 200, SEPARACION_BORDES_PANTALLA*9, 400, 10, self.game.volumen)
 
@@ -1003,7 +1105,7 @@ class Ajustes:
         self.barra_sonido.eventos(evento)
         
         if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
-            self.menu.cambiar_modo(self.menu)
+            self.menu.game.cambiar_modo(self.menu)
     
     def actualizar(self):
         self.barra_sonido.actualizar()
@@ -1016,7 +1118,7 @@ class Informacion:
         self.menu = menu
         self.pantalla = menu.pantalla  # Pantalla donde se dibuja la información
         self.musica = menu.game.canciones[0]
-        self.boton_cerrar = menu.boton_cerrar
+        self.boton_cerrar = Boton(ANCHO_PANTALLA - 70, 20, 50, 50, "X", self.pantalla, ROJO, BLANCO)  # Botón para volver al menu desde alguna opcion
         
         self.texto = "Información del juego"  # Texto de la información del juego
         self.fuente = fuente_texto  # Fuente del texto de la información
@@ -1025,38 +1127,7 @@ class Informacion:
         self.foto_juan = pg.transform.scale(self.foto_juan, (150, 150))  # Reescala la imagen de Juan a 150x150 píxeles
         self.foto_pablo = pg.transform.scale(self.foto_pablo, (150, 150))  # Reescala la imagen de Pablo a 150x150 píxeles
         
-        self.lineas = self.dividir_texto()
-
-    # El texto que pensamos poner en la pantalla de información es medianamente largo, por lo que se dividirá en varias líneas
-    def dividir_texto(self):
-        self.ancho_max = ANCHO_PANTALLA - 100  # Ancho máximo de cada línea de texto
-        self.fuente = fuente_texto  # Fuente del texto
-        self.texto = TEXTO_INFO  # Texto a dividir
-
-        bloques = self.texto.split("\n")  # Paso para dividir el texto y que respete los saltos de línea manuales 
-        lineas = []  # Lista para almacenar las líneas de texto
-
-        for bloque in bloques:
-            palabras = bloque.split(' ')  # "Split" divide el texto en palabras, cada que encuentra un espacio, borrándolo en el proceso
-            linea_actual = ""  # Línea actual que se está construyendo
-            
-            # Recorremos cada palabra y comprobamos para cada linea si cabe en el ancho máximo
-            # Si cabe, se agrega a la línea actual y seguimos revisando
-            # Si no cabe, se agrega la línea actual a la lista de líneas y se comienza una nueva línea con la palabra actual
-            # Añadimos los espacios manualmente
-            for palabra in palabras: 
-                prueba = linea_actual + palabra + " "
-                if self.fuente.size(prueba)[0] <= self.ancho_max:
-                    linea_actual = prueba
-                else:
-                    lineas.append(linea_actual)
-                    linea_actual = palabra + " "
-            # Si al final hay una línea actual que no está vacía, la agregamos a la lista de líneas
-            if linea_actual:
-                lineas.append(linea_actual)
-            # Devolvemos la lista de líneas
-
-        return lineas  # Devuelve la lista de líneas de texto divididas
+        self.lineas = dividir_texto(TEXTO_INFO)
 
     def dibujar(self):
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
@@ -1078,21 +1149,23 @@ class Informacion:
     def eventos(self, evento):
         mouse_pos = pg.mouse.get_pos()
         if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
-            self.menu.cambiar_modo(self.menu)
+            self.menu.game.cambiar_modo(self.menu)
 
 class Puntajes:
     def __init__(self, menu):
         self.menu = menu
         self.pantalla = menu.pantalla  # Pantalla donde se dibuja la información
         self.musica = menu.game.canciones[0]
-        self.boton_cerrar = menu.boton_cerrar
+        self.boton_cerrar = Boton(ANCHO_PANTALLA - 70, 20, 50, 50, "X", self.pantalla, ROJO, BLANCO)  # Botón para volver al menu desde alguna opcion
         self.fuente = fuente_texto  # Fuente del texto de los puntajes
+        self.mensaje = "No hay puntajes aún"  # Mensaje que se muestra si no hay puntajes
         self.ordenar_puntajes()  # Carga los puntajes desde el archivo
 
     def ordenar_puntajes(self):
         self.top = []  # Lista para almacenar los puntajes
         self.top_render = []  # Lista para almacenar los puntajes renderizados
-        for i in range(5):  # Almacena los mejores 5 puntajes
+        self.cantidad_mostrada = min(5, len(puntajes))  # Cantidad de puntajes a mostrar (máximo 5)
+        for i in range(self.cantidad_mostrada):  # Almacena los mejores 5 puntajes
             if puntajes != []:
                 self.top.append((i + 1, puntajes[i]))  # Agrega el puntaje y su posición a la lista de puntajes
             else:
@@ -1101,13 +1174,14 @@ class Puntajes:
         for top_puntajes in self.top:
             self.top_render.append(self.fuente.render(f"{top_puntajes[0]}. {top_puntajes[1][0]} - {top_puntajes[1][1]}", True, AMARILLO if top_puntajes[0] == 1 else BLANCO))  # Agrega el texto renderizado a la lista de puntajes renderizados
 
+
     def actualizar(self):
         self.ordenar_puntajes()  # Vuelve a ordenar los puntajes cada vez que se actualiza
 
     def eventos(self, evento):
         mouse_pos = pg.mouse.get_pos()
         if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
-            self.menu.cambiar_modo(self.menu)
+            self.menu.game.cambiar_modo(self.menu)
 
     def dibujar(self):
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
@@ -1115,29 +1189,231 @@ class Puntajes:
         self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
 
         self.boton_cerrar.dibujar()
-        for i, texto in enumerate(self.top_render):
-            self.pantalla.blit(texto, (ANCHO_PANTALLA//2 - texto.get_width()//2, ALTO_PANTALLA//3 + self.fuente.get_height() * i))
+        if self.top != []:
+            for i, texto in enumerate(self.top_render):
+                self.pantalla.blit(texto, (ANCHO_PANTALLA//2 - texto.get_width()//2, ALTO_PANTALLA//3 + self.fuente.get_height() * i))
+        else:
+            self.mensaje_renderizado = self.fuente.render(self.mensaje, True, BLANCO)
+            self.pantalla.blit(self.mensaje_renderizado, (ANCHO_PANTALLA//2 - self.mensaje_renderizado.get_width()//2, ALTO_PANTALLA//2))
+
+class Personalizacion:
+    def __init__(self, menu):
+        self.menu = menu
+        self.pantalla = menu.pantalla  # Pantalla donde se dibujan los aspectos de personalización
+        self.boton_cerrar = Boton(ANCHO_PANTALLA - 70, 20, 50, 50, "X", self.pantalla, ROJO, BLANCO)  # Botón para volver al menu desde alguna opcion
+        self.boton_confirmar = Boton(ANCHO_PANTALLA // 2 - 100, ALTO_PANTALLA - 150, 200, 50, "Confirmar", self.pantalla, VERDE, BLANCO)  # Botón para confirmar la personalización
+        self.musica = menu.game.canciones[0]
+        self.cambiar_modo = menu.game.cambiar_modo(self)  # Método para cambiar el modo del juego
+
+        self.fuente = fuente_texto  # Fuente del texto de la información
+        self.num_skin = 1  # Número del skin actual (1 por defecto)
+
+        self.texto_renderizado = self.fuente.render("Esta es la leyenda de:", True, BLANCO)  # Renderiza el texto de los ajustes
+        self.inputbox = InputBox(self.pantalla, ANCHO_PANTALLA // 2 - 250, 90)
+
+        self.imagenes_skins = cargar_skins(self.num_skin, puntos_iniciales_skins_jugador)  # Carga las imágenes de los skins desde la carpeta de personajes
+        self.imagen_mostrada = self.imagenes_skins["derecha"][0]  # Imagen que se muestra en la pantalla (por defecto es la imagen de la derecha del skin 1)
+        self.imagen_mostrada = pg.transform.scale(self.imagen_mostrada, (128, 128))  # Escala la imagen
+        self.lineas = dividir_texto(INFORMACION_PERSONAJES, self.num_skin)  # Divide el texto de información del personaje en líneas para que se ajuste a la pantalla
+
+    def cambio_de_skin(self, accion):
+        self.num_skin += accion
+        if self.num_skin == 4:  # Si se sale del rango de skins desde la 3era skin, vuelve a la 1era skin
+            self.num_skin = 1
+        elif self.num_skin == 0:  # Si se sale del rango de skins desde la 1era skin, vuelve a la 3era skin
+            self.num_skin = 3
+
+    def reinciar(self):  # Reinicia la personalización al skin 1 y limpia la caja de entrada de texto
+        self.num_skin = 1
+        self.inputbox.texto = ""  # Limpia la caja de entrada de texto
+
+    def actualizar(self):  # Actualiza la información del personaje según el skin seleccionado
+        self.imagenes_skins = cargar_skins(self.num_skin, puntos_iniciales_skins_jugador)  # Carga las imágenes de los skins desde la carpeta de personajes
+        self.imagen_mostrada = self.imagenes_skins["derecha"][0]  # Imagen que se muestra en la pantalla (por defecto es la imagen de la derecha del skin 1)
+        self.imagen_mostrada = pg.transform.scale(self.imagen_mostrada, (128, 128))  # Escala la imagen
+        self.lineas = dividir_texto(INFORMACION_PERSONAJES, self.num_skin)  # Divide el texto de información del personaje en líneas para que se ajuste a la pantalla
+        # print(self.num_skin)
+
+    def dibujar(self):
+        self.pantalla.fill(NEGRO)  # Limpia la pantalla
+        self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
+        self.inputbox.dibujar()
+
+        self.pantalla.blit(self.imagen_mostrada, (ANCHO_PANTALLA//2 - self.imagen_mostrada.get_width()//2 , ALTO_PANTALLA//2 - self.imagen_mostrada.get_height()//2))
+
+        # Impresión del texto
+        y = ALTO_PANTALLA//2 + self.imagen_mostrada.get_height()//2 + 32  # 32 es el espacio de separación entre el sprite y el texto
+        for linea in self.lineas:
+            render = self.fuente.render(linea, True, BLANCO)
+            x = (ANCHO_PANTALLA - render.get_width()) // 2  # Centra el texto en la pantalla
+            self.pantalla.blit(render, (x, y))
+            y += self.fuente.get_height() + 5
+        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar
+        self.boton_confirmar.dibujar()  # Dibujar el botón de confirmar la personalización
 
 
+    def eventos(self, evento):
+        self.inputbox.escribir(evento, pg.mouse.get_pos(), pg.mouse.get_pressed()[0])  # Escribe en la caja de entrada de texto
+        mouse_pos = pg.mouse.get_pos()
+        if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
+            self.menu.game.cambiar_modo(self.menu)
+        if self.boton_confirmar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
+            if self.inputbox.texto != "":  # Si se ha escrito algo en la caja de entrada
+                self.menu.game.nombre_jugador = self.inputbox.texto  # Asigna el nombre del jugador al texto escrito en la caja de entrada
+            else:
+                self.menu.game.nombre_jugador = "Jugador"  # Si no se ha escrito nada, asigna un nombre por defecto al jugador
+            self.menu.jugar = Jugar(self.menu.game, self.num_skin)  # Crea un nuevo juego con el skin seleccionado
+            self.menu.game.cambiar_modo(self.menu.jugar)  # Cambia el modo del juego al menú principal
+            self.reinciar()  # Reinicia la personalización al skin 1 y limpia la caja de entrada de texto
+
+        if evento.type == KEYDOWN:
+            if evento.key == K_RIGHT:
+                self.cambio_de_skin(+1)
+            elif evento.key == K_LEFT:
+                self.cambio_de_skin(-1)
+
+class Mejoras:
+    def __init__(self, jugar):
+        self.jugar = jugar
+        self.jugador = jugar.jugador
+        self.pantalla = jugar.pantalla
+        self.dibujar_texto = jugar.dibujar_texto
+        
+        self.puntos = self.jugador.puntaje
+        self.precio_vida = 100
+        self.precio_golpe = 100
+        self.precio_rango = 100
+        
+        self.crear_botones()
+    
+    def crear_botones(self):
+        self.boton_vida = Boton(100, 100, 200, 75, f"VIDA {self.precio_vida}", self.pantalla, VERDE)
+        self.boton_golpe = Boton(100, 300, 200, 75, f"GOLPE {self.precio_golpe}", self.pantalla, ROJO)
+        self.boton_rango = Boton(100, 500, 200, 75, f"RANGO {self.precio_rango}", self.pantalla, AZUL)
+        self.pasar_nivel = Boton(1000, 650, 200, 50, "PASAR NIVEL", self.pantalla, GRIS)
+    
+    def dibujar(self):
+        self.pantalla.fill(VERDE_AGUA)
+        
+        self.dibujar_texto("PRECIOS", 100, 50)
+        self.dibujar_texto(f"PUNTOS: {self.puntos}", 100, 650)
+        self.dibujar_texto(f"VIDAS MÁX: {self.jugador.vidas}", 400, 100 + self.boton_vida.alto // 4)
+        self.dibujar_texto(f"GOLPE: {self.jugador.golpe}", 400, 300 + self.boton_golpe.alto // 4)
+        self.dibujar_texto(f"RANGO: {self.jugador.rango}", 400, 500 + self.boton_rango.alto // 4)
+        
+        self.boton_vida.dibujar()
+        self.boton_golpe.dibujar()
+        self.boton_rango.dibujar()
+        self.pasar_nivel.dibujar()
+    
+    def actualizar(self):  # No es necesario actualizar nada en este caso, pero se deja para mantener la estructura
+        pass
+
+    def eventos(self, evento):
+        mouse_pos = pg.mouse.get_pos()
+        click_izq = pg.mouse.get_pressed()[0] #Click izquierdo
+            
+        if self.boton_vida.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
+            self.puntos -= self.precio_vida
+            self.precio_vida += 200 #  Incrementa el precio linearmente 200 cada vez
+            self.jugador.vidas += 1
+            self.jugador.vidas_max += 1 #  Aumenta la vida maxima del jugador
+            self.boton_vida.texto = f"VIDA {self.precio_vida}"
+                
+        elif self.boton_golpe.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_golpe:
+            self.puntos -= self.precio_golpe
+            self.precio_golpe += 200 #  Incrementa el precio linearmente 200 cada vez
+            self.jugador.golpe += 1
+            self.boton_golpe.texto = f"GOLPE {self.precio_golpe}"
+                
+        elif self.boton_rango.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_rango:
+            self.puntos -= self.precio_rango
+            self.precio_rango += 500 #  Incrementa el precio linearmente 500 cada vez
+            self.jugador.rango += 1
+            self.boton_rango.texto = f"RANGO {self.precio_rango}"
+                
+        elif self.pasar_nivel.detectar_presionado(mouse_pos, click_izq):
+            self.jugar.cambiar_modo(self.jugar)
+            self.jugar.pasar_nivel()
+            self.jugador.puntaje = self.puntos
+
+class Resultados:
+    def __init__(self, game):
+        self.game = game  # Acceso al menú del juego
+        self.pantalla = self.game.pantalla
+        self.musica = self.game.canciones[2]
+        self.boton_confirmar = Boton(ANCHO_PANTALLA // 2 - 100, ALTO_PANTALLA - 150, 200, 50, "Confirmar", self.pantalla, VERDE, BLANCO)  # Botón para confirmar la personalización
+        self.cambiar_modo = self.game.cambiar_modo(self)  # Método para cambiar el modo del juego
+        self.fuente = fuente_texto  # Fuente del texto de la información
+
+        self.texto = "Resultados"
+        self.texto_renderizado = self.fuente.render(self.texto, True, BLANCO)  # Renderiza el texto de los ajustes
+
+        self.puntaje_mostrado = 0
+        self.puntaje_renderizado = self.fuente.render(f"{self.puntaje_mostrado}", True, BLANCO)  # Renderiza el puntaje del jugador
+
+        self.num_skin = self.game.menu.jugar.jugador.num_skin  # Número del skin seleccionado en el menú de personalización
+        self.texto_resultado = f"¡Felicidades, {self.game.nombre_jugador}, llegando hasta el nivel {self.game.menu.jugar.manager_niveles.num_nivel} conseguiste un puntaje de:"
+
+        self.imagenes_skins = cargar_skins(self.num_skin, puntos_iniciales_skins_jugador)  # Carga las imágenes de los skins desde la carpeta de personajes
+        self.imagen_mostrada = self.imagenes_skins["derecha"][0]  # Imagen que se muestra en la pantalla (por defecto es la imagen de la derecha del skin 1)
+        self.imagen_mostrada = pg.transform.scale(self.imagen_mostrada, (128, 128))  # Escala la imagen
+        self.lineas = dividir_texto(self.texto_resultado)  # Divide el texto de información del personaje en líneas para que se ajuste a la pantalla
+        puntajes.append([self.game.nombre_jugador, self.game.menu.jugar.jugador.puntaje])  # Agrega el puntaje del jugador a la lista de puntajes
+
+    def actualizar(self):  
+        # Animación del puntaje
+        if self.puntaje_mostrado < self.game.menu.jugar.jugador.puntaje:
+            self.puntaje_mostrado += 3
+            self.puntaje_renderizado = self.fuente.render(f"{self.puntaje_mostrado}", True, BLANCO)  # Renderiza el puntaje del jugador
+        # Si nos pasamos, lo ajustamos al puntaje del jugador
+        elif self.puntaje_mostrado > self.game.menu.jugar.jugador.puntaje:
+            self.puntaje_mostrado = self.game.menu.jugar.jugador.puntaje
+            self.puntaje_renderizado = self.fuente.render(f"{self.puntaje_mostrado}", True, AMARILLO)  # Renderiza el puntaje del jugador en amarillo al terminar el conteo
+        
+    def dibujar(self):
+        self.pantalla.fill(NEGRO)  # Limpia la pantalla
+        self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
+        self.pantalla.blit(self.imagen_mostrada, (ANCHO_PANTALLA//2 - self.imagen_mostrada.get_width()//2 , ALTO_PANTALLA//2 - self.imagen_mostrada.get_height()//2))
+
+        # Impresión del texto
+        y = ALTO_PANTALLA//2 + self.imagen_mostrada.get_height()//2 + 32  # 32 es el espacio de separación entre el sprite y el texto
+        for linea in self.lineas:
+            render = self.fuente.render(linea, True, BLANCO)
+            x = (ANCHO_PANTALLA - render.get_width()) // 2  # Centra el texto en la pantalla
+            self.pantalla.blit(render, (x, y))
+            y += self.fuente.get_height() + 5
+        self.pantalla.blit(self.puntaje_renderizado, (ANCHO_PANTALLA//2 - self.puntaje_renderizado.get_width()//2 , ALTO_PANTALLA//2 + self.imagen_mostrada.get_height()//2 + self.fuente.get_height() + 37))
+        self.boton_confirmar.dibujar()  # Dibujar el botón de confirmar y volver al menú principal
+
+    def eventos(self, evento):  # evento no se usa realmente, ya que no se escribe nada, pero es por continuidad y para que se pueda usar en el bucle de eventos del juego
+        mouse_pos = pg.mouse.get_pos()
+        if self.boton_confirmar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
+            self.game.cambiar_modo(self.game.menu)  # Cambia el modo del juego al menú principal
 
 class Menu:
     def __init__(self, game):
         self.game = game
         self.pantalla = game.pantalla  # Pantalla donde se dibuja el menú
-        self.cambiar_modo = game.cambiar_modo
         self.volumen = game.volumen
-        
-        self.boton_cerrar = Boton(ANCHO_PANTALLA - 70, 20, 50, 50, "X", self.pantalla, ROJO, BLANCO)  # Botón para volver al menu desde alguna opcion
         
         #Opciones del menu
         self.ajustes = Ajustes(self)
         self.info = Informacion(self)
         self.puntajes = Puntajes(self)
-        self.opcion_a_funcion = {"Jugar":game.jugar, "Ajustes":self.ajustes, "Puntajes": self.puntajes,"Información":self.info, "Salir":None} #Mapea el nombre de las opciones a ellas
+        self.personalizacion = Personalizacion(self)
+        self.opcion_a_funcion = {"Jugar":self.personalizacion, 
+                                 "Ajustes":self.ajustes, 
+                                 "Puntajes": self.puntajes,
+                                 "Información":self.info, 
+                                 "Salir":None} #Mapea el nombre de las opciones a ellas
 
         self.musica = game.canciones[0]
         self.botones = self.crear_botones()  # Crea los botones del menú
         self.logo = cargar_logo()
+
+    def crear_juego(self):
+        self.game.jugar = Jugar(self.game, 2)
 
     def crear_botones(self):
         botones = []  # Lista de botones del menú
@@ -1153,17 +1429,21 @@ class Menu:
         for boton in self.botones:  # Dibuja cada botón en la pantalla
             boton.dibujar()
         self.pantalla.blit(self.logo, (ANCHO_PANTALLA // 2 - self.logo.get_width() // 2, - 20))  # Dibuja el logo del juego en la parte superior de la pantalla
-        
-    def eventos(self, evento):
+
+    def actualizar(self):  # El menú no requiere actualizarse, por lo que se deja en pass
+        pass
+
+    def eventos(self, evento):  # Como no tiene para presionar teclas, "evento" no es realmente necesario, pero es por continuidad
         mouse_pos = mouse.get_pos()
         for boton in self.botones:  # Recorre la lista de botones del menú
             if boton.detectar_presionado(mouse_pos, mouse.get_pressed()[0]): #Si detecta click izquierdo
-                self.cambiar_modo(self.opcion_a_funcion[boton.texto]) #Mapea el texto del boton a un modo de juego
+                self.game.cambiar_modo(self.opcion_a_funcion[boton.texto]) #Mapea el texto del boton a un modo de juego
 
+# ==========================================================================
+#  LÓGICA PARA EL PASO DE NIVELES Y JUEGO
+# ==========================================================================
 
-    def actualizar(self):
-        pass
-    
+# Clase que maneja los niveles del juego, carga los niveles y sprites, y permite pasar de nivel
 class Niveles:
     def __init__(self, jugar):
         self.jugar = jugar
@@ -1204,41 +1484,10 @@ class Niveles:
             
         elif num_nivel == len(self.niveles): # Se devuelve al primer nivel al terminar TODO (por que se devuelve? No deberia terminar y ya)
             self.nivel = self.num_niveles[0]
-            
-        else:
-            pass #TODO poner resultados o no se que queria hacer Juan
 
-class DestruyeBloque:
-    def __init__(self, jugar, x, y):
-        self.jugar = jugar
-        self.pantalla = jugar.pantalla
-        self.jugar.capas[4].append(self) #Capa del nivel
-        self.x = x
-        self.y = y
-        self.sprite = jugar.manager_niveles.sprites[2]
-        self.frames_totales = 10
-        self.frame_actual = 0
-        self.terminado = False
-        
-    def actualizar(self):
-        self.frame_actual += 1
-        if self.frame_actual >= self.frames_totales:
-            self.jugar.capas[4].remove(self)
-
-    def dibujar(self):
-        # Escala proporcional inversa
-        escala = max(1, int(MEDIDA_BLOQUE * max(0.01, 1 - self.frame_actual / self.frames_totales)))
-        sprite_escalado = pg.transform.scale(self.sprite, (escala, escala))
-
-        # Para que se mantenga centrado al reducir tamaño
-        offset_x = (MEDIDA_BLOQUE - escala) // 2
-        offset_y = (MEDIDA_BLOQUE - escala) // 2
-        self.pantalla.blit(sprite_escalado, (self.x * MEDIDA_BLOQUE + offset_x, self.y * MEDIDA_BLOQUE + offset_y))
-
-
-# Clase del juego
+# Clase del juego: crea todo lo relacionado con el jugador y los elementos visuales que lo acompañan
 class Jugar:
-    def __init__(self, game):
+    def __init__(self, game, num_skin):
         self.game = game
         self.pantalla = game.pantalla  # Pantalla donde se dibuja el juego
         self.pantalla_juego = Surface((ANCHO_PANTALLA - 2*SEPARACION_BORDES_PANTALLA, ALTO_PANTALLA - MEDIDA_HUD - SEPARACION_BORDES_PANTALLA))
@@ -1247,20 +1496,20 @@ class Jugar:
         self.sprites_bomba = game.sprites_bomba
         self.dibujar_texto = game.dibujar_texto # Toma el metodo de dibujar texto
         
-        self.debug = False #G para cambiar (muestra hitboxes y gridlines)
+        self.debug = False  # G para cambiar (muestra hitboxes y gridlines)
         self.manager_niveles = Niveles(self)
         self.nivel = self.manager_niveles.nivel
-        self.jugador = Jugador(self)
+        self.jugador = Jugador(self, num_skin)  # Crea el jugador con el skin seleccionado
         self.mejoras = Mejoras(self)
         self.hud = HUD(self)  # Crea el HUD del juego
         self.lista_pegamento = []  # Lista para almacenar los pegamentos que sueltan los enemigos
         self.capas = {
-            0:[self.manager_niveles], #  El fondo
-            1:self.asignar_extras(),  #  Capa para objetos (llave, objetos, etc)
-            2:[], #  Capa para bombas y pegamento
-            3:self.colocar_enemigos(),
+            0:[self.manager_niveles],  # El fondo
+            1:self.asignar_extras(),  # Capa para objetos (llave, objetos, etc)
+            2:[],  # Capa para bombas y pegamento
+            3:self.colocar_enemigos(),  # Capa para enemigos y elementos que dañan al jugador
             4:[self.jugador],
-            5:[]} #  Capa para explosiones
+            5:[]}  # Capa para explosiones
         
     def colocar_enemigos(self):
         coords_ocupadas = [(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR)]
@@ -1274,8 +1523,21 @@ class Jugar:
                 coords_ocupadas.append((x, y))
                 enemigo = Enemigo(self, (x-1) * MEDIDA_BLOQUE, (y-1) * MEDIDA_BLOQUE)
                 enemigos.append(enemigo)
-        
         return enemigos
+    
+    def colocar_venenos(self):
+        # Coloca los venenos en posiciones aleatorias del nivel, evitando que aparezcan cerca del jugador, a partir del nivel 2
+        coords_ocupadas = [(X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR), (ANCHO_MATRIZ, self.capas[1][0].y_bloque)]  # Evita que aparezcan cerca del jugador y de la puerta
+        venenos = []
+        while len(venenos) < CANTIDAD_VENENOS:
+            x = randint(5, ANCHO_MATRIZ) # Inicia desde 5 para evitar que aparezcan cerca del jugador
+            y = randint(5, ALTO_MATRIZ)  # Inicia desde 5 para evitar que aparezcan cerca del jugador
+                
+            if (x, y) not in coords_ocupadas and self.nivel[y][x] == 0:
+                coords_ocupadas.append((x, y))
+                veneno = Veneno(self, (x-1) * MEDIDA_BLOQUE, (y-1) * MEDIDA_BLOQUE)
+                venenos.append(veneno)
+        return venenos
 
     def pasar_nivel(self):
         self.nivel = self.manager_niveles.pasar_nivel()
@@ -1383,7 +1645,7 @@ class Jugar:
                 else:
                     self.debug = False
                     self.jugador.vidas = VIDAS
-                    self.jugador.bombas = BOMBAS_DISPONIBLES
+                    self.jugador.cantidad_bombas = CANTIDAD_BOMBAS + self.manager_niveles.num_nivel  # Reinicia las bombas al salir del modo debug
             
             elif evento.key == K_p:
                 self.pasar_nivel()
@@ -1407,118 +1669,14 @@ class Jugar:
         else:
             self.jugador.game_over.dibujar()
 
-
-class Mejoras:
-    def __init__(self, jugar):
-        self.jugar = jugar
-        self.jugador = jugar.jugador
-        self.pantalla = jugar.pantalla
-        self.dibujar_texto = jugar.dibujar_texto
-        
-        self.puntos = self.jugador.puntaje
-        self.precio_vida = 100
-        self.precio_golpe = 100
-        self.precio_rango = 100
-        
-        self.crear_botones()
-    
-    def crear_botones(self):
-        self.boton_vida = Boton(100, 100, 200, 75, f"VIDA {self.precio_vida}", self.pantalla, VERDE)
-        self.boton_golpe = Boton(100, 300, 200, 75, f"GOLPE {self.precio_golpe}", self.pantalla, ROJO)
-        self.boton_rango = Boton(100, 500, 200, 75, f"RANGO {self.precio_rango}", self.pantalla, AZUL)
-        self.pasar_nivel = Boton(1000, 650, 200, 50, "PASAR NIVEL", self.pantalla, GRIS)
-    
-    def dibujar(self):
-        self.pantalla.fill(VERDE_AGUA)
-        
-        self.dibujar_texto("PRECIOS", 100, 50)
-        self.dibujar_texto(f"PUNTOS: {self.puntos}", 100, 650)
-        self.dibujar_texto(f"VIDAS MÁX: {self.jugador.vidas}", 400, 100 + self.boton_vida.alto // 4)
-        self.dibujar_texto(f"GOLPE: {self.jugador.golpe}", 400, 300 + self.boton_golpe.alto // 4)
-        self.dibujar_texto(f"RANGO: {self.jugador.rango}", 400, 500 + self.boton_rango.alto // 4)
-        
-        self.boton_vida.dibujar()
-        self.boton_golpe.dibujar()
-        self.boton_rango.dibujar()
-        self.pasar_nivel.dibujar()
-    
-    def actualizar(self):
-        mouse_pos = pg.mouse.get_pos()
-        click_izq = pg.mouse.get_pressed()[0] #Click izquierdo
-            
-        if self.boton_vida.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
-            self.puntos -= self.precio_vida
-            self.precio_vida += 200 #  Incrementa el precio linearmente 200 cada vez
-            self.jugador.vidas += 1
-            self.jugador.vidas_max += 1 #  Aumenta la vida maxima del jugador
-            self.boton_vida.texto = f"VIDA {self.precio_vida}"
-                
-        elif self.boton_golpe.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_golpe:
-            self.puntos -= self.precio_golpe
-            self.precio_golpe += 200 #  Incrementa el precio linearmente 200 cada vez
-            self.jugador.golpe += 1
-            self.boton_golpe.texto = f"GOLPE {self.precio_golpe}"
-                
-        elif self.boton_rango.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_rango:
-            self.puntos -= self.precio_rango
-            self.precio_rango += 500 #  Incrementa el precio linearmente 500 cada vez
-            self.jugador.rango += 1
-            self.boton_rango.texto = f"RANGO {self.precio_rango}"
-                
-        elif self.pasar_nivel.detectar_presionado(mouse_pos, click_izq):
-            self.jugar.cambiar_modo(self.jugar)
-            self.jugar.pasar_nivel()
-            self.jugador.puntaje = self.puntos
-            
-    def eventos(self, evento):
-        pass
-
-class Deslizante:
-    def __init__(self, pantalla, x, y, ancho, alto, parametro, min_parametro=0, max_parametro=1, radio_control=10):
-        self.pantalla = pantalla
-        self.x = x
-        self.y = y
-        self.ancho = ancho
-        self.alto = alto
-        self.parametro = parametro #Valor a cambiar cuando se desliza la barra
-        self.min_parametro = min_parametro #Minimo valor que puede tomar
-        self.max_parametro = max_parametro #Maximo valor que puede tomar
-        self.radio = radio_control
-        
-        self.x_control = self.x + int(self.ancho * self.parametro)  # Posición del control en x
-        self.deslizando = False #Indica si se esta deslizando la barra
-        
-    def eventos(self, evento):
-        mouse_pos = pg.mouse.get_pos()
-        if evento.type == pg.MOUSEBUTTONDOWN:
-            if abs(mouse_pos[0] - self.x_control) <= self.radio and abs(mouse_pos[1] - (self.y) + self.alto // 2) <= self.radio:  # Si el cursor está cerca del control deslizante
-                self.deslizando = True  # Indica que se está arrastrando el control de la barra
-            
-        elif evento.type == pg.MOUSEBUTTONUP:
-            self.deslizando = False #Suelta el deslizante
-            
-    def actualizar(self):
-        if self.deslizando:  # Si se está arrastrando la barra de sonido
-            self.x_control = self.x + int(self.ancho * self.parametro)  # Posición del control en x
-            self.parametro = max(0, min(1, (pg.mouse.get_pos()[0] - self.x) / self.ancho))  # Calcula el nuevo valor del parametro según la posición del mouse
-    
-    def dibujar(self):
-        pg.draw.rect(self.pantalla, GRIS, (self.x, self.y, self.ancho, self.alto))  # Dibuja el fondo de la barra
-        pg.draw.rect(self.pantalla, VERDE, (self.x, self.y, self.ancho * self.parametro, self.alto))
-        pg.draw.circle(self.pantalla, BLANCO, (self.x_control, self.y + self.alto // 2), self.radio)  # Dibuja el control deslizante en la barra de sonido
-        
-
-class Resultados:
-    def __init__(self, game):
-        self.pantalla = game.pantalla
-        self.musica = game.canciones[2]
-        # TODO
+# ==========================================================================
+#  CLASE MAESTRA DEL JUEGO
+# ==========================================================================
 
 # Clase game que maneja a todas las otras clases
 class Game: 
     def __init__(self):
         init()  # Inicializamos Pygame
-        
         self.pantalla = display.set_mode((ANCHO_PANTALLA, ALTO_PANTALLA))  # Configura la ventana
         display.set_caption("Wooly Warfare")  # Título de la ventana
         self.clock = time.Clock()  # Crea un objeto de reloj para controlar la tasa de refresco, necesario para la física y el movimiento
@@ -1531,8 +1689,8 @@ class Game:
         self.volumen = VALOR_INCIAL_VOLUMEN  # Volumen inicial del juego
         
         self.sprites_bomba = cargar_bomba()
-        
-        self.jugar = Jugar(self) #Crea una instancia del juego
+        self.nombre_jugador = None  # Nombre del jugador, se puede cambiar en el menú de personalización
+
         self.menu = Menu(self)  # Crea una instancia del menú
 
         self.modo = self.menu #Inicia en el modo menu
@@ -1554,22 +1712,22 @@ class Game:
 
     def cambiar_modo(self, modo):
         if modo == None:
+            guardar_archivo(ARCHIVO_PUNTAJES, str(puntajes))  # Guarda los puntajes en el archivo antes de salir
             self.running = False
         else:
             self.modo_previo = modo
             self.modo = modo
             self.administrar_musica() #Cambia a la musica del modo respectivo
-        
     
     def eventos(self):
         for evento in event.get():
             if evento.type == QUIT:
+                guardar_archivo(ARCHIVO_PUNTAJES, str(puntajes))  # Guarda los puntajes en el archivo antes de salir
                 self.running = False
             self.modo.eventos(evento) #Corre los eventos del modo activo
     
     def actualizar(self):
         self.modo.actualizar()
-
 
     def dibujar(self):
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
@@ -1591,15 +1749,7 @@ if __name__ == "__main__": #solo se ejecuta si se hace run, no si es import
 
 
 
-
-
 """
 # TODO:
-# 1. Implementar la clase Enemigo con sus métodos de movimiento y ataque.
 # 4. Implementar la clase Jefe con sus mecánicas de ataque y vida.
-# 7. Implementar un sistema de HUD para mostrar la vida del jugador, bombas restantes y puntaje.
-# 9. Implementar un sistema de guardados y almacenamiento de puntajes
-# 11. Implementar un sistema de personalización del jugador (skins)
-# 12. Implementar pantallas de fin de juego. 
-# 13. Revisar todo lo que diga todo o pass
 """
