@@ -1550,32 +1550,6 @@ class Jugar:
         return venenos
 
     def pasar_nivel(self):
-<<<<<<< HEAD:merge.py
-        self.nivel = self.manager_niveles.pasar_nivel()
-        self.jugador.pasar_nivel(self.nivel)
-        if self.manager_niveles.num_nivel == len(self.manager_niveles.niveles):
-            self.iniciar_nivel_jefe()
-        else:
-            self.iniciar_nivel_jefe() #CAMBIAR
-            
-    
-    def iniciar_nivel_normal(self):
-        self.capas[1] = self.asignar_extras()
-        self.capas[3] = self.colocar_enemigos() #Pone los enemigos
-        self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
-        # Reinicio de las estadísticas de los caramelos
-        for _ in range(self.jugador.contador_rojos):
-            self.jugador.golpe -= 1
-        for _ in range(self.jugador.contador_azules):
-            self.jugador.rango -= 1
-        # Reinicio de los contadores de caramelos
-        self.jugador.contador_rojos = 0
-        self.jugador.contador_azules = 0
-    
-    def iniciar_nivel_jefe(self):
-        self.capas[3] = [Jefe(self, 10, 5)]
-        
-=======
         if self.manager_niveles.pasar_nivel():
             self.nivel = self.manager_niveles.nivel #Cambia los datos de nivel
             self.jugador.rect.topleft = X_INICIAL_JUGADOR, Y_INICIAL_JUGADOR #Reinicia la pos del jugador
@@ -1585,7 +1559,6 @@ class Jugar:
             self.capas[3] = self.colocar_venenos() + self.colocar_enemigos() # Pone los elementos que dañan al jugador
             self.jugador.invulnerabilidad() #Hace el jugador invulnerable al iniciar el nivel
             # Reinicio de las estadísticas de los caramelos
->>>>>>> d304205670b6bf9c0ebae2994ac1a6dad9ed12dd:main.py
     
     def menu_mejoras(self):
         self.game.modo_previo = self
