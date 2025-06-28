@@ -13,13 +13,15 @@ from niveles import *
 # Además, dejé un espacio de 16 pixeles entre la matriz y el borde inferior, para que no se vea tan pegado
 # Haremos los niveles con matrices (11x26), y como no se requiere crear nuevos, podemos ponerlos dentro del archivo de código
 
-"""
+# ==========================================================================
+#  GUARDADO Y LECTURA DE ARCHIVOS
+# ==========================================================================
+
 # Guarda un string en un archivo
 def guardar_archivo(file_path, content):
         archivo = open(file_path, 'w')  # w crea o trunca el archivo
         archivo.write(content)
         archivo.close()
-"""
         
 # Lee la información de un archivo y devuelve su contenido evaluado según su formato
 def leer_archivo(path):
@@ -75,6 +77,10 @@ def dividir_texto(texto, indice_skin=None):
 font.init()  # Inicializa el módulo de fuentes de Pygame
 fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto del juego
 
+# ==========================================================================
+#  ELEMENTOS RELACIONADOS CON EL JUGADOR
+# ==========================================================================
+
 # Clase Jugador
 class Jugador:
     def __init__(self, jugar, num_skin=2):
@@ -83,8 +89,8 @@ class Jugador:
         self.nivel = jugar.nivel  # Nivel actual del jugador (se usa para verificar colisiones)
 
         self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
-        self.numero_skin = num_skin  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
-        self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
+        self.num_skin = num_skin  # Número de skin del jugador (se puede cambiar para personalizar el jugador)
+        self.skin_hoja_sprites = cargar_skins(self.num_skin, puntos_iniciales_skins_jugador)  # Carga la skin del jugador desde la hoja de sprites
 
         self.direccion = "abajo"  # Dirección inicial del jugador (y a la que está mirando)
         self.frame = 0  # Frame actual del sprite del jugador
@@ -98,7 +104,7 @@ class Jugador:
         self.rango = 1 # Rango inicial de la bomba
         self.moviendose = False  # Indica si el jugador se está moviendo o no
         
-        self.puntaje = 100000  # Puntaje del jugador
+        self.puntaje = 0  # Puntaje del jugador
 
         # Habilidades e ítems del jugador
         self.tiene_habilidad = True  # Indica si el jugador tiene la habilidad especial
@@ -226,26 +232,26 @@ class Jugador:
         if self.tiene_habilidad:  # Si el jugador no tiene la habilidad especial
             self.habilidad_en_uso = True
             self.tiene_habilidad = False  # Desactiva la bandera de la habilidad especial
-            if self.numero_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
+            if self.num_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
                 self.atraviesa_destructibles = True
-            elif self.numero_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
+            elif self.num_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
                 self.rango += 3  # Aumenta el rango de las bombas del jugador
                 self.golpes_penetrantes = True  # Las bombas del jugador no se detienen al tocar muros destructibles
-            elif self.numero_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
+            elif self.num_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
                 self.enemigos_congelados = True  # Congela a los enemigos por un tiempo limitado
 
             def reestablecer():
                 sleep(DURACION_EFECTOS / 1000)  # Espera el tiempo de duración del efecto de la habilidad especial
-                if self.numero_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
+                if self.num_skin == 1:  # Si el jugador es de skin 1 (Oveja común)
                     # Reduce el lag usando un sleep más largo y chequeos menos frecuentes
                     while self.verificar_en_bloque_destructible(self.rect):
                         self.atraviesa_destructibles = True
                         sleep(0.1)  # Chequea cada 100ms en vez de un bucle apretado
                     self.atraviesa_destructibles = False  # Vuelve a la normalidad al salir del bloque destructible
-                elif self.numero_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
+                elif self.num_skin == 2:  # Si el jugador es de skin 2 (Oveja albina)
                     self.rango -= 3  # Vuelve al rango normal de las bombas del jugador
                     self.golpes_penetrantes = False  # Las bombas del jugador se detienen al tocar muros destructibles00000
-                elif self.numero_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
+                elif self.num_skin == 3:  # Si el jugador es de skin 3 (Oveja rosada)
                     self.enemigos_congelados = False  # Descongela a los enemigos
                 self.habilidad_en_uso = False  # Vuelve a activar la bandera de la habilidad especial
                 self.tiempo_desde_habilidad = pg.time.get_ticks()  # Reinicia el tiempo desde que se usó la habilidad especial
@@ -294,7 +300,7 @@ class Jugador:
             hilo.daemon = True
             hilo.start()
         else:
-            self.game_over = GameOver(self.jugar.pantalla)  # Si no tiene vidas, se muestra la pantalla de Game Over
+            self.jugar.resultados = Resultados(self.jugar.game)  # Si no tiene vidas, se muestra la pantalla de Game Over
     
     def invulnerabilidad(self):
         self.invulnerable = True
@@ -314,154 +320,6 @@ class Jugador:
 
             elif evento.key == K_e:  # Si le da a E
                 self.habilidad()  # Usa la habilidad especial del jugador
-
-class GameOver:
-    def __init__(self, pantalla):
-        self.pantalla = pantalla  # Pantalla donde se dibuja la pantalla de Game Over
-        self.imagen = cargar_gameover()
-
-    def dibujar(self):
-        self.pantalla.fill(NEGRO)  # Limpia la pantalla con un color
-        self.pantalla.blit(self.imagen, (0, 0))  # Dibuja la pantalla de Game Over
-        
-
-
-class Enemigo:
-    def __init__(self, jugar, x, y):
-        self.jugar = jugar
-        self.jugador = jugar.jugador
-        self.pantalla = jugar.pantalla_juego
-        self.nivel = jugar.nivel
-        self.x = x
-        self.y = y
-        self.num_nivel = jugar.manager_niveles.num_nivel
-
-        self.frame = 0
-        self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
-        self.numero_skin = self.num_nivel  # Número de skin del enemigo (se puede cambiar para hacerlo más complicado)
-        self.skin_hoja_sprites = cargar_skins(self.numero_skin, puntos_inciales_skins_enemigos)  # Carga la skin del enemigo desde la hoja de sprites
-        self.vidas = self.num_nivel # La cantidad de vida de los enemigos será igual al número de nivel
-        self.velocidad = 2
-        self.rect = Rect(self.x, self.y, int(MEDIDA_BLOQUE*0.75), int(MEDIDA_BLOQUE*0.75))  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
-        self.movimientos = {"arriba" : (0, -self.velocidad), "abajo" : (0, self.velocidad), "izquierda" : (-self.velocidad, 0), "derecha" : (self.velocidad, 0)}  # Diccionario con los movimientos posibles
-        self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
-        self.sprite = self.skin_hoja_sprites[self.movimiento_elegido][self.frame] #Sprite inicial del enemigo
-        
-        self.moviendose = False
-
-    # Mueve al enemigo en una dirección aleatoria
-    def actualizar(self):
-        if self.jugador.enemigos_congelados:  # Si el jugador tiene enemigos congelados, no se mueve
-            return
-        if self.num_nivel >= 3:  # Si el nivel es 3, el enemigo suelta pegamento
-            self.soltar_pegamento()
-        dx, dy = self.movimientos[self.movimiento_elegido]
-        # Movimiento en eje X
-        rect_dx = self.rect.move(dx, 0)
-        if self.verificar_colision(rect_dx):  # Si puede moverse
-            self.rect = rect_dx
-            self.x = self.rect.x
-            self.y = self.rect.y
-        else:
-            self.movimiento_elegido = choice(list(self.movimientos.keys()))
-            return  # Sale para que el nuevo movimiento se intente en el siguiente frame
-
-        # Movimiento en eje Y
-        rect_dy = self.rect.move(0, dy)
-        if self.verificar_colision(rect_dy):  # Si puede moverse
-            self.rect = rect_dy
-            self.x = self.rect.x
-            self.y = self.rect.y
-        else:
-            self.movimiento_elegido = choice(list(self.movimientos.keys()))
-
-        self.actualizar_frame_sprite()  # Actualiza el frame del sprite del enemigo
-        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
-            self.jugador.morir()
-
-    
-    def verificar_colision(self, rect):
-        #Hay un offset de 1 porque hay un borde no visible de bloques solidos
-        esquinas = (
-            (izq := rect.left // MEDIDA_BLOQUE+1, arriba := rect.top // MEDIDA_BLOQUE+1), #Superior izquierda
-            (izq, abajo := rect.bottom // MEDIDA_BLOQUE+1), #Inferior izquierda
-            (der := rect.right // MEDIDA_BLOQUE+1, arriba), #Superior derecha
-            (der, abajo) #Inferior derecha
-        )
-        
-        #Verifica si alguna esquina esta en un tile que no sea aire
-        for x, y in esquinas:
-            if self.nivel[y][x] != 0: #Si no es aire
-                return False
-            for bomba in self.jugar.capas[2]: #Verificar si hay una bomba
-                if (x, y) == (bomba.bx, bomba.by):
-                    return False
-        return True
-    
-    def actualizar_frame_sprite(self):
-        if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el enemigo se está moviendo y han pasado 150ms
-            self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
-            self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
-        self.sprite = self.skin_hoja_sprites[self.movimiento_elegido][self.frame]
-
-    def soltar_pegamento(self):
-        pos = (self.rect.centerx // MEDIDA_BLOQUE + 1, self.rect.centery // MEDIDA_BLOQUE + 1)
-        posiciones_pegamento = [(el.bx, el.by) for el in self.jugar.lista_pegamento]
-        if pos not in posiciones_pegamento:
-            pegamento = Pegamento(self)  # Crea un pegamento si no hay uno en la misma posición
-            self.jugar.lista_pegamento.append(pegamento)
-            # print(len(self.jugar.lista_pegamento))  # Para debug, muestra la cantidad de pegamento en pantalla
-
-    #  Dibuja al enemigo en la pantalla
-    def dibujar(self):
-        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
-        
-
-class Pegamento:  # Los enemigos más avanzados sueltan pegamento al moverse, que ralentiza al jugador
-    def __init__(self, enemigo):
-        self.jugar = enemigo.jugar
-        self.pantalla = enemigo.pantalla
-        self.bx = enemigo.rect.centerx//MEDIDA_BLOQUE+1 #Bloque en x
-        self.by = enemigo.rect.centery//MEDIDA_BLOQUE+1 #Bloque en y
-        self.x = (self.bx-1) * MEDIDA_BLOQUE #X en pixeles
-        self.y = (self.by-1) * MEDIDA_BLOQUE #Y en pixeles
-        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al pegamento en el canvas
-        self.sprite = cargar_pegamento()  # Carga la skin del pegamento desde la hoja de sprites
-        self.activo = True  # Indica si el pegamento está activo
-        self.tiempo_creacion = pg.time.get_ticks()  # Tiempo de creación del pegamento
-        self.hilo = Thread(target=self.duracion)  # Crea un hilo para actualizar el pegamento
-        self.hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
-        self.hilo.start()
-
-    def actualizar(self):
-        pass
-
-    def duracion(self):
-        sleep(PEGAMENTO_DURACION / 1000) 
-        self.activo = False  # Desactiva el pegamento después de un tiempo
-        self.jugar.lista_pegamento.remove(self)
-
-    def dibujar(self):
-
-        self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja el sprite
-
-class Veneno:
-    def __init__(self, jugar, x, y):
-        self.jugar = jugar
-        self.pantalla = jugar.pantalla_juego
-        self.jugador = jugar.jugador
-        self.x = x
-        self.y = y
-        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al veneno en el canvas
-        self.sprite = cargar_veneno()  # Carga la skin el veneno desde la hoja de sprites
-
-    def actualizar(self):
-        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
-            self.jugador.morir()
-
-    def dibujar(self):
-        self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja el sprite
-
 
 class Bomba:
     def __init__(self, jugador):
@@ -636,8 +494,297 @@ class Explosion:
 
             self.pantalla.blit(self.sprites[llave][subframe], (x-MEDIDA_BLOQUE, y-MEDIDA_BLOQUE))
 
+class DestruyeBloque:
+    def __init__(self, jugar, x, y):
+        self.jugar = jugar
+        self.pantalla = jugar.pantalla
+        self.jugar.capas[4].append(self) #Capa del nivel
+        self.x = x
+        self.y = y
+        self.sprite = jugar.manager_niveles.sprites[2]
+        self.frames_totales = 10
+        self.frame_actual = 0
+        self.terminado = False
+        
+    def actualizar(self):
+        self.frame_actual += 1
+        if self.frame_actual >= self.frames_totales:
+            self.jugar.capas[4].remove(self)
+
+    def dibujar(self):
+        # Escala proporcional inversa
+        escala = max(1, int(MEDIDA_BLOQUE * max(0.01, 1 - self.frame_actual / self.frames_totales)))
+        sprite_escalado = pg.transform.scale(self.sprite, (escala, escala))
+
+        # Para que se mantenga centrado al reducir tamaño
+        offset_x = (MEDIDA_BLOQUE - escala) // 2
+        offset_y = (MEDIDA_BLOQUE - escala) // 2
+        self.pantalla.blit(sprite_escalado, (self.x * MEDIDA_BLOQUE + offset_x, self.y * MEDIDA_BLOQUE + offset_y))
+
+# ==========================================================================
+#  ELEMENTOS HOSTILES HACIA EL JUGADOR
+# ==========================================================================
+
+class Enemigo:
+    def __init__(self, jugar, x, y):
+        self.jugar = jugar
+        self.jugador = jugar.jugador
+        self.pantalla = jugar.pantalla_juego
+        self.nivel = jugar.nivel
+        self.x = x
+        self.y = y
+        self.num_nivel = jugar.manager_niveles.num_nivel
+
+        self.frame = 0
+        self.ultima_actualizacion_frame = time.get_ticks()  # Tiempo de la última actualización del sprite
+        self.num_skin = self.num_nivel  # Número de skin del enemigo (se puede cambiar para hacerlo más complicado)
+        self.skin_hoja_sprites = cargar_skins(self.num_skin, puntos_inciales_skins_enemigos)  # Carga la skin del enemigo desde la hoja de sprites
+        self.vidas = self.num_nivel # La cantidad de vida de los enemigos será igual al número de nivel
+        self.velocidad = 2
+        self.rect = Rect(self.x, self.y, int(MEDIDA_BLOQUE*0.75), int(MEDIDA_BLOQUE*0.75))  # Rectángulo que representa al enemigo en el canvas (uso para colisiones)
+        self.movimientos = {"arriba" : (0, -self.velocidad), "abajo" : (0, self.velocidad), "izquierda" : (-self.velocidad, 0), "derecha" : (self.velocidad, 0)}  # Diccionario con los movimientos posibles
+        self.movimiento_elegido = choice(list(self.movimientos.keys()))  # Elige un movimiento aleatorio del diccionario
+        self.sprite = self.skin_hoja_sprites[self.movimiento_elegido][self.frame] #Sprite inicial del enemigo
+        
+        self.moviendose = False
+
+    # Mueve al enemigo en una dirección aleatoria
+    def actualizar(self):
+        if self.jugador.enemigos_congelados:  # Si el jugador tiene enemigos congelados, no se mueve
+            return
+        if self.num_nivel >= 3:  # Si el nivel es 3, el enemigo suelta pegamento
+            self.soltar_pegamento()
+        dx, dy = self.movimientos[self.movimiento_elegido]
+        # Movimiento en eje X
+        rect_dx = self.rect.move(dx, 0)
+        if self.verificar_colision(rect_dx):  # Si puede moverse
+            self.rect = rect_dx
+            self.x = self.rect.x
+            self.y = self.rect.y
+        else:
+            self.movimiento_elegido = choice(list(self.movimientos.keys()))
+            return  # Sale para que el nuevo movimiento se intente en el siguiente frame
+
+        # Movimiento en eje Y
+        rect_dy = self.rect.move(0, dy)
+        if self.verificar_colision(rect_dy):  # Si puede moverse
+            self.rect = rect_dy
+            self.x = self.rect.x
+            self.y = self.rect.y
+        else:
+            self.movimiento_elegido = choice(list(self.movimientos.keys()))
+
+        self.actualizar_frame_sprite()  # Actualiza el frame del sprite del enemigo
+        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
+            self.jugador.morir()
+
+    
+    def verificar_colision(self, rect):
+        #Hay un offset de 1 porque hay un borde no visible de bloques solidos
+        esquinas = (
+            (izq := rect.left // MEDIDA_BLOQUE+1, arriba := rect.top // MEDIDA_BLOQUE+1), #Superior izquierda
+            (izq, abajo := rect.bottom // MEDIDA_BLOQUE+1), #Inferior izquierda
+            (der := rect.right // MEDIDA_BLOQUE+1, arriba), #Superior derecha
+            (der, abajo) #Inferior derecha
+        )
+        
+        #Verifica si alguna esquina esta en un tile que no sea aire
+        for x, y in esquinas:
+            if self.nivel[y][x] != 0: #Si no es aire
+                return False
+            for bomba in self.jugar.capas[2]: #Verificar si hay una bomba
+                if (x, y) == (bomba.bx, bomba.by):
+                    return False
+        return True
+    
+    def actualizar_frame_sprite(self):
+        if time.get_ticks() - self.ultima_actualizacion_frame > 150:  # Si el enemigo se está moviendo y han pasado 150ms
+            self.ultima_actualizacion_frame = time.get_ticks() # Reinicia el tiempo de la última actualización del sprite
+            self.frame = (self.frame + 1) % len(self.skin_hoja_sprites) # Frame ciclico, se reinicia cuando llega al final
+        self.sprite = self.skin_hoja_sprites[self.movimiento_elegido][self.frame]
+
+    def soltar_pegamento(self):
+        pos = (self.rect.centerx // MEDIDA_BLOQUE + 1, self.rect.centery // MEDIDA_BLOQUE + 1)
+        posiciones_pegamento = [(el.bx, el.by) for el in self.jugar.lista_pegamento]
+        if pos not in posiciones_pegamento:
+            pegamento = Pegamento(self)  # Crea un pegamento si no hay uno en la misma posición
+            self.jugar.lista_pegamento.append(pegamento)
+            # print(len(self.jugar.lista_pegamento))  # Para debug, muestra la cantidad de pegamento en pantalla
+
+    #  Dibuja al enemigo en la pantalla
+    def dibujar(self):
+        self.pantalla.blit(self.sprite, self.sprite.get_rect(center=self.rect.center))
+        
+class Pegamento:  # Los enemigos más avanzados sueltan pegamento al moverse, que ralentiza al jugador
+    def __init__(self, enemigo):
+        self.jugar = enemigo.jugar
+        self.pantalla = enemigo.pantalla
+        self.bx = enemigo.rect.centerx//MEDIDA_BLOQUE+1 #Bloque en x
+        self.by = enemigo.rect.centery//MEDIDA_BLOQUE+1 #Bloque en y
+        self.x = (self.bx-1) * MEDIDA_BLOQUE #X en pixeles
+        self.y = (self.by-1) * MEDIDA_BLOQUE #Y en pixeles
+        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al pegamento en el canvas
+        self.sprite = cargar_pegamento()  # Carga la skin del pegamento desde la hoja de sprites
+        self.activo = True  # Indica si el pegamento está activo
+        self.tiempo_creacion = pg.time.get_ticks()  # Tiempo de creación del pegamento
+        self.hilo = Thread(target=self.duracion)  # Crea un hilo para actualizar el pegamento
+        self.hilo.daemon = True  # Daemon para que se cierre al cerrar el juego
+        self.hilo.start()
+
+    def actualizar(self):  # El pegamento no necesita actualizarse constantemente, solo se activa al pisarlo
+        pass
+
+    def duracion(self):
+        sleep(PEGAMENTO_DURACION / 1000) 
+        self.activo = False  # Desactiva el pegamento después de un tiempo
+        self.jugar.lista_pegamento.remove(self)
+
+    def dibujar(self):
+
+        self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja el sprite
+
+class Veneno:
+    def __init__(self, jugar, x, y):
+        self.jugar = jugar
+        self.pantalla = jugar.pantalla_juego
+        self.jugador = jugar.jugador
+        self.x = x
+        self.y = y
+        self.rect = Rect(self.x, self.y, MEDIDA_BLOQUE, MEDIDA_BLOQUE)  # Rectángulo que representa al veneno en el canvas
+        self.sprite = cargar_veneno()  # Carga la skin el veneno desde la hoja de sprites
+
+    def actualizar(self):
+        if not self.jugador.invulnerable and self.rect.colliderect(self.jugador.rect):
+            self.jugador.morir()
+
+    def dibujar(self):
+        self.pantalla.blit(self.sprite, (self.x, self.y)) #Dibuja el sprite
+
 class Jefe:
     pass
+
+# ==========================================================================
+#  ELEMENTOS DE INTERFAZ DE USUARIO
+# ==========================================================================
+
+# Clase para botones: necesario para los botones del menú
+class Boton:
+    def __init__(self, x, y, ancho, alto, texto, pantalla, color=BLANCO, color_texto=NEGRO):
+        self.x = x  # Posición en el eje X
+        self.y = y  # Posición en el eje Y
+        self.ancho = ancho  # Ancho del botón
+        self.alto = alto  # Alto del botón
+        self.texto = texto  # Texto del botón
+        self.pantalla = pantalla  # Pantalla donde se dibuja el botón
+        self.color = color  # Color del botón (por defecto es blanco)
+        self.color_texto = color_texto  # Color del texto del botón (por defecto es negro)
+        self.rect = pg.Rect(self.x, self.y, self.ancho, self.alto)  # Rectángulo que representa el botón para colisiones
+        self.fuente = fuente_texto
+        
+        # Permite que no detecta un click todo el tiempo que mantiene click si no solo uno
+        self.fue_presionado = False # Pasado
+        self.presionado = False  # Presente
+
+    def detectar(self, mouse_pos, *botones):
+        if self.rect.collidepoint(mouse_pos) and any(botones) and not self.presionado:
+            self.presionado = True
+            return True
+        else:
+            self.presionado = False
+        return False    
+        
+    def dibujar(self):
+        pg.draw.rect(self.pantalla, self.color, self.rect)  # Dibuja el botón en la pantalla
+        pg.draw.rect(self.pantalla, NEGRO, self.rect, 2)  # Le crea un borde al botón (eso es lo que indica el 2, que es el grosor del borde)
+        texto_renderizado = self.fuente.render(self.texto, True, self.color_texto)  # Renderiza el texto del botón
+        self.pantalla.blit(texto_renderizado, (self.rect.x + (self.rect.width - texto_renderizado.get_width()) // 2, self.rect.y + (self.rect.height - texto_renderizado.get_height()) // 2))  # Dibuja el texto centrado en el botón
+
+    def detectar_presionado(self, mouse_pos, *presses):
+        ahora_presionado = any(presses) # Si presiono cualquier boton valido
+        self.presionado = self.rect.collidepoint(mouse_pos) and ahora_presionado # self.presionado = mouse encima del boton y lo presiona
+        presionado = self.presionado and not self.fue_presionado # Si acaba de presionar (no solo esta manteniendo click)
+        self.fue_presionado = self.presionado #Actualiza fue_presionado
+        return presionado
+
+# Clase para la caja de entrada de texto: necesario para el nombre del usuario y la dirección
+class InputBox:
+    def __init__(self, pantalla, x, y, max_ancho:float=500, color_fuente=NEGRO, color_fondo=BLANCO,):
+            self.pantalla = pantalla
+            self.x = x
+            self.y = y
+            self.fuente = fuente_texto
+            self.color_fuente = color_fuente
+            self.color_fondo = color_fondo
+            self.max_ancho = max_ancho
+            self.color_activo = VERDE_AGUA
+            self.color_pasivo = GRIS
+            self.caracteres_validos = "012345789AaBbCcDdEeFfGgHhIiJjKkLlMmNnÑñOoPpQqRrSsTtUuVvWwXxYyZz "
+            self.texto = ""
+            self.altura = self.fuente.get_height()
+            self.rect = pg.Rect(x, y, max_ancho, self.altura*1.1) # La barra es un poco más grande que el texto que recibe
+            self.activa = False
+            
+    def escribir(self, evento, mouse_pos, click_izq):
+        pasar_encima = self.rect.collidepoint(mouse_pos)
+        if pasar_encima and click_izq:  # Si se le pasa por encima a la barra y se le hace click
+            self.activa = True  # La barra se activa
+        elif click_izq and not pasar_encima and self.activa == True:  # Si se hace click fuera de la barra y la barra está activa
+            self.activa = None  # Si se hace click fuera de la barra, se desactiva
+        
+        if self.activa:  # Si la caja de entrada está activa
+            if evento.type == pg.KEYDOWN: # Si se presiona una tecla
+                if evento.key == pg.K_BACKSPACE and len(self.texto) >= 1: # Si se presiona la tecla de retroceso y hay texto
+                    self.texto = self.texto[:-1] # Elimina el último carácter del texto
+                else:
+                    letra = evento.unicode  
+                    if letra in self.caracteres_validos:  # Si la letra es válida
+                        ancho_letra = self.fuente.size(self.texto + letra)[0]
+                        if ancho_letra < self.max_ancho:  # Si el ancho del texto con la nueva letra es menor que el máximo
+                            self.texto += letra  # Agrega la letra al texto
+        return False  # Caso en donde no es escribe un caracter válido
+
+    def dibujar(self):
+        pg.draw.rect(self.pantalla, self.color_fondo, self.rect)  # Dibuja el fondo de la caja de entrada
+        self.texto_render = self.fuente.render(self.texto, True, self.color_fuente)  # Renderiza el texto de la caja de entrada
+        self.pantalla.blit(self.texto_render, (self.x + self.max_ancho//2 - self.texto_render.get_width()//2, self.y))  # Dibuja el texto en la caja de entrada 
+        if not self.activa:  # Si la caja de entrada no está activa, dibuja un borde pasivo
+            pg.draw.rect(self.pantalla, self.color_pasivo, self.rect, width=1)  # Pone frame pasivo
+        else:
+            pg.draw.rect(self.pantalla, self.color_activo, self.rect, width=1)  # Pone frame activo
+
+class Deslizante:
+    def __init__(self, pantalla, x, y, ancho, alto, parametro, min_parametro=0, max_parametro=1, radio_control=10):
+        self.pantalla = pantalla
+        self.x = x
+        self.y = y
+        self.ancho = ancho
+        self.alto = alto
+        self.parametro = parametro #Valor a cambiar cuando se desliza la barra
+        self.min_parametro = min_parametro #Minimo valor que puede tomar
+        self.max_parametro = max_parametro #Maximo valor que puede tomar
+        self.radio = radio_control
+        
+        self.x_control = self.x + int(self.ancho * self.parametro)  # Posición del control en x
+        self.deslizando = False #Indica si se esta deslizando la barra
+        
+    def eventos(self, evento):
+        mouse_pos = pg.mouse.get_pos()
+        if evento.type == pg.MOUSEBUTTONDOWN:
+            if abs(mouse_pos[0] - self.x_control) <= self.radio and abs(mouse_pos[1] - (self.y) + self.alto // 2) <= self.radio:  # Si el cursor está cerca del control deslizante
+                self.deslizando = True  # Indica que se está arrastrando el control de la barra
+            
+        elif evento.type == pg.MOUSEBUTTONUP:
+            self.deslizando = False #Suelta el deslizante
+            
+    def actualizar(self):
+        if self.deslizando:  # Si se está arrastrando la barra de sonido
+            self.x_control = self.x + int(self.ancho * self.parametro)  # Posición del control en x
+            self.parametro = max(0, min(1, (pg.mouse.get_pos()[0] - self.x) / self.ancho))  # Calcula el nuevo valor del parametro según la posición del mouse
+    
+    def dibujar(self):
+        pg.draw.rect(self.pantalla, GRIS, (self.x, self.y, self.ancho, self.alto))  # Dibuja el fondo de la barra
+        pg.draw.rect(self.pantalla, VERDE, (self.x, self.y, self.ancho * self.parametro, self.alto))
+        pg.draw.circle(self.pantalla, BLANCO, (self.x_control, self.y + self.alto // 2), self.radio)  # Dibuja el control deslizante en la barra de sonido
 
 class BarraVida:
     def __init__(self, x, y, ancho, alto, jugar):
@@ -661,17 +808,18 @@ class BarraVida:
         pg.draw.rect(self.pantalla, ROJO, (self.x, self.y, self.ancho, self.alto))  # Dibuja el fondo de la barra de vida
         pg.draw.rect(self.pantalla, VERDE, (self.x, self.y, self.ancho * self.ratio, self.alto))  # Dibuja la barra de vida actual del jugador
 
-
 # Clase HUD (Head-Up Display) que muestra información del juego en la pantalla
 class HUD:
     def __init__(self, jugar):
         self.jugar = jugar
         self.pantalla = jugar.pantalla  # Pantalla donde se dibuja el HUD
         self.jugador = jugar.jugador  # Jugador del juego
+        self.num_skin = self.jugador.num_skin  # Número de skin del jugador
         self.fuente = fuente_texto  # Fuente del texto del HUD
         self.texto_vidas = self.fuente.render("Vida", True, BLANCO)
         self.barra_vida = BarraVida(SEPARACION_BORDES_PANTALLA + self.texto_vidas.get_width() + 10, 20, 200, 20, jugar)  # Barra de vida del jugador
         self.textos = []  # Lista para almacenar los textos del HUD
+        self.iconos_habilidades = cargar_habilidades()  # Carga los iconos de las habilidades del jugador
         self.cargar_sprites_en_proporcion()  # Carga los sprites de los items del jugador en proporción
 
     def cargar_sprites_en_proporcion(self):
@@ -723,10 +871,16 @@ class HUD:
             altura = int(96 * ratio)
             y_base = 136 - altura  # La base es 136, restamos la altura para que crezca hacia arriba
             pg.draw.rect(self.pantalla, VERDE, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, y_base, 96, altura))
+        
+        # Dibuja los íconos de las habilidades
+        self.pantalla.blit(self.iconos_habilidades[self.num_skin], (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, 40))
 
+        # Dibuja el marco de la habilidad del jugador
         pg.draw.rect(self.pantalla, BLANCO, (SEPARACION_BORDES_PANTALLA + 300 + 3 * 112, 40, 96, 96), 4)  # Dibuja los cuadros de los items del jugador
 
-    
+# ==========================================================================
+#  CONSUMIBLES DEL JUEGO + PUERTA Y LLAVE
+# ==========================================================================
 
 # Función para cargar la llave, es especial, porque es un objeto que se encuentra dentro de un bloque aleatorio del nivel, y aparece al romperlo
 class Llave:
@@ -751,7 +905,6 @@ class Llave:
     def dibujar(self):
         if self.bloque_roto and not self.jugador.tiene_llave:
             self.pantalla.blit(self.sprite, self.rect)  # Dibuja el sprite de la llave en la pantalla
-
 
 class Puerta:
     def __init__(self, jugar, y):
@@ -834,46 +987,10 @@ class Caramelos:  # Los caramelos son un objeto que se encuentra en el nivel, y 
     def dibujar(self):
         if self.bloque_roto:
             self.pantalla.blit(self.sprite, ((self.x_bloque - 1) * MEDIDA_BLOQUE, (self.y_bloque - 1) * MEDIDA_BLOQUE))  # Dibuja el sprite del caramelo en la pantalla
-    
 
-# Clase para botones: necesario para los botones del menú
-class Boton:
-    def __init__(self, x, y, ancho, alto, texto, pantalla, color=BLANCO, color_texto=NEGRO):
-        self.x = x  # Posición en el eje X
-        self.y = y  # Posición en el eje Y
-        self.ancho = ancho  # Ancho del botón
-        self.alto = alto  # Alto del botón
-        self.texto = texto  # Texto del botón
-        self.pantalla = pantalla  # Pantalla donde se dibuja el botón
-        self.color = color  # Color del botón (por defecto es blanco)
-        self.color_texto = color_texto  # Color del texto del botón (por defecto es negro)
-        self.rect = pg.Rect(self.x, self.y, self.ancho, self.alto)  # Rectángulo que representa el botón para colisiones
-        self.fuente = fuente_texto
-        
-        # Permite que no detecta un click todo el tiempo que mantiene click si no solo uno
-        self.fue_presionado = False # Pasado
-        self.presionado = False  # Presente
-
-    def detectar(self, mouse_pos, *botones):
-        if self.rect.collidepoint(mouse_pos) and any(botones) and not self.presionado:
-            self.presionado = True
-            return True
-        else:
-            self.presionado = False
-        return False    
-        
-    def dibujar(self):
-        pg.draw.rect(self.pantalla, self.color, self.rect)  # Dibuja el botón en la pantalla
-        pg.draw.rect(self.pantalla, NEGRO, self.rect, 2)  # Le crea un borde al botón (eso es lo que indica el 2, que es el grosor del borde)
-        texto_renderizado = self.fuente.render(self.texto, True, self.color_texto)  # Renderiza el texto del botón
-        self.pantalla.blit(texto_renderizado, (self.rect.x + (self.rect.width - texto_renderizado.get_width()) // 2, self.rect.y + (self.rect.height - texto_renderizado.get_height()) // 2))  # Dibuja el texto centrado en el botón
-
-    def detectar_presionado(self, mouse_pos, *presses):
-        ahora_presionado = any(presses) # Si presiono cualquier boton valido
-        self.presionado = self.rect.collidepoint(mouse_pos) and ahora_presionado # self.presionado = mouse encima del boton y lo presiona
-        presionado = self.presionado and not self.fue_presionado # Si acaba de presionar (no solo esta manteniendo click)
-        self.fue_presionado = self.presionado #Actualiza fue_presionado
-        return presionado
+# ==========================================================================
+#  PESTAÑAS DENTRO Y FUERA DEL MENU
+# ==========================================================================
 
 # Clase Ajustes: aquí se pueden agregar las configuraciones del juego, como el volumen
 class Ajustes:
@@ -988,52 +1105,6 @@ class Puntajes:
         for i, texto in enumerate(self.top_render):
             self.pantalla.blit(texto, (ANCHO_PANTALLA//2 - texto.get_width()//2, ALTO_PANTALLA//3 + self.fuente.get_height() * i))
 
-# Clase para la caja de entrada de texto: necesario para el nombre del usuario y la dirección
-class InputBox:
-    def __init__(self, pantalla, x, y, max_ancho:float=500, color_fuente=NEGRO, color_fondo=BLANCO,):
-            self.pantalla = pantalla
-            self.x = x
-            self.y = y
-            self.fuente = fuente_texto
-            self.color_fuente = color_fuente
-            self.color_fondo = color_fondo
-            self.max_ancho = max_ancho
-            self.color_activo = VERDE_AGUA
-            self.color_pasivo = GRIS
-            self.caracteres_validos = "012345789AaBbCcDdEeFfGgHhIiJjKkLlMmNnÑñOoPpQqRrSsTtUuVvWwXxYyZz "
-            self.texto = ""
-            self.altura = self.fuente.get_height()
-            self.rect = pg.Rect(x, y, max_ancho, self.altura*1.1) # La barra es un poco más grande que el texto que recibe
-            self.activa = False
-            
-    def escribir(self, evento, mouse_pos, click_izq):
-        pasar_encima = self.rect.collidepoint(mouse_pos)
-        if pasar_encima and click_izq:  # Si se le pasa por encima a la barra y se le hace click
-            self.activa = True  # La barra se activa
-        elif click_izq and not pasar_encima and self.activa == True:  # Si se hace click fuera de la barra y la barra está activa
-            self.activa = None  # Si se hace click fuera de la barra, se desactiva
-        
-        if self.activa:  # Si la caja de entrada está activa
-            if evento.type == pg.KEYDOWN: # Si se presiona una tecla
-                if evento.key == pg.K_BACKSPACE and len(self.texto) >= 1: # Si se presiona la tecla de retroceso y hay texto
-                    self.texto = self.texto[:-1] # Elimina el último carácter del texto
-                else:
-                    letra = evento.unicode  
-                    if letra in self.caracteres_validos:  # Si la letra es válida
-                        ancho_letra = self.fuente.size(self.texto + letra)[0]
-                        if ancho_letra < self.max_ancho:  # Si el ancho del texto con la nueva letra es menor que el máximo
-                            self.texto += letra  # Agrega la letra al texto
-        return False  # Caso en donde no es escribe un caracter válido
-
-    def dibujar(self):
-        pg.draw.rect(self.pantalla, self.color_fondo, self.rect)  # Dibuja el fondo de la caja de entrada
-        self.texto_render = self.fuente.render(self.texto, True, self.color_fuente)  # Renderiza el texto de la caja de entrada
-        self.pantalla.blit(self.texto_render, (self.x + self.max_ancho//2 - self.texto_render.get_width()//2, self.y))  # Dibuja el texto en la caja de entrada 
-        if not self.activa:  # Si la caja de entrada no está activa, dibuja un borde pasivo
-            pg.draw.rect(self.pantalla, self.color_pasivo, self.rect, width=1)  # Pone frame pasivo
-        else:
-            pg.draw.rect(self.pantalla, self.color_activo, self.rect, width=1)  # Pone frame activo
-
 class Personalizacion:
     def __init__(self, menu):
         self.menu = menu
@@ -1043,7 +1114,6 @@ class Personalizacion:
         self.musica = menu.game.canciones[0]
         self.cambiar_modo = menu.game.cambiar_modo(self)  # Método para cambiar el modo del juego
 
-        self.texto = "Personalización"
         self.fuente = fuente_texto  # Fuente del texto de la información
         self.num_skin = 1  # Número del skin actual (1 por defecto)
 
@@ -1062,8 +1132,11 @@ class Personalizacion:
         elif self.num_skin == 0:  # Si se sale del rango de skins desde la 1era skin, vuelve a la 3era skin
             self.num_skin = 3
 
+    def reinciar(self):  # Reinicia la personalización al skin 1 y limpia la caja de entrada de texto
+        self.num_skin = 1
+        self.inputbox.texto = ""  # Limpia la caja de entrada de texto
 
-    def actualizar(self):  # Realmente no necesita actualizar nada, pero es necesario para el ciclo del juego
+    def actualizar(self):  # Actualiza la información del personaje según el skin seleccionado
         self.imagenes_skins = cargar_skins(self.num_skin, puntos_iniciales_skins_jugador)  # Carga las imágenes de los skins desde la carpeta de personajes
         self.imagen_mostrada = self.imagenes_skins["derecha"][0]  # Imagen que se muestra en la pantalla (por defecto es la imagen de la derecha del skin 1)
         self.imagen_mostrada = pg.transform.scale(self.imagen_mostrada, (128, 128))  # Escala la imagen
@@ -1100,6 +1173,7 @@ class Personalizacion:
                 self.menu.game.nombre_jugador = "Jugador"  # Si no se ha escrito nada, asigna un nombre por defecto al jugador
             self.menu.jugar = Jugar(self.menu.game, self.num_skin)  # Crea un nuevo juego con el skin seleccionado
             self.menu.game.cambiar_modo(self.menu.jugar)  # Cambia el modo del juego al menú principal
+            self.reinciar()  # Reinicia la personalización al skin 1 y limpia la caja de entrada de texto
 
         if evento.type == KEYDOWN:
             if evento.key == K_RIGHT:
@@ -1107,6 +1181,124 @@ class Personalizacion:
             elif evento.key == K_LEFT:
                 self.cambio_de_skin(-1)
 
+class Mejoras:
+    def __init__(self, jugar):
+        self.jugar = jugar
+        self.jugador = jugar.jugador
+        self.pantalla = jugar.pantalla
+        self.dibujar_texto = jugar.dibujar_texto
+        
+        self.puntos = self.jugador.puntaje
+        self.precio_vida = 100
+        self.precio_golpe = 100
+        self.precio_rango = 100
+        
+        self.crear_botones()
+    
+    def crear_botones(self):
+        self.boton_vida = Boton(100, 100, 200, 75, f"VIDA {self.precio_vida}", self.pantalla, VERDE)
+        self.boton_golpe = Boton(100, 300, 200, 75, f"GOLPE {self.precio_golpe}", self.pantalla, ROJO)
+        self.boton_rango = Boton(100, 500, 200, 75, f"RANGO {self.precio_rango}", self.pantalla, AZUL)
+        self.pasar_nivel = Boton(1000, 650, 200, 50, "PASAR NIVEL", self.pantalla, GRIS)
+    
+    def dibujar(self):
+        self.pantalla.fill(VERDE_AGUA)
+        
+        self.dibujar_texto("PRECIOS", 100, 50)
+        self.dibujar_texto(f"PUNTOS: {self.puntos}", 100, 650)
+        self.dibujar_texto(f"VIDAS MÁX: {self.jugador.vidas}", 400, 100 + self.boton_vida.alto // 4)
+        self.dibujar_texto(f"GOLPE: {self.jugador.golpe}", 400, 300 + self.boton_golpe.alto // 4)
+        self.dibujar_texto(f"RANGO: {self.jugador.rango}", 400, 500 + self.boton_rango.alto // 4)
+        
+        self.boton_vida.dibujar()
+        self.boton_golpe.dibujar()
+        self.boton_rango.dibujar()
+        self.pasar_nivel.dibujar()
+    
+    def actualizar(self):  # No es necesario actualizar nada en este caso, pero se deja para mantener la estructura
+        pass
+
+    def eventos(self, evento):
+        mouse_pos = pg.mouse.get_pos()
+        click_izq = pg.mouse.get_pressed()[0] #Click izquierdo
+            
+        if self.boton_vida.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
+            self.puntos -= self.precio_vida
+            self.precio_vida += 200 #  Incrementa el precio linearmente 200 cada vez
+            self.jugador.vidas += 1
+            self.jugador.vidas_max += 1 #  Aumenta la vida maxima del jugador
+            self.boton_vida.texto = f"VIDA {self.precio_vida}"
+                
+        elif self.boton_golpe.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_golpe:
+            self.puntos -= self.precio_golpe
+            self.precio_golpe += 200 #  Incrementa el precio linearmente 200 cada vez
+            self.jugador.golpe += 1
+            self.boton_golpe.texto = f"GOLPE {self.precio_golpe}"
+                
+        elif self.boton_rango.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_rango:
+            self.puntos -= self.precio_rango
+            self.precio_rango += 500 #  Incrementa el precio linearmente 500 cada vez
+            self.jugador.rango += 1
+            self.boton_rango.texto = f"RANGO {self.precio_rango}"
+                
+        elif self.pasar_nivel.detectar_presionado(mouse_pos, click_izq):
+            self.jugar.cambiar_modo(self.jugar)
+            self.jugar.pasar_nivel()
+            self.jugador.puntaje = self.puntos
+
+class Resultados:
+    def __init__(self, game):
+        self.game = game  # Acceso al menú del juego
+        self.pantalla = self.game.pantalla
+        self.musica = self.game.canciones[2]
+        self.boton_confirmar = Boton(ANCHO_PANTALLA // 2 - 100, ALTO_PANTALLA - 150, 200, 50, "Confirmar", self.pantalla, VERDE, BLANCO)  # Botón para confirmar la personalización
+        self.cambiar_modo = self.game.cambiar_modo(self)  # Método para cambiar el modo del juego
+        self.fuente = fuente_texto  # Fuente del texto de la información
+
+        self.texto = "Resultados"
+        self.texto_renderizado = self.fuente.render(self.texto, True, BLANCO)  # Renderiza el texto de los ajustes
+
+        self.puntaje_mostrado = 0
+        self.puntaje_renderizado = self.fuente.render(f"{self.puntaje_mostrado}", True, BLANCO)  # Renderiza el puntaje del jugador
+
+        self.num_skin = self.game.menu.jugar.jugador.num_skin  # Número del skin seleccionado en el menú de personalización
+        self.texto_resultado = f"¡Felicidades, {self.game.nombre_jugador}, llegando hasta el nivel {self.game.menu.jugar.manager_niveles.num_nivel} conseguiste un puntaje de:"
+
+        self.imagenes_skins = cargar_skins(self.num_skin, puntos_iniciales_skins_jugador)  # Carga las imágenes de los skins desde la carpeta de personajes
+        self.imagen_mostrada = self.imagenes_skins["derecha"][0]  # Imagen que se muestra en la pantalla (por defecto es la imagen de la derecha del skin 1)
+        self.imagen_mostrada = pg.transform.scale(self.imagen_mostrada, (128, 128))  # Escala la imagen
+        self.lineas = dividir_texto(self.texto_resultado)  # Divide el texto de información del personaje en líneas para que se ajuste a la pantalla
+        puntajes.append([self.game.nombre_jugador, self.game.menu.jugar.jugador.puntaje])  # Agrega el puntaje del jugador a la lista de puntajes
+
+    def actualizar(self):  
+        # Animación del puntaje
+        if self.puntaje_mostrado < self.game.menu.jugar.jugador.puntaje:
+            self.puntaje_mostrado += 3
+            self.puntaje_renderizado = self.fuente.render(f"{self.puntaje_mostrado}", True, BLANCO)  # Renderiza el puntaje del jugador
+        # Si nos pasamos, lo ajustamos al puntaje del jugador
+        elif self.puntaje_mostrado > self.game.menu.jugar.jugador.puntaje:
+            self.puntaje_mostrado = self.game.menu.jugar.jugador.puntaje
+            self.puntaje_renderizado = self.fuente.render(f"{self.puntaje_mostrado}", True, AMARILLO)  # Renderiza el puntaje del jugador en amarillo al terminar el conteo
+        
+    def dibujar(self):
+        self.pantalla.fill(NEGRO)  # Limpia la pantalla
+        self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
+        self.pantalla.blit(self.imagen_mostrada, (ANCHO_PANTALLA//2 - self.imagen_mostrada.get_width()//2 , ALTO_PANTALLA//2 - self.imagen_mostrada.get_height()//2))
+
+        # Impresión del texto
+        y = ALTO_PANTALLA//2 + self.imagen_mostrada.get_height()//2 + 32  # 32 es el espacio de separación entre el sprite y el texto
+        for linea in self.lineas:
+            render = self.fuente.render(linea, True, BLANCO)
+            x = (ANCHO_PANTALLA - render.get_width()) // 2  # Centra el texto en la pantalla
+            self.pantalla.blit(render, (x, y))
+            y += self.fuente.get_height() + 5
+        self.pantalla.blit(self.puntaje_renderizado, (ANCHO_PANTALLA//2 - self.puntaje_renderizado.get_width()//2 , ALTO_PANTALLA//2 + self.imagen_mostrada.get_height()//2 + self.fuente.get_height() + 37))
+        self.boton_confirmar.dibujar()  # Dibujar el botón de confirmar y volver al menú principal
+
+    def eventos(self, evento):  # evento no se usa realmente, ya que no se escribe nada, pero es por continuidad y para que se pueda usar en el bucle de eventos del juego
+        mouse_pos = pg.mouse.get_pos()
+        if self.boton_confirmar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
+            self.game.cambiar_modo(self.game.menu)  # Cambia el modo del juego al menú principal
 
 class Menu:
     def __init__(self, game):
@@ -1119,7 +1311,7 @@ class Menu:
         self.info = Informacion(self)
         self.puntajes = Puntajes(self)
         self.personalizacion = Personalizacion(self)
-        self.opcion_a_funcion = {"Jugar":self.personalizacion, "Ajustes":self.ajustes, "Puntajes": self.puntajes,"Información":self.info, "Salir":None} #Mapea el nombre de las opciones a ellas
+        self.opcion_a_funcion = {"Jugar":self.personalizacion, "Ajustes":self.ajustes, "Puntajes": self.puntajes,"Información":self.info, "Salir":self.salir} #Mapea el nombre de las opciones a ellas
 
         self.musica = game.canciones[0]
         self.botones = self.crear_botones()  # Crea los botones del menú
@@ -1137,22 +1329,30 @@ class Menu:
             botones.append(self.boton)  # Agrega el botón a la lista de botones del menú
         return botones
 
+    def salir(self):
+        guardar_archivo(ARCHIVO_PUNTAJES, str(puntajes))  # Guarda los puntajes en el archivo antes de salir
+        quit()  # Cierra Pygame y termina el programa
+
     def dibujar(self):
         self.pantalla.fill(NEGRO)
         for boton in self.botones:  # Dibuja cada botón en la pantalla
             boton.dibujar()
         self.pantalla.blit(self.logo, (ANCHO_PANTALLA // 2 - self.logo.get_width() // 2, - 20))  # Dibuja el logo del juego en la parte superior de la pantalla
-        
+
+    def actualizar(self):  # El menú no requiere actualizarse, por lo que se deja en pass
+        pass
+
     def eventos(self, evento):  # Como no tiene para presionar teclas, "evento" no es realmente necesario, pero es por continuidad
         mouse_pos = mouse.get_pos()
         for boton in self.botones:  # Recorre la lista de botones del menú
             if boton.detectar_presionado(mouse_pos, mouse.get_pressed()[0]): #Si detecta click izquierdo
                 self.game.cambiar_modo(self.opcion_a_funcion[boton.texto]) #Mapea el texto del boton a un modo de juego
 
+# ==========================================================================
+#  LÓGICA PARA EL PASO DE NIVELES Y JUEGO
+# ==========================================================================
 
-    def actualizar(self):
-        pass
-    
+# Clase que maneja los niveles del juego, carga los niveles y sprites, y permite pasar de nivel
 class Niveles:
     def __init__(self, jugar):
         self.jugar = jugar
@@ -1193,41 +1393,10 @@ class Niveles:
             
         elif num_nivel == len(self.niveles): # Se devuelve al primer nivel al terminar TODO (por que se devuelve? No deberia terminar y ya)
             self.nivel = self.num_niveles[0]
-            
-        else:
-            pass #TODO poner resultados o no se que queria hacer Juan
 
-class DestruyeBloque:
-    def __init__(self, jugar, x, y):
-        self.jugar = jugar
-        self.pantalla = jugar.pantalla
-        self.jugar.capas[4].append(self) #Capa del nivel
-        self.x = x
-        self.y = y
-        self.sprite = jugar.manager_niveles.sprites[2]
-        self.frames_totales = 10
-        self.frame_actual = 0
-        self.terminado = False
-        
-    def actualizar(self):
-        self.frame_actual += 1
-        if self.frame_actual >= self.frames_totales:
-            self.jugar.capas[4].remove(self)
-
-    def dibujar(self):
-        # Escala proporcional inversa
-        escala = max(1, int(MEDIDA_BLOQUE * max(0.01, 1 - self.frame_actual / self.frames_totales)))
-        sprite_escalado = pg.transform.scale(self.sprite, (escala, escala))
-
-        # Para que se mantenga centrado al reducir tamaño
-        offset_x = (MEDIDA_BLOQUE - escala) // 2
-        offset_y = (MEDIDA_BLOQUE - escala) // 2
-        self.pantalla.blit(sprite_escalado, (self.x * MEDIDA_BLOQUE + offset_x, self.y * MEDIDA_BLOQUE + offset_y))
-
-
-# Clase del juego
+# Clase del juego: crea todo lo relacionado con el jugador y los elementos visuales que lo acompañan
 class Jugar:
-    def __init__(self, game, numero_skin):
+    def __init__(self, game, num_skin):
         self.game = game
         self.pantalla = game.pantalla  # Pantalla donde se dibuja el juego
         self.pantalla_juego = Surface((ANCHO_PANTALLA - 2*SEPARACION_BORDES_PANTALLA, ALTO_PANTALLA - MEDIDA_HUD - SEPARACION_BORDES_PANTALLA))
@@ -1239,7 +1408,7 @@ class Jugar:
         self.debug = False  # G para cambiar (muestra hitboxes y gridlines)
         self.manager_niveles = Niveles(self)
         self.nivel = self.manager_niveles.nivel
-        self.jugador = Jugador(self, numero_skin)  # Crea el jugador con el skin seleccionado
+        self.jugador = Jugador(self, num_skin)  # Crea el jugador con el skin seleccionado
         self.mejoras = Mejoras(self)
         self.hud = HUD(self)  # Crea el HUD del juego
         self.lista_pegamento = []  # Lista para almacenar los pegamentos que sueltan los enemigos
@@ -1401,118 +1570,14 @@ class Jugar:
         else:
             self.jugador.game_over.dibujar()
 
-
-class Mejoras:
-    def __init__(self, jugar):
-        self.jugar = jugar
-        self.jugador = jugar.jugador
-        self.pantalla = jugar.pantalla
-        self.dibujar_texto = jugar.dibujar_texto
-        
-        self.puntos = self.jugador.puntaje
-        self.precio_vida = 100
-        self.precio_golpe = 100
-        self.precio_rango = 100
-        
-        self.crear_botones()
-    
-    def crear_botones(self):
-        self.boton_vida = Boton(100, 100, 200, 75, f"VIDA {self.precio_vida}", self.pantalla, VERDE)
-        self.boton_golpe = Boton(100, 300, 200, 75, f"GOLPE {self.precio_golpe}", self.pantalla, ROJO)
-        self.boton_rango = Boton(100, 500, 200, 75, f"RANGO {self.precio_rango}", self.pantalla, AZUL)
-        self.pasar_nivel = Boton(1000, 650, 200, 50, "PASAR NIVEL", self.pantalla, GRIS)
-    
-    def dibujar(self):
-        self.pantalla.fill(VERDE_AGUA)
-        
-        self.dibujar_texto("PRECIOS", 100, 50)
-        self.dibujar_texto(f"PUNTOS: {self.puntos}", 100, 650)
-        self.dibujar_texto(f"VIDAS MÁX: {self.jugador.vidas}", 400, 100 + self.boton_vida.alto // 4)
-        self.dibujar_texto(f"GOLPE: {self.jugador.golpe}", 400, 300 + self.boton_golpe.alto // 4)
-        self.dibujar_texto(f"RANGO: {self.jugador.rango}", 400, 500 + self.boton_rango.alto // 4)
-        
-        self.boton_vida.dibujar()
-        self.boton_golpe.dibujar()
-        self.boton_rango.dibujar()
-        self.pasar_nivel.dibujar()
-    
-    def actualizar(self):
-        mouse_pos = pg.mouse.get_pos()
-        click_izq = pg.mouse.get_pressed()[0] #Click izquierdo
-            
-        if self.boton_vida.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_vida:
-            self.puntos -= self.precio_vida
-            self.precio_vida += 200 #  Incrementa el precio linearmente 200 cada vez
-            self.jugador.vidas += 1
-            self.jugador.vidas_max += 1 #  Aumenta la vida maxima del jugador
-            self.boton_vida.texto = f"VIDA {self.precio_vida}"
-                
-        elif self.boton_golpe.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_golpe:
-            self.puntos -= self.precio_golpe
-            self.precio_golpe += 200 #  Incrementa el precio linearmente 200 cada vez
-            self.jugador.golpe += 1
-            self.boton_golpe.texto = f"GOLPE {self.precio_golpe}"
-                
-        elif self.boton_rango.detectar_presionado(mouse_pos, click_izq) and self.puntos >= self.precio_rango:
-            self.puntos -= self.precio_rango
-            self.precio_rango += 500 #  Incrementa el precio linearmente 500 cada vez
-            self.jugador.rango += 1
-            self.boton_rango.texto = f"RANGO {self.precio_rango}"
-                
-        elif self.pasar_nivel.detectar_presionado(mouse_pos, click_izq):
-            self.jugar.cambiar_modo(self.jugar)
-            self.jugar.pasar_nivel()
-            self.jugador.puntaje = self.puntos
-            
-    def eventos(self, evento):
-        pass
-
-class Deslizante:
-    def __init__(self, pantalla, x, y, ancho, alto, parametro, min_parametro=0, max_parametro=1, radio_control=10):
-        self.pantalla = pantalla
-        self.x = x
-        self.y = y
-        self.ancho = ancho
-        self.alto = alto
-        self.parametro = parametro #Valor a cambiar cuando se desliza la barra
-        self.min_parametro = min_parametro #Minimo valor que puede tomar
-        self.max_parametro = max_parametro #Maximo valor que puede tomar
-        self.radio = radio_control
-        
-        self.x_control = self.x + int(self.ancho * self.parametro)  # Posición del control en x
-        self.deslizando = False #Indica si se esta deslizando la barra
-        
-    def eventos(self, evento):
-        mouse_pos = pg.mouse.get_pos()
-        if evento.type == pg.MOUSEBUTTONDOWN:
-            if abs(mouse_pos[0] - self.x_control) <= self.radio and abs(mouse_pos[1] - (self.y) + self.alto // 2) <= self.radio:  # Si el cursor está cerca del control deslizante
-                self.deslizando = True  # Indica que se está arrastrando el control de la barra
-            
-        elif evento.type == pg.MOUSEBUTTONUP:
-            self.deslizando = False #Suelta el deslizante
-            
-    def actualizar(self):
-        if self.deslizando:  # Si se está arrastrando la barra de sonido
-            self.x_control = self.x + int(self.ancho * self.parametro)  # Posición del control en x
-            self.parametro = max(0, min(1, (pg.mouse.get_pos()[0] - self.x) / self.ancho))  # Calcula el nuevo valor del parametro según la posición del mouse
-    
-    def dibujar(self):
-        pg.draw.rect(self.pantalla, GRIS, (self.x, self.y, self.ancho, self.alto))  # Dibuja el fondo de la barra
-        pg.draw.rect(self.pantalla, VERDE, (self.x, self.y, self.ancho * self.parametro, self.alto))
-        pg.draw.circle(self.pantalla, BLANCO, (self.x_control, self.y + self.alto // 2), self.radio)  # Dibuja el control deslizante en la barra de sonido
-        
-
-class Resultados:
-    def __init__(self, game):
-        self.pantalla = game.pantalla
-        self.musica = game.canciones[2]
-        # TODO
+# ==========================================================================
+#  CLASE MAESTRA DEL JUEGO
+# ==========================================================================
 
 # Clase game que maneja a todas las otras clases
 class Game: 
     def __init__(self):
         init()  # Inicializamos Pygame
-        
         self.pantalla = display.set_mode((ANCHO_PANTALLA, ALTO_PANTALLA))  # Configura la ventana
         display.set_caption("Wooly Warfare")  # Título de la ventana
         self.clock = time.Clock()  # Crea un objeto de reloj para controlar la tasa de refresco, necesario para la física y el movimiento
@@ -1557,6 +1622,7 @@ class Game:
     def eventos(self):
         for evento in event.get():
             if evento.type == QUIT:
+                guardar_archivo(ARCHIVO_PUNTAJES, str(puntajes))  # Guarda los puntajes en el archivo antes de salir
                 self.running = False
             self.modo.eventos(evento) #Corre los eventos del modo activo
     
@@ -1584,14 +1650,7 @@ if __name__ == "__main__": #solo se ejecuta si se hace run, no si es import
 
 
 
-
 """
 # TODO:
-# 1. Implementar la clase Enemigo con sus métodos de movimiento y ataque.
 # 4. Implementar la clase Jefe con sus mecánicas de ataque y vida.
-# 7. Implementar un sistema de HUD para mostrar la vida del jugador, bombas restantes y puntaje.
-# 9. Implementar un sistema de guardados y almacenamiento de puntajes
-# 11. Implementar un sistema de personalización del jugador (skins)
-# 12. Implementar pantallas de fin de juego. 
-# 13. Revisar todo lo que diga todo o pass
 """
