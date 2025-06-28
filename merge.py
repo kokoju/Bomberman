@@ -37,6 +37,41 @@ def leer_archivo(path):
 puntajes = sorted(leer_archivo(ARCHIVO_PUNTAJES), key=lambda elemento: elemento[1], reverse=True)  
 # print(puntajes)
 
+# El texto que pensamos poner en la pantalla puede ser largo, por lo que se dividirá en varias líneas
+def dividir_texto(texto, indice_skin=None):
+    ancho_max = ANCHO_PANTALLA - 100  # Ancho máximo de cada línea de texto
+    fuente = fuente_texto  # Fuente del texto
+    if indice_skin is not None:  # Si se especifica un índice de skin, se usa para seleccionar el texto
+        texto = texto[indice_skin]  # Texto a dividir
+    else:
+        texto = texto  # Texto a dividir, si no se especifica un índice de skin
+
+    bloques = texto.split("\n")  # Paso para dividir el texto y que respete los saltos de línea manuales 
+    lineas = []  # Lista para almacenar las líneas de texto
+
+    for bloque in bloques:
+        palabras = bloque.split(' ')  # "Split" divide el texto en palabras, cada que encuentra un espacio, borrándolo en el proceso
+        linea_actual = ""  # Línea actual que se está construyendo
+            
+        # Recorremos cada palabra y comprobamos para cada linea si cabe en el ancho máximo
+        # Si cabe, se agrega a la línea actual y seguimos revisando
+        # Si no cabe, se agrega la línea actual a la lista de líneas y se comienza una nueva línea con la palabra actual
+        # Añadimos los espacios manualmente
+        for palabra in palabras: 
+            prueba = linea_actual + palabra + " "
+            if fuente.size(prueba)[0] <= ancho_max:
+                linea_actual = prueba
+            else:
+                lineas.append(linea_actual)
+                linea_actual = palabra + " "
+        # Si al final hay una línea actual que no está vacía, la agregamos a la lista de líneas
+        if linea_actual:
+            lineas.append(linea_actual)
+        # Devolvemos la lista de líneas
+
+    return lineas  # Devuelve la lista de líneas de texto divididas
+
+
 font.init()  # Inicializa el módulo de fuentes de Pygame
 fuente_texto = font.Font("assets/FuenteTexto.ttf", 30)  # Tipografía del texto del juego
 
@@ -891,38 +926,7 @@ class Informacion:
         self.foto_juan = pg.transform.scale(self.foto_juan, (150, 150))  # Reescala la imagen de Juan a 150x150 píxeles
         self.foto_pablo = pg.transform.scale(self.foto_pablo, (150, 150))  # Reescala la imagen de Pablo a 150x150 píxeles
         
-        self.lineas = self.dividir_texto()
-
-    # El texto que pensamos poner en la pantalla de información es medianamente largo, por lo que se dividirá en varias líneas
-    def dividir_texto(self):
-        self.ancho_max = ANCHO_PANTALLA - 100  # Ancho máximo de cada línea de texto
-        self.fuente = fuente_texto  # Fuente del texto
-        self.texto = TEXTO_INFO  # Texto a dividir
-
-        bloques = self.texto.split("\n")  # Paso para dividir el texto y que respete los saltos de línea manuales 
-        lineas = []  # Lista para almacenar las líneas de texto
-
-        for bloque in bloques:
-            palabras = bloque.split(' ')  # "Split" divide el texto en palabras, cada que encuentra un espacio, borrándolo en el proceso
-            linea_actual = ""  # Línea actual que se está construyendo
-            
-            # Recorremos cada palabra y comprobamos para cada linea si cabe en el ancho máximo
-            # Si cabe, se agrega a la línea actual y seguimos revisando
-            # Si no cabe, se agrega la línea actual a la lista de líneas y se comienza una nueva línea con la palabra actual
-            # Añadimos los espacios manualmente
-            for palabra in palabras: 
-                prueba = linea_actual + palabra + " "
-                if self.fuente.size(prueba)[0] <= self.ancho_max:
-                    linea_actual = prueba
-                else:
-                    lineas.append(linea_actual)
-                    linea_actual = palabra + " "
-            # Si al final hay una línea actual que no está vacía, la agregamos a la lista de líneas
-            if linea_actual:
-                lineas.append(linea_actual)
-            # Devolvemos la lista de líneas
-
-        return lineas  # Devuelve la lista de líneas de texto divididas
+        self.lineas = dividir_texto(TEXTO_INFO)
 
     def dibujar(self):
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
@@ -983,55 +987,59 @@ class Puntajes:
         self.boton_cerrar.dibujar()
         for i, texto in enumerate(self.top_render):
             self.pantalla.blit(texto, (ANCHO_PANTALLA//2 - texto.get_width()//2, ALTO_PANTALLA//3 + self.fuente.get_height() * i))
-"""
-# TODO
+
 # Clase para la caja de entrada de texto: necesario para el nombre del usuario y la dirección
 class InputBox:
-    def __init__(self, x, y, ancho, alto, placeholder, pantalla):
-        self.x = x  # Posición en el eje X
-        self.y = y  # Posición en el eje Y
-        self.ancho = ancho  # Ancho de la caja de entrada
-        self.alto = alto  # Alto de la caja de entrada
-        self.rect = pg.Rect(x, y, ancho, alto)  # Rectángulo que representa la caja de entrada (USADO PARA LA COLISIÓN DEL MOUSE AL HACER CLICK)
-        self.pantalla = pantalla
-        self.texto = ""  # Texto de la caja de entrada (lo que se escribe dentro de ella)
-        self.activo = False  # Indica si la caja de entrada está activa
-        self.fuente = fuente_texto  # Fuente del texto de la caja de entrada
-        self.placeholder = placeholder
-        self.limite_caracteres = LIMITE_CARACTERES_INPUTBOX  # Límite de caracteres que se pueden escribir en la caja de entrada
-        self.error = False  # Indica si hay un error al escribir en la caja de entrada (por ejemplo, si esta se encuentra vacía)
-    
-    def escritura(self, evento):
-        if evento.key == pg.K_BACKSPACE:
-            self.texto = self.texto[:-1]  # Elimina el último carácter al presionar BACKSPACE (la tecla de borrar)
-        else:
-            # Obtiene el carácter Unicode de la acción (tecla que fue presionada + estado de las teclas modificadoras (como Shift, Alt, Ctrl))
-            self.texto += evento.unicode  
-    
-    def obtener_texto(self):
-        # Devuelve el texto de la caja de entrada
-        return self.texto
+    def __init__(self, pantalla, x, y, max_ancho:float=500, color_fuente=NEGRO, color_fondo=BLANCO,):
+            self.pantalla = pantalla
+            self.x = x
+            self.y = y
+            self.fuente = fuente_texto
+            self.color_fuente = color_fuente
+            self.color_fondo = color_fondo
+            self.max_ancho = max_ancho
+            self.color_activo = VERDE_AGUA
+            self.color_pasivo = GRIS
+            self.caracteres_validos = "012345789AaBbCcDdEeFfGgHhIiJjKkLlMmNnÑñOoPpQqRrSsTtUuVvWwXxYyZz "
+            self.texto = ""
+            self.altura = self.fuente.get_height()
+            self.rect = pg.Rect(x, y, max_ancho, self.altura*1.1) # La barra es un poco más grande que el texto que recibe
+            self.activa = False
+            
+    def escribir(self, evento, mouse_pos, click_izq):
+        pasar_encima = self.rect.collidepoint(mouse_pos)
+        if pasar_encima and click_izq:  # Si se le pasa por encima a la barra y se le hace click
+            self.activa = True  # La barra se activa
+        elif click_izq and not pasar_encima and self.activa == True:  # Si se hace click fuera de la barra y la barra está activa
+            self.activa = None  # Si se hace click fuera de la barra, se desactiva
+        
+        if self.activa:  # Si la caja de entrada está activa
+            if evento.type == pg.KEYDOWN: # Si se presiona una tecla
+                if evento.key == pg.K_BACKSPACE and len(self.texto) >= 1: # Si se presiona la tecla de retroceso y hay texto
+                    self.texto = self.texto[:-1] # Elimina el último carácter del texto
+                else:
+                    letra = evento.unicode  
+                    if letra in self.caracteres_validos:  # Si la letra es válida
+                        ancho_letra = self.fuente.size(self.texto + letra)[0]
+                        if ancho_letra < self.max_ancho:  # Si el ancho del texto con la nueva letra es menor que el máximo
+                            self.texto += letra  # Agrega la letra al texto
+        return False  # Caso en donde no es escribe un caracter válido
 
     def dibujar(self):
-        # Dibuja la caja de entrada en la pantalla
-        pg.draw.rect(self.pantalla, (255, 255, 255), self.rect)  # Rectángulo blanco (el fondo de la caja de entrada, donde se escribe el texto)
-        pg.draw.rect(self.pantalla, (0, 0, 0), self.rect, 2)  # Borde (indicado por el 2, que es el grosor del borde)
-        if self.texto == "" and not self.activo and not self.error:  # Si no hay texto y la caja de entrada no está activa, muestra un texto (placeholder)
-            self.texto_renderizado = self.fuente.render(self.placeholder, True, (150, 150, 150))  # Placeholder, en gris claro
-        elif self.texto == "" and not self.activo and self.error:
-            self.texto_renderizado = self.fuente.render(self.placeholder, True, (255, 0, 0))  # Placeholder, en rojo (indica un error)
+        pg.draw.rect(self.pantalla, self.color_fondo, self.rect)  # Dibuja el fondo de la caja de entrada
+        self.texto_render = self.fuente.render(self.texto, True, self.color_fuente)  # Renderiza el texto de la caja de entrada
+        self.pantalla.blit(self.texto_render, (self.x + self.max_ancho//2 - self.texto_render.get_width()//2, self.y))  # Dibuja el texto en la caja de entrada 
+        if not self.activa:  # Si la caja de entrada no está activa, dibuja un borde pasivo
+            pg.draw.rect(self.pantalla, self.color_pasivo, self.rect, width=1)  # Pone frame pasivo
         else:
-            self.texto_renderizado = self.fuente.render(self.texto, True, (0, 0, 0))  # Texto normal, en negro
-        # Dibuja el texto en la caja de entrada
-        self.pantalla.blit(self.texto_renderizado, (self.rect.x + 5, self.rect.y)) # Dibuja el texto centrado verticalmente en la caja de entrada
-"""
+            pg.draw.rect(self.pantalla, self.color_activo, self.rect, width=1)  # Pone frame activo
 
 class Personalizacion:
     def __init__(self, menu):
         self.menu = menu
         self.pantalla = menu.pantalla  # Pantalla donde se dibujan los aspectos de personalización
         self.boton_cerrar = Boton(ANCHO_PANTALLA - 70, 20, 50, 50, "X", self.pantalla, ROJO, BLANCO)  # Botón para volver al menu desde alguna opcion
-        self.boton_confirmar = None # TODO
+        self.boton_confirmar = Boton(ANCHO_PANTALLA // 2 - 100, ALTO_PANTALLA - 150, 200, 50, "Confirmar", self.pantalla, VERDE, BLANCO)  # Botón para confirmar la personalización
         self.musica = menu.game.canciones[0]
         self.cambiar_modo = menu.game.cambiar_modo(self)  # Método para cambiar el modo del juego
 
@@ -1039,42 +1047,13 @@ class Personalizacion:
         self.fuente = fuente_texto  # Fuente del texto de la información
         self.num_skin = 1  # Número del skin actual (1 por defecto)
 
+        self.texto_renderizado = self.fuente.render("Esta es la leyenda de:", True, BLANCO)  # Renderiza el texto de los ajustes
+        self.inputbox = InputBox(self.pantalla, ANCHO_PANTALLA // 2 - 250, 90)
 
         self.imagenes_skins = cargar_skins(self.num_skin, puntos_iniciales_skins_jugador)  # Carga las imágenes de los skins desde la carpeta de personajes
         self.imagen_mostrada = self.imagenes_skins["derecha"][0]  # Imagen que se muestra en la pantalla (por defecto es la imagen de la derecha del skin 1)
         self.imagen_mostrada = pg.transform.scale(self.imagen_mostrada, (128, 128))  # Escala la imagen
-        self.lineas = self.dividir_texto()
-
-    # El texto que pensamos poner en la pantalla de información es medianamente largo, por lo que se dividirá en varias líneas
-    def dividir_texto(self):
-        self.ancho_max = ANCHO_PANTALLA - 100  # Ancho máximo de cada línea de texto
-        self.fuente = fuente_texto  # Fuente del texto
-        self.texto = INFORMACION_PERSONAJES[self.num_skin]  # Texto a dividir
-
-        bloques = self.texto.split("\n")  # Paso para dividir el texto y que respete los saltos de línea manuales 
-        lineas = []  # Lista para almacenar las líneas de texto
-
-        for bloque in bloques:
-            palabras = bloque.split(' ')  # "Split" divide el texto en palabras, cada que encuentra un espacio, borrándolo en el proceso
-            linea_actual = ""  # Línea actual que se está construyendo
-            
-            # Recorremos cada palabra y comprobamos para cada linea si cabe en el ancho máximo
-            # Si cabe, se agrega a la línea actual y seguimos revisando
-            # Si no cabe, se agrega la línea actual a la lista de líneas y se comienza una nueva línea con la palabra actual
-            # Añadimos los espacios manualmente
-            for palabra in palabras: 
-                prueba = linea_actual + palabra + " "
-                if self.fuente.size(prueba)[0] <= self.ancho_max:
-                    linea_actual = prueba
-                else:
-                    lineas.append(linea_actual)
-                    linea_actual = palabra + " "
-            # Si al final hay una línea actual que no está vacía, la agregamos a la lista de líneas
-            if linea_actual:
-                lineas.append(linea_actual)
-            # Devolvemos la lista de líneas
-
-        return lineas  # Devuelve la lista de líneas de texto divididas
+        self.lineas = dividir_texto(INFORMACION_PERSONAJES, self.num_skin)  # Divide el texto de información del personaje en líneas para que se ajuste a la pantalla
 
     def cambio_de_skin(self, accion):
         self.num_skin += accion
@@ -1088,14 +1067,13 @@ class Personalizacion:
         self.imagenes_skins = cargar_skins(self.num_skin, puntos_iniciales_skins_jugador)  # Carga las imágenes de los skins desde la carpeta de personajes
         self.imagen_mostrada = self.imagenes_skins["derecha"][0]  # Imagen que se muestra en la pantalla (por defecto es la imagen de la derecha del skin 1)
         self.imagen_mostrada = pg.transform.scale(self.imagen_mostrada, (128, 128))  # Escala la imagen
-        self.lineas = self.dividir_texto()
-        print(self.num_skin)
+        self.lineas = dividir_texto(INFORMACION_PERSONAJES, self.num_skin)  # Divide el texto de información del personaje en líneas para que se ajuste a la pantalla
+        # print(self.num_skin)
 
     def dibujar(self):
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
-        self.texto_renderizado = self.fuente.render("Esta es la leyenda de:", True, BLANCO)  # Renderiza el texto de los ajustes
         self.pantalla.blit(self.texto_renderizado, (ANCHO_PANTALLA // 2 - self.texto_renderizado.get_width() // 2, 30))  # Dibuja el texto centrado en la pantalla
-
+        self.inputbox.dibujar()
 
         self.pantalla.blit(self.imagen_mostrada, (ANCHO_PANTALLA//2 - self.imagen_mostrada.get_width()//2 , ALTO_PANTALLA//2 - self.imagen_mostrada.get_height()//2))
 
@@ -1106,13 +1084,23 @@ class Personalizacion:
             x = (ANCHO_PANTALLA - render.get_width()) // 2  # Centra el texto en la pantalla
             self.pantalla.blit(render, (x, y))
             y += self.fuente.get_height() + 5
-        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar la información
+        self.boton_cerrar.dibujar()  # Dibuja el botón de cerrar
+        self.boton_confirmar.dibujar()  # Dibujar el botón de confirmar la personalización
 
 
     def eventos(self, evento):
+        self.inputbox.escribir(evento, pg.mouse.get_pos(), pg.mouse.get_pressed()[0])  # Escribe en la caja de entrada de texto
         mouse_pos = pg.mouse.get_pos()
         if self.boton_cerrar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
             self.menu.game.cambiar_modo(self.menu)
+        if self.boton_confirmar.detectar_presionado(mouse_pos, pg.mouse.get_pressed()[0]): #Click izquierdo
+            if self.inputbox.texto != "":  # Si se ha escrito algo en la caja de entrada
+                self.menu.game.nombre_jugador = self.inputbox.texto  # Asigna el nombre del jugador al texto escrito en la caja de entrada
+            else:
+                self.menu.game.nombre_jugador = "Jugador"  # Si no se ha escrito nada, asigna un nombre por defecto al jugador
+            self.menu.jugar = Jugar(self.menu.game, self.num_skin)  # Crea un nuevo juego con el skin seleccionado
+            self.menu.game.cambiar_modo(self.menu.jugar)  # Cambia el modo del juego al menú principal
+
         if evento.type == KEYDOWN:
             if evento.key == K_RIGHT:
                 self.cambio_de_skin(+1)
@@ -1537,7 +1525,8 @@ class Game:
         self.volumen = VALOR_INCIAL_VOLUMEN  # Volumen inicial del juego
         
         self.sprites_bomba = cargar_bomba()
-        
+        self.nombre_jugador = None  # Nombre del jugador, se puede cambiar en el menú de personalización
+
         self.menu = Menu(self)  # Crea una instancia del menú
 
         self.modo = self.menu #Inicia en el modo menu
@@ -1564,7 +1553,6 @@ class Game:
             self.modo_previo = modo
             self.modo = modo
             self.administrar_musica() #Cambia a la musica del modo respectivo
-        
     
     def eventos(self):
         for evento in event.get():
@@ -1574,7 +1562,6 @@ class Game:
     
     def actualizar(self):
         self.modo.actualizar()
-
 
     def dibujar(self):
         self.pantalla.fill(NEGRO)  # Limpia la pantalla
